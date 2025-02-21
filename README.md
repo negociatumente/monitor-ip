@@ -15,9 +15,9 @@ Este proyecto permite monitorear la conectividad a servidores desde tu red local
 ## 🛠️ Instalación y Uso  
 
 ### 1️⃣ Requisitos  
-🟢 **PHP 7.4+**
-🟢 **Servidor Apache**
-🟢 **Un navegador web**  
+⚙️ **PHP 7.4+**  
+⚙️ **Servidor Apache**  
+⚙️ **Un navegador web**    
 
 ### 2️⃣ Instalación  
 **-Instalar PHP y Apache:**  
