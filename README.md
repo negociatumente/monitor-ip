@@ -26,8 +26,8 @@ Este proyecto permite monitorear la conectividad a servidores desde tu red local
 -Instalar PHP y Apache:
 sudo apt update && sudo apt install apache2 php -y
 
--Clona el repositorio:  
-git clone https://github.com/tu-usuario/monitor-ip.git
+-Clona el repositorio:
+git clone https://github.com/negociatumente/monitor-ip.git
 
 -Mueve el proyecto a la carpeta de htdocs:
 sudo mv ~/monitor-ip /var/www/html/
