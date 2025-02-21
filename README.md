@@ -9,7 +9,7 @@ Este proyecto permite monitorear la conectividad a servidores desde tu red local
 ✅ Monitoriza servidores desde tu red.  
 ✅ Configurable desde el archivo `config.php`.  
 ✅ **Diseño moderno y visual**.  
-✅ Almacena el estado de los pings.
+✅ Almacena el estado de los pings.  
 ✅ Compatible con **Windows, Linux y macOS**.  
 
 ## 🛠️ Instalación y Uso  
@@ -27,7 +27,7 @@ sudo apt update && sudo apt install apache2 php -y
 git clone https://github.com/negociatumente/monitor-ip.git
 
 **-Mueve el proyecto a la carpeta de htdocs:**  
-sudo mv ~/monitor-ip /var/www/html/
+sudo mv ~/monitor-ip-main/monitor /var/www/html/
 
 ### 3️⃣ Configuración
 **-Abre el archivo config.php y modifica las IPs según los servidores que quieras monitorizar:**  
