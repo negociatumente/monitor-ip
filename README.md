@@ -20,24 +20,24 @@ Este proyecto permite monitorear la conectividad a servidores desde tu red local
 🟢 **Un navegador web**  
 
 ### 2️⃣ Instalación  
--Instalar PHP y Apache:  
+**-Instalar PHP y Apache:**  
 sudo apt update && sudo apt install apache2 php -y
 
--Clona el repositorio:  
+**-Clona el repositorio:**  
 git clone https://github.com/negociatumente/monitor-ip.git
 
--Mueve el proyecto a la carpeta de htdocs:  
+**-Mueve el proyecto a la carpeta de htdocs:**  
 sudo mv ~/monitor-ip /var/www/html/
 
 ### 3️⃣ Configuración
--Abre el archivo config.php y modifica las IPs según los servidores que quieras monitorizar:  
+**-Abre el archivo config.php y modifica las IPs según los servidores que quieras monitorizar:**  
 cd monitor-ip
 nano config.php
 
 ### 4️⃣ Ejecución
--Levanta el servidor Apache local:  
+**-Levanta el servidor Apache local:**  
 sudo systemctl start apache2
 
 ### 5️⃣ Resultados
--Luego, abre en tu navegador la siguiente url:  
+**-Luego, abre en tu navegador la siguiente url:**    
 http://localhost:8000
