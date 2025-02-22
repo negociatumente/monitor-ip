@@ -28,8 +28,8 @@ sudo apt update && sudo apt install apache2 php -y
 **🔹Clona el repositorio:**  
 git clone https://github.com/negociatumente/monitor-ip.git
 
-**🔹Mueve el proyecto a la carpeta de htdocs:**  
-sudo mv ~/monitor-ip-main /var/www/html/
+**🔹Mueve el contenido del proyecto a la carpeta de htdocs:**  
+sudo mv ~/monitor-ip/monitor-ip /var/www/html/monitor-ip
 
 ### 3️⃣ Configuración
 **🔹Abre el archivo config.php y modifica las IPs según los servidores que quieras monitorizar:**  
@@ -63,7 +63,7 @@ https://www.apachefriends.org/es/download.html
 **🔹Descargar el código ZIP:**  
 https://github.com/negociatumente/monitor-ip
 
-**🔹Mueve el proyecto a la carpeta de htdocs:**  
+**🔹Mueve la carpeta /monitor-ip que hay dentro de la carpeta /monitor-ip-main a la carpeta de htdocs:**  
 C:\xampp\htdocs\monitor-ip
 
 ### 4️⃣ Configuración
