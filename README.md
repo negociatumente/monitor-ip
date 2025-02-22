@@ -14,7 +14,7 @@ Este proyecto permite monitorear la conectividad a servidores desde tu red local
 ✅ Almacena el estado de los pings.  
 ✅ Compatible con **Windows, Linux y macOS**.  
 
-## 🛠️ Instalación y Uso  
+## 🛠️ Instalación en Linux y MacOS  
 
 ### 1️⃣ Requisitos  
 ⚙️ **PHP 7.4+**  
@@ -22,24 +22,54 @@ Este proyecto permite monitorear la conectividad a servidores desde tu red local
 ⚙️ **Un navegador web**    
 
 ### 2️⃣ Instalación  
-**-Instalar PHP y Apache:**  
+**🔹Instalar PHP y Apache:**  
 sudo apt update && sudo apt install apache2 php -y
 
-**-Clona el repositorio:**  
+**🔹Clona el repositorio:**  
 git clone https://github.com/negociatumente/monitor-ip.git
 
-**-Mueve el proyecto a la carpeta de htdocs:**  
-sudo mv ~/monitor-ip-main/monitor /var/www/html/
+**🔹Mueve el proyecto a la carpeta de htdocs:**  
+sudo mv ~/monitor-ip-main /var/www/html/
 
 ### 3️⃣ Configuración
-**-Abre el archivo config.php y modifica las IPs según los servidores que quieras monitorizar:**  
+**🔹Abre el archivo config.php y modifica las IPs según los servidores que quieras monitorizar:**  
 cd monitor-ip
 nano config.php
 
 ### 4️⃣ Ejecución
-**-Levanta el servidor Apache local:**  
+**🔹Levanta el servidor Apache local:**  
 sudo systemctl start apache2
 
 ### 5️⃣ Resultados
-**-Luego, abre en tu navegador la siguiente url:**    
-http://localhost:8000
+**🔹Luego, abre en tu navegador la siguiente url:**    
+http://localhost:8000/monitor-ip
+
+## 🛠️ Instalación en Windows  
+
+### 1️⃣ Requisitos  
+⚙️ **XAMPP**  
+⚙️ **Un navegador web**    
+
+### 2️⃣ Instalación  
+**🔹Descargar XAMPP:**  
+https://www.apachefriends.org/es/download.html  
+
+**🔹Instalar XAMPP:**  
+-Ejecuta el instalador y sigue los pasos.  
+-Asegúrate de seleccionar Apache y PHP en la instalación.  
+-Cuando termine, abre XAMPP Control Panel y presiona "Start" en Apache.  
+
+### 3️⃣ Descargar y configurar el proyecto
+**🔹Descargar el código ZIP:**  
+https://github.com/negociatumente/monitor-ip
+
+**🔹Mueve el proyecto a la carpeta de htdocs:**  
+C:\xampp\htdocs\monitor-ip
+
+### 4️⃣ Configuración
+**🔹Abre el archivo config.php y modifica las IPs según los servidores que quieras monitorizar:**  
+config.php
+
+### 5️⃣ Resultados
+**🔹Luego, abre en tu navegador la siguiente url:**    
+http://localhost:8000/monitor-ip
