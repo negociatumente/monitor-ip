@@ -17,7 +17,7 @@ if (file_exists($ping_file)) {
 function update_ping_results($ip) {
     global $ping_attempts, $ping_data;
 
-    $ping = shell_exec("ping -c 1 $ip");
+    $ping = shell_exec("ping -c 1 -W 1 $ip");
     $ping_status = (strpos($ping, '1 received') !== false) ? "UP" : "DOWN";
 
     if (!isset($ping_data[$ip])) {
