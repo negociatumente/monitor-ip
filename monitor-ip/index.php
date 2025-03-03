@@ -17,8 +17,17 @@ if (file_exists($ping_file)) {
 function update_ping_results($ip) {
     global $ping_attempts, $ping_data;
 
-    $ping = shell_exec("ping -c 1 -W 1 $ip");
-    $ping_status = (strpos($ping, '1 received') !== false) ? "UP" : "DOWN";
+    // Detectar si el sistema es Windows
+    $isWindows = (PHP_OS_FAMILY === 'Windows');
+
+    // Comando de ping según el sistema operativo
+    $pingCommand = $isWindows ? "ping -n 1 -w 1000 $ip" : "ping -c 1 -W 1 $ip";
+    
+    // Ejecutar el ping
+    $ping = shell_exec($pingCommand);
+
+    // Evaluar si la IP respondió correctamente
+    $ping_status = (strpos($ping, 'TTL=') !== false || strpos($ping, 'bytes from') !== false) ? "UP" : "DOWN";
 
     if (!isset($ping_data[$ip])) {
         $ping_data[$ip] = [];
