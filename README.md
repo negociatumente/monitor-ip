@@ -44,7 +44,7 @@ sudo systemctl start apache2
 
 ### 5️⃣ Resultados
 **🔹Luego, abre en tu navegador la siguiente url:**    
-http://localhost:8000/monitor-ip
+http://localhost/monitor-ip
 
 ## 🛠️ Instalación en Windows  
 
@@ -74,4 +74,4 @@ config.php
 
 ### 5️⃣ Resultados
 **🔹Luego, abre en tu navegador la siguiente url:**    
-http://localhost:8000/monitor-ip
+http://localhost/monitor-ip
