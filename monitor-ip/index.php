@@ -16,7 +16,7 @@ if (file_exists($ping_file)) {
 // Función para realizar un ping y actualizar los datos
 function update_ping_results($ip) {
     global $ping_attempts, $ping_data;
-
+    
     // Detectar si el sistema es Windows
     $isWindows = (PHP_OS_FAMILY === 'Windows');
 
@@ -28,14 +28,17 @@ function update_ping_results($ip) {
 
     // Evaluar si la IP respondió correctamente
     $ping_status = (strpos($ping, 'TTL=') !== false || strpos($ping, 'bytes from') !== false) ? "UP" : "DOWN";
-
+    
+    // Captura la fecha y hora actual
+    $timestamp = date('Y-m-d H:i:s');  
     if (!isset($ping_data[$ip])) {
         $ping_data[$ip] = [];
     }
 
-    array_unshift($ping_data[$ip], $ping_status);
+    array_unshift($ping_data[$ip], ["status" => $ping_status, "timestamp" => $timestamp]);
     if (count($ping_data[$ip]) > $ping_attempts) {
-        array_pop($ping_data[$ip]);
+        // Mantiene solo los últimos registros
+        array_pop($ping_data[$ip]);  
     }
 }
 
@@ -51,10 +54,15 @@ file_put_contents($ping_file, json_encode($ping_data));
 function analyze_ip($ip) {
     global $ping_data;
 
-    $ping_results = $ping_data[$ip] ?? array_fill(0, 5, "N/A");
-    $success_count = array_count_values($ping_results)["UP"] ?? 0;
-    $percentage = ($success_count / 5) * 100;
-    $status = ($percentage >= 60) ? "UP" : "DOWN";
+    $ping_results = $ping_data[$ip] ?? array_fill(0, 5, ["status" => "N/A", "timestamp" => "N/A"]);
+    $success_count = 0;
+    foreach ($ping_results as $ping) {
+        if ($ping['status'] === "UP") {
+            $success_count++;
+        }
+    }
+    $percentage = ($success_count / count($ping_results)) * 100;
+    $status = ($percentage > 50) ? "UP" : "DOWN";
 
     if ($percentage >= 80) {
         $label = "Good";
@@ -83,18 +91,32 @@ function analyze_ip($ip) {
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <div class="container mx-auto p-4">
-        <h1 class="text-3xl font-bold text-center my-6">IP Status Monitor</h1>
+    <div class="text-center my-4">
+        <button onclick="window.location.reload();" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-700">
+            Check Status Now!
+        </button>
+    </div> 
+    <h1 class="text-3xl font-bold text-center my-6">IP Status Monitor</h1>
         <div class="overflow-x-auto">
             <table class="w-full max-w-5xl mx-auto border-collapse shadow-lg rounded-lg overflow-hidden">
                 <thead>
+                    <!-- Primera fila del encabezado -->
                     <tr class="bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                         <th class="p-3">Service</th>
                         <th class="p-3">IP Address</th>
                         <th class="p-3">Status</th>
                         <th class="p-3">Label</th>
                         <th class="p-3">Percentage</th>
-                        <th class="p-3" colspan="5">Recent Pings</th>
-                    </tr>
+                        <?php 
+                        // Obtener una IP de ejemplo para mostrar fechas (si existen datos previos)
+                        $sample_ip = array_key_first($ping_data); 
+                        $latest_pings = $ping_data[$sample_ip] ?? array_fill(0, 5, ["timestamp" => "N/A"]);
+                        foreach ($latest_pings as $ping) {
+                            $date = isset($ping['timestamp']) ? date('d M H:i:s', strtotime($ping['timestamp'])) : "N/A";
+                            echo "<th class='p-2 text-center'>" . $date . "</th>";
+                        }
+                        ?>
+                        
                 </thead>
                 <tbody>
                     <?php foreach ($ips_to_monitor as $ip => $service): ?>
@@ -114,11 +136,11 @@ function analyze_ip($ip) {
                             <td class="p-3 text-center"><?php echo $ip; ?></td>
                             <td class="p-3 text-center <?php echo $status_color; ?> text-white font-bold rounded-lg"><?php echo $status; ?></td>
                             <td class="p-3 text-center <?php echo $label_color; ?> text-white font-bold rounded-lg"><?php echo $label; ?></td>
-                            <td class="p-3 text-center"><?php echo number_format($percentage, 2); ?>%</td>
+                            <td class="p-3 text-center"><?php echo number_format($percentage, 0); ?>%</td>
                             <?php foreach ($ping_results as $ping): ?>
                                 <td class="p-3 text-center">
-                                    <span class="<?php echo $ping === "UP" ? "text-green-500" : "text-red-500"; ?>">
-                                        <?php echo $ping; ?>
+                                    <span class="<?php echo ($ping['status'] ?? "DOWN") === "UP" ? "text-green-500" : "text-red-500"; ?>">
+                                        <?php echo $ping['status'] ?? "N/A"; ?>
                                     </span>
                                 </td>
                             <?php endforeach; ?>
