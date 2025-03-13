@@ -6,8 +6,9 @@ Este proyecto permite monitorear la conectividad a servidores desde tu red local
 ## ⚠️ Aviso  
 - Este proyecto es solo para **uso personal y diagnóstico de red**.  
 - No se debe abusar del ping para evitar tráfico innecesario.
-- Los pings no se vuelven a lanzar hasta que no se refresque la web.
+- Los pings se lanzan cada minuto o al pulsar el botón.
 - Solo se almacenan los estados de los últimos 5 pings lanzados.
+- Si no se refrescan los pings en la tabla, borrar el contenido del archivo "ping_results.json".
   
 ## 🚀 Características  
 ✅ Monitoriza servidores desde tu red.  
