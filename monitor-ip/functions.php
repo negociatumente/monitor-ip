@@ -20,7 +20,7 @@ function update_ping_results($ip) {
 
     // Captura el tiempo de respuesta
     if ($isWindows) {
-        preg_match('/time[=<]\s*(\d+ms)/', $ping, $matches);
+        preg_match('/tiempo[=<]\s*(\d+ms)/', $ping, $matches);
     } else {
         preg_match('/time[=<]\s*(\d+\.\d+ ms)/', $ping, $matches);
     }

@@ -123,7 +123,7 @@
                         <th class="p-3">Average Ping</th>
                         <?php 
                         // Obtener una IP de ejemplo para mostrar fechas (si existen datos previos)
-                        $sample_ip = array_key_first($ping_data); 
+                        $sample_ip = array_key_last($ping_data); 
                         $latest_pings = $ping_data[$sample_ip] ?? array_fill(0, 5, ["timestamp" => "-"]);
                         //Haz un for que vaya hasta el ping_attempts y muestre las fechas
                         for($i = 0; $i < 5; $i++) {
