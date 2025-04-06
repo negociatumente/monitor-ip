@@ -31,7 +31,7 @@ sudo apt update && sudo apt install apache2 php -y
 **🔹Clona el repositorio:**  
 git clone https://github.com/negociatumente/monitor-ip.git
 
-**🔹Mueve el contenido del proyecto a la carpeta de htdocs:**  
+**🔹Mueve el contenido del proyecto a la carpeta del servidor web:**  
 sudo mv ~/monitor-ip/monitor-ip /var/www/html/monitor-ip
 
 ### 3️⃣ Configuración
