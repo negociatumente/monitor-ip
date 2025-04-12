@@ -34,10 +34,13 @@ git clone https://github.com/negociatumente/monitor-ip.git
 **🔹Mueve el contenido del proyecto a la carpeta del servidor web:**  
 sudo mv ~/monitor-ip/monitor-ip /var/www/html/monitor-ip
 
+**🔹Da permisos de lectura y escritura al archivo ping_results.json:**  
+sudo chmod 664 /var/www/html/monitor-ip/ping_results.json
+
 ### 3️⃣ Configuración
-**🔹Abre el archivo config.php y modifica las IPs según los servidores que quieras monitorizar:**  
+**🔹Abre el archivo config.ini y modifica las IPs según los servidores que quieras monitorizar:**  
 cd monitor-ip
-nano config.php
+nano config.ini
 
 ### 4️⃣ Ejecución
 **🔹Levanta el servidor Apache local:**  
@@ -70,8 +73,8 @@ https://github.com/negociatumente/monitor-ip
 C:\xampp\htdocs\monitor-ip
 
 ### 4️⃣ Configuración
-**🔹Abre el archivo config.php y modifica las IPs según los servidores que quieras monitorizar:**  
-config.php
+**🔹Abre el archivo config.ini y modifica las IPs según los servidores que quieras monitorizar:**  
+config.ini
 
 ### 5️⃣ Resultados
 **🔹Luego, abre en tu navegador la siguiente url:**    
