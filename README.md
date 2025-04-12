@@ -39,7 +39,7 @@ sudo chmod 664 /var/www/html/monitor-ip/ping_results.json
 
 ### 3️⃣ Configuración
 **🔹Abre el archivo config.ini y modifica las IPs según los servidores que quieras monitorizar:**  
-cd monitor-ip
+cd monitor-ip  
 nano config.ini
 
 ### 4️⃣ Ejecución
