@@ -1,7 +1,9 @@
-# 🌐 Monitor de IPs Públicas  
+# 🌐 Monitor de IPs  
 Este proyecto permite monitorear la conectividad a servidores desde tu red local. Es útil para **diagnosticar bloqueos de tu proveedor de Internet (ISP)** y verificar la disponibilidad de estos servicios.  
 
 ![ip-monitor](https://github.com/user-attachments/assets/fcab05ae-e28f-4916-a62c-6f8e94bcf189)
+
+Para saber más sobre monitorización de IPs y redes tienes la siguiente **guía**: https://go.hotmart.com/L99188121S?dp=1
 
 ## ⚠️ Aviso  
 - Este proyecto es solo para **uso personal y diagnóstico de red**.  
