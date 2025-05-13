@@ -116,10 +116,22 @@
 
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <!-- Banner superior -->
-    <div class="bg-gray-400 text-center py-1 shadow-lg">
-        <p>Proyecto hecho por <a href="https://negociatumente.com" target="_blank"
-                class=" font-bold hover:underline">Antonio Cañavate | Telemático</a></p>
+    <div class="bg-gray-400 text-center py-2 shadow-lg">
+    <p>
+        Proyecto hecho por 
+        <a href="https://negociatumente.com" target="_blank" class="font-bold hover:underline">
+            Antonio Cañavate | Telemático
+        </a>
+        <a href="https://github.com/negociatumente/monitor-ip" target="_blank" class="hover:underline mx-4">
+            Ver en GitHub
+        </a> <a href="https://negociatumente.com/guia-redes/" target="_blank" class="hover:underline mx-4">
+            Quiero aprender más
+        </a>
+    </p>
+     
+    
     </div>
+</div>
 
     <div class="container mx-auto p-2">
         <div class="text-center my-2">
