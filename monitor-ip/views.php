@@ -168,7 +168,9 @@ function getContrastColor($hexcolor) {
             confirmDelete: function(ip) {
                 this.showModal('deleteIpForm');
                 document.getElementById('delete_ip').value = ip;
-            }
+            },
+            hideDeleteIpForm: function() { this.hideModal('deleteIpForm'); },
+
         };
         
         // Countdown and page refresh functions
@@ -233,6 +235,7 @@ function getContrastColor($hexcolor) {
         window.showClearDataConfirmation = function() { modalFunctions.showClearDataConfirmation(); };
         window.hideClearDataConfirmation = function() { modalFunctions.hideClearDataConfirmation(); };
         window.confirmDelete = function(ip) { modalFunctions.confirmDelete(ip); };
+        window.hideDeleteIpForm = function() { modalFunctions.hideDeleteIpForm(); };
         window.reloadPage = reloadPage;
         window.updateTimer = updateTimer;
     </script>
