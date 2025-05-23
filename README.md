@@ -31,29 +31,43 @@ https://negociatumente.com/guia-redes
 
 ### 2️⃣ Instalación  
 **🔹Instalar PHP y Apache:**  
+```bash
 sudo apt update && sudo apt install apache2 php -y
+```
 
 **🔹Clona el repositorio:**  
+```bash
 git clone https://github.com/negociatumente/monitor-ip.git
+```
 
-**🔹Mueve el contenido del proyecto a la carpeta del servidor web:**  
+**🔹Mueve el contenido del proyecto a la carpeta del servidor web:**
+```bash
 sudo mv ~/monitor-ip/monitor-ip /var/www/html/monitor-ip
+```
 
-**🔹Da permisos de lectura y escritura al archivo ping_results.json:**  
+**🔹Da permisos de lectura y escritura al archivo ping_results.json:**
+```bash
 sudo chmod 664 /var/www/html/monitor-ip/ping_results.json
+```
 
 ### 3️⃣ Configuración
-**🔹Abre el archivo config.ini y modifica las IPs según los servidores que quieras monitorizar:**  
+**🔹Abre el archivo config.ini y modifica las IPs según los servidores que quieras monitorizar:**
+```bash
 cd monitor-ip  
 nano config.ini
+```
 
 ### 4️⃣ Ejecución
-**🔹Levanta el servidor Apache local:**  
+**🔹Levanta el servidor Apache local:**
+```bash
 sudo systemctl start apache2
+```
 
 ### 5️⃣ Resultados
-**🔹Luego, abre en tu navegador la siguiente url:**    
+**🔹Finalmente, abre en tu navegador la siguiente url:**
+```bash
 http://localhost/monitor-ip
+```
 
 ## 🛠️ Instalación en Windows  
 
@@ -85,5 +99,5 @@ C:\xampp\htdocs\monitor-ip
 config.ini
 
 ### 5️⃣ Resultados
-**🔹Luego, abre en tu navegador la siguiente url:**    
+**🔹Finalmente, abre en tu navegador la siguiente url:**    
 http://localhost/monitor-ip
