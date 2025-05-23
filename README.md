@@ -57,7 +57,7 @@ http://localhost/monitor-ip
 
 ## 🛠️ Instalación en Windows  
 
-Aquí tienes un video sobre la instalación en Windows:
+🔹Aquí tienes un video sobre la instalación en Windows:  
 https://www.tiktok.com/@negociatumente/video/7504332909923568919
 
 ### 1️⃣ Requisitos  
