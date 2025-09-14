@@ -26,7 +26,11 @@ if (file_exists($ping_file)) {
 $import_export_message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_config'])) {
     $success = import_config_ini($_FILES['import_config']);
-    $import_export_message = $success ? 'Configuración importada correctamente.' : 'Error al importar configuración.';
+    // Limpiar datos de ping automáticamente tras importar
+    if (file_exists($ping_file)) {
+        file_put_contents($ping_file, json_encode([]));
+    }
+    $import_export_message = $success ? 'Configuración importada correctamente. (Datos de ping limpiados)' : 'Error al importar configuración.';
     // Redirigir para evitar reenvío del archivo
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '?imported=1');
     exit;
@@ -71,36 +75,36 @@ if (isset($_GET['imported'])) {
         let currentPage = 1;
         const pingsPerPage = 5;
 
-            window.ipDetails = {
-        <?php
-        $ip_entries = [];
-        foreach ($ips_to_monitor as $ip => $service) {
-            $result = analyze_ip($ip);
-            $service_styling = getServiceStyling($service, $services);
-            $status_styling = getStatusStyling($result['status']);
-            $label_styling = getLabelStyling($result['label']);
-            $percentage_styling = getPercentageStyling($result['percentage']);
-            $response_styling = getResponseTimeStyling($result['average_response_time']);
-            $ip_entries[] = "'" . addslashes($ip) . "': " . json_encode([
-                'service' => $service,
-                'service_color' => $service_styling['color'],
-                'service_text_color' => $service_styling['text_color'],
-                'status' => $result['status'],
-                'status_badge' => $status_styling['badge'],
-                'status_icon' => $status_styling['icon'],
-                'label' => $result['label'],
-                'label_badge' => $label_styling['badge'],
-                'label_icon' => $label_styling['icon'],
-                'percentage' => $result['percentage'],
-                'percentage_text_class' => $percentage_styling['text_class'],
-                'average_response_time' => $result['average_response_time'],
-                'response_class' => $response_styling['class'],
-                'ping_results' => $result['ping_results'],
-            ]);
-        }
-        echo implode(",\n", $ip_entries);
-        ?>
-    };
+        window.ipDetails = {
+            <?php
+            $ip_entries = [];
+            foreach ($ips_to_monitor as $ip => $service) {
+                $result = analyze_ip($ip);
+                $service_styling = getServiceStyling($service, $services);
+                $status_styling = getStatusStyling($result['status']);
+                $label_styling = getLabelStyling($result['label']);
+                $percentage_styling = getPercentageStyling($result['percentage']);
+                $response_styling = getResponseTimeStyling($result['average_response_time']);
+                $ip_entries[] = "'" . addslashes($ip) . "': " . json_encode([
+                    'service' => $service,
+                    'service_color' => $service_styling['color'],
+                    'service_text_color' => $service_styling['text_color'],
+                    'status' => $result['status'],
+                    'status_badge' => $status_styling['badge'],
+                    'status_icon' => $status_styling['icon'],
+                    'label' => $result['label'],
+                    'label_badge' => $label_styling['badge'],
+                    'label_icon' => $label_styling['icon'],
+                    'percentage' => $result['percentage'],
+                    'percentage_text_class' => $percentage_styling['text_class'],
+                    'average_response_time' => $result['average_response_time'],
+                    'response_class' => $response_styling['class'],
+                    'ping_results' => $result['ping_results'],
+                ]);
+            }
+            echo implode(",\n", $ip_entries);
+            ?>
+        };
     </script>
 
     <script src="lib/script.js"></script>
@@ -319,7 +323,3 @@ if (isset($_GET['imported'])) {
 </body>
 
 </html>
-
-<script>
-
-</script>
