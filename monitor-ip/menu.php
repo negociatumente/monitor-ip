@@ -77,7 +77,7 @@
         </div>
         <?php if (!empty($import_export_message)): ?>
             <div class="mb-4 p-3 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                <?php echo htmlspecialchars($import_export_message); ?>
+                <?php echo $import_export_message === true ? 'Configuración importada correctamente.' : htmlspecialchars($import_export_message); ?>
             </div>
         <?php endif; ?>
         <div class="mb-6">
@@ -247,7 +247,7 @@
 </div>
 <!-- Modal: Change Timer Interval -->
 <div id="changeTimerForm" class="modal">
-    <div class="modal-content">
+    <div class="modal-content max-w-3xl">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
                 <i class="fas fa-clock text-blue-500 mr-2"></i> Change Timer Interval
@@ -259,41 +259,97 @@
         </div>
 
         <form method="POST" action="">
-            <div class="mb-5">
-                <label for="new_timer_value"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Timer Interval
-                    (seconds)</label>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <i class="fas fa-stopwatch text-gray-400"></i>
-                    </div>
-                    <input type="number" id="new_timer_value" name="new_timer_value"
-                        class="w-full pl-10 p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        value="<?php echo $ping_interval; ?>" min="1" required>
+            <div class="mb-6">
+                <div class="mb-6">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Choose how often the system should check IP
+                        status</p>
                 </div>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Set how often the system should check
-                    IP status (in seconds)</p>
-            </div>
 
-            <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-5">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-info-circle text-blue-500 text-xl"></i>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <!-- Critical Services - 30 seconds -->
+                    <div class="group">
+                        <button type="button" id="timer-btn-30"
+                            class="timer-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_interval == 30 ? 'bg-red-500 text-white border-red-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-red-50 hover:border-red-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-red-900/20'); ?>"
+                            onclick="setTimerValue(30)">
+                            <div class="flex flex-col items-center">
+                                <div
+                                    class="mb-3 p-3 rounded-full <?php echo ($ping_interval == 30 ? 'bg-white/20' : 'bg-red-100 dark:bg-red-900/30'); ?>">
+                                    <i
+                                        class="fas fa-exclamation-triangle text-2xl <?php echo ($ping_interval == 30 ? 'text-white' : 'text-red-500'); ?>"></i>
+                                </div>
+                                <div class="text-2xl font-bold mb-1">30s</div>
+                                <div class="text-sm font-medium">Critical Services</div>
+                                <div class="text-xs opacity-75 mt-1">High priority monitoring</div>
+                            </div>
+                        </button>
                     </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-blue-800 dark:text-blue-300">Recommended settings
-                        </h3>
-                        <div class="mt-2 text-sm text-blue-700 dark:text-blue-200">
-                            <ul class="list-disc pl-5 space-y-1">
-                                <li>30-60 seconds: For critical services</li>
-                                <li>60-300 seconds: For standard monitoring</li>
-                                <li>300+ seconds: For non-critical services</li>
-                            </ul>
+
+                    <!-- Standard Services - 90 seconds -->
+                    <div class="group">
+                        <button type="button" id="timer-btn-90"
+                            class="timer-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_interval == 90 ? 'bg-blue-500 text-white border-blue-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-blue-900/20'); ?>"
+                            onclick="setTimerValue(90)">
+                            <div class="flex flex-col items-center">
+                                <div
+                                    class="mb-3 p-3 rounded-full <?php echo ($ping_interval == 90 ? 'bg-white/20' : 'bg-blue-100 dark:bg-blue-900/30'); ?>">
+                                    <i
+                                        class="fas fa-server text-2xl <?php echo ($ping_interval == 90 ? 'text-white' : 'text-blue-500'); ?>"></i>
+                                </div>
+                                <div class="text-2xl font-bold mb-1">90s</div>
+                                <div class="text-sm font-medium">Standard Services</div>
+                                <div class="text-xs opacity-75 mt-1">Balanced monitoring</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Non-Critical Services - 300 seconds -->
+                    <div class="group">
+                        <button type="button" id="timer-btn-300"
+                            class="timer-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_interval == 300 ? 'bg-green-500 text-white border-green-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-green-50 hover:border-green-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-green-900/20'); ?>"
+                            onclick="setTimerValue(300)">
+                            <div class="flex flex-col items-center">
+                                <div
+                                    class="mb-3 p-3 rounded-full <?php echo ($ping_interval == 300 ? 'bg-white/20' : 'bg-green-100 dark:bg-green-900/30'); ?>">
+                                    <i class="fas fa-leaf text-2xl <?php echo ($ping_interval == 300 ? 'text-green' : 'text-green-500'); ?>"></i>
+                                </div>
+                                <div class="text-2xl font-bold mb-1">5m</div>
+                                <div class="text-sm font-medium">Non-Critical Services</div>
+                                <div class="text-xs opacity-75 mt-1">Light monitoring</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-lightbulb text-blue-500 text-xl"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">Monitoring Guidelines
+                            </h4>
+                            <div class="text-sm text-blue-700 dark:text-blue-200 space-y-1">
+                                <div class="flex items-center">
+                                    <i class="fas fa-circle text-red-500 text-xs mr-2"></i>
+                                    <span><strong>30 seconds:</strong> Critical infrastructure, databases, core
+                                        services</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-circle text-blue-500 text-xs mr-2"></i>
+                                    <span><strong>90 seconds:</strong> Web servers, APIs, standard applications</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-circle text-green-500 text-xs mr-2"></i>
+                                    <span><strong>5 minutes:</strong> Background services, development
+                                        environments</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
+            <input type="hidden" id="new_timer_value" name="new_timer_value" value="<?php echo $ping_interval; ?>">
             <div class="flex justify-end gap-3 mt-6">
                 <button type="button" onclick="hideChangeTimerForm();"
                     class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
@@ -309,10 +365,10 @@
 </div>
 <!-- Modal: Change Ping History -->
 <div id="changePingAttemptsForm" class="modal">
-    <div class="modal-content">
+    <div class="modal-content max-w-4xl">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-history text-purple-500 mr-2"></i> Change Ping History
+                <i class="fas fa-history text-blue-500 mr-2"></i> Change Ping History
             </h2>
             <button type="button" onclick="hideChangePingAttemptsForm();"
                 class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
@@ -321,37 +377,101 @@
         </div>
 
         <form method="POST" action="">
-            <div class="mb-5">
-                <label for="new_ping_attempts"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ping History
-                    Length</label>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <i class="fas fa-list-ol text-gray-400"></i>
-                    </div>
-                    <input type="number" id="new_ping_attempts" name="new_ping_attempts"
-                        class="w-full pl-10 p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        value="<?php echo $ping_attempts; ?>" min="1" max="20" required>
+            <div class="mb-6">
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                        Select History Length
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Choose how many ping results to keep for trend
+                        analysis</p>
                 </div>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Number of ping results to keep in
-                    history (1-20)</p>
-            </div>
 
-            <div class="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-lg mb-5">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-info-circle text-purple-500 text-xl"></i>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    <!-- Quick Analysis - 5 pings -->
+                    <div class="group">
+                        <button type="button" id="btn-5"
+                            class="ping-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_attempts == 5 ? 'bg-purple-500 text-white border-purple-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-purple-50 hover:border-purple-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-purple-900/20'); ?>"
+                            onclick="setPingAttempts(5)">
+                            <div class="flex flex-col items-center">
+                                <div
+                                    class="mb-3 p-3 rounded-full <?php echo ($ping_attempts == 5 ? 'bg-white/20' : 'bg-purple-100 dark:bg-purple-900/30'); ?>">
+                                    <i
+                                        class="fas fa-bolt text-2xl <?php echo ($ping_attempts == 5 ? 'text-purple' : 'text-purple-500'); ?>"></i>
+                                </div>
+                                <div class="text-2xl font-bold mb-1">5</div>
+                                <div class="text-sm font-medium">Quick</div>
+                                <div class="text-xs opacity-75 mt-1">Minimal tracking</div>
+                            </div>
+                        </button>
                     </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-purple-800 dark:text-purple-300">About Ping History
-                        </h3>
-                        <div class="mt-2 text-sm text-purple-700 dark:text-purple-200">
-                            <p>The ping history determines how many previous ping results are stored and
-                                displayed in the table. A longer history provides better trend analysis but may
-                                make the table wider.</p>
+
+                    <!-- Standard Analysis - 15 pings -->
+                    <div class="group">
+                        <button type="button" id="btn-15"
+                            class="ping-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_attempts == 15 ? 'bg-blue-500 text-white border-blue-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-blue-900/20'); ?>"
+                            onclick="setPingAttempts(15)">
+                            <div class="flex flex-col items-center">
+                                <div
+                                    class="mb-3 p-3 rounded-full <?php echo ($ping_attempts == 15 ? 'bg-white/20' : 'bg-blue-100 dark:bg-blue-900/30'); ?>">
+                                    <i
+                                        class="fas fa-chart-bar text-2xl <?php echo ($ping_attempts == 15 ? 'text-blue' : 'text-blue-500'); ?>"></i>
+                                </div>
+                                <div class="text-2xl font-bold mb-1">15</div>
+                                <div class="text-sm font-medium">Standard</div>
+                                <div class="text-xs opacity-75 mt-1">Balanced view</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Detailed Analysis - 25 pings -->
+                    <div class="group">
+                        <button type="button" id="btn-25"
+                            class="ping-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_attempts == 25 ? 'bg-orange-500 text-white border-orange-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-orange-50 hover:border-orange-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-orange-900/20'); ?>"
+                            onclick="setPingAttempts(25)">
+                            <div class="flex flex-col items-center">
+                                <div
+                                    class="mb-3 p-3 rounded-full <?php echo ($ping_attempts == 25 ? 'bg-white/20' : 'bg-orange-100 dark:bg-orange-900/30'); ?>">
+                                    <i
+                                        class="fas fa-chart-line text-2xl <?php echo ($ping_attempts == 25 ? 'text-white' : 'text-orange-500'); ?>"></i>
+                                </div>
+                                <div class="text-2xl font-bold mb-1">25</div>
+                                <div class="text-sm font-medium">Detailed</div>
+                                <div class="text-xs opacity-75 mt-1">More insights</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-blue-500 text-xl"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">History Guidelines
+                            </h4>
+                            <div class="text-sm text-blue-700 dark:text-blue-200 space-y-1">
+                                <div class="flex items-center">
+                                    <i class="fas fa-circle text-purple-500 text-xs mr-2"></i>
+                                    <span><strong>5 pings:</strong> Basic monitoring, minimal table width</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-circle text-blue-500 text-xs mr-2"></i>
+                                    <span><strong>15 pings:</strong> Good balance between detail and performance</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-circle text-orange-500 text-xs mr-2"></i>
+                                    <span><strong>25 pings:</strong> Detailed trend analysis for important
+                                        services</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <input type="hidden" id="new_ping_attempts" name="new_ping_attempts"
+                    value="<?php echo $ping_attempts; ?>">
             </div>
 
             <div class="flex justify-end gap-3 mt-6">
@@ -360,7 +480,7 @@
                     <i class="fas fa-times mr-2"></i> Cancel
                 </button>
                 <button type="submit" name="change_ping_attempts"
-                    class="btn px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
+                    class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                     <i class="fas fa-save mr-2"></i> Update
                 </button>
             </div>
