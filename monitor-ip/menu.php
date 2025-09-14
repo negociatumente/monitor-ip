@@ -49,7 +49,7 @@
 
             <button onclick="showConfigModal();"
                 class="btn bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md">
-                <i class="fas fa-file-import"></i> Importar/Exportar
+                <i class="fas fa-file-import"></i> Import/Export
             </button>
             <button type="button" onclick="showClearServiceForm();"
                 class="btn bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md">

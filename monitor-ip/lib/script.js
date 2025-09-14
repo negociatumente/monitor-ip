@@ -385,7 +385,7 @@ function closeIpModal() {
  * Shows the confirmation modal to delete an IP from the detail view.
  */
 function showDeleteConfirmFromDetail() {
-    const ip = document.getElementById('modalIpTitle').innerText.replace('Información sobre ', '');
+    const ip = document.getElementById('modalIpTitle').innerText.replace('IP info: ', '');
     const confirmModal = document.getElementById('deleteIpForm');
     document.getElementById('delete_ip').value = ip;
     confirmModal.style.zIndex = '100'; // Más alto que el modal de detalle
@@ -397,8 +397,10 @@ function showDeleteConfirmFromDetail() {
  */
 function createPingChart(ipData) {
     const ctx = document.getElementById('pingChart').getContext('2d');
-    const labels = ipData.ping_results.map(p => p.timestamp.split(' ')[1] || p.timestamp);
-    const data = ipData.ping_results.map(p => {
+    // Invertir el orden de los pings para mostrar los más recientes a la derecha
+    const reversedResults = [...ipData.ping_results].reverse();
+    const labels = reversedResults.map(p => p.timestamp.split(' ')[1] || p.timestamp);
+    const data = reversedResults.map(p => {
         let val = p.response_time;
         if (typeof val === 'string') {
             val = parseFloat(val.replace('ms', '').replace(' ', ''));
@@ -509,10 +511,11 @@ function showIpDetailModal(ip) {
     if (!ipData) return;
 
     currentPage = 1; // Reset to first page
-    document.getElementById('modalIpTitle').innerText = `Información sobre ${ip}`;
+    document.getElementById('modalIpTitle').innerText = `IP info: ${ip}`;
 
-    // Determinar color del uptime según el porcentaje
+    // Uptime color logic
     let uptimeColors = '';
+    let uptimeTextColor = '';
     if (ipData.percentage >= 90) {
         uptimeColors = 'bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 text-green-600 dark:text-green-300';
         uptimeTextColor = 'text-green-700 dark:text-green-400';
@@ -524,12 +527,18 @@ function showIpDetailModal(ip) {
         uptimeTextColor = 'text-red-700 dark:text-red-400';
     }
 
-    // Determinar color del tiempo promedio
+    // Ping color logic
     let pingColors = '';
     let pingTextColor = '';
     if (ipData.average_response_time === 'N/A') {
         pingColors = 'bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 text-gray-600 dark:text-gray-300';
         pingTextColor = 'text-gray-700 dark:text-gray-400';
+    } else if (ipData.average_response_time > 100) {
+        pingColors = 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900 dark:to-red-800 text-red-600 dark:text-red-300';
+        pingTextColor = 'text-red-700 dark:text-red-400';
+    } else if (ipData.average_response_time > 50) {
+        pingColors = 'bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900 dark:to-yellow-800 text-yellow-600 dark:text-yellow-300';
+        pingTextColor = 'text-yellow-700 dark:text-yellow-400';
     } else {
         pingColors = 'bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 text-green-600 dark:text-green-300';
         pingTextColor = 'text-green-700 dark:text-green-400';
@@ -543,12 +552,12 @@ function showIpDetailModal(ip) {
                     <div class='text-sm ${uptimeTextColor}'>Uptime</div>
                 </div>
                 <div class='${pingColors} rounded-lg p-4 text-center'>
-                    <div class='text-2xl font-bold'>${typeof ipData.average_response_time === 'number' ? ipData.average_response_time.toFixed(2) : ipData.average_response_time}</div>
-                    <div class='text-sm ${pingTextColor}'>Tiempo promedio (ms)</div>
+                    <div class='text-2xl font-bold'>${typeof ipData.average_response_time === 'number' ? ipData.average_response_time.toFixed(2) : ipData.average_response_time} ms</div>
+                    <div class='text-sm ${pingTextColor}'>Avg. Latency</div>
                 </div>
                 <div class='rounded-lg p-4 text-center' style='background-color: ${ipData.service_color}; color: ${ipData.service_text_color};'>
                     <div class='text-xl font-bold'>${ipData.service}</div>
-                    <div class='text-sm opacity-80 mt-1'>Servicio</div>
+                    <div class='text-sm opacity-80 mt-1'>Service</div>
                 </div>
             </div>
         </div>
@@ -557,7 +566,7 @@ function showIpDetailModal(ip) {
             <div class='flex justify-between items-center mb-3'>
                 <h4 class='text-md font-semibold text-gray-700 dark:text-gray-300 flex items-center'>
                     <i class='fas fa-history mr-2 text-blue-500'></i>
-                    Historial de Pings
+                    Pings History
                 </h4>
                 <div class='text-sm text-gray-500 dark:text-gray-400'>
                     Total: ${ipData.ping_results.length} pings

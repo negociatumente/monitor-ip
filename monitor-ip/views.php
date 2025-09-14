@@ -164,22 +164,34 @@ if (isset($_GET['imported'])) {
                             <th class='p-3 whitespace-nowrap'>IP Address</th>
                             <th class='p-3 whitespace-nowrap'>Status</th>
                             <th class='p-3 whitespace-nowrap'>Reliability</th>
-                            <th class='p-3 whitespace-nowrap'>Uptime %</th>
-                            <th class='p-3 whitespace-nowrap'>Response</th>
+                            <th class='p-3 whitespace-nowrap'>Uptime</th>
+                            <th class='p-3 whitespace-nowrap'>LATENCY</th>
                             <?php
+                            // Encabezados de pings (de derecha a izquierda)
                             $max_pings_to_show = 5;
                             $sample_ip = array_key_last($ping_data);
-                            $latest_pings = $ping_data[$sample_ip] ?? array_fill(0, $ping_attempts, ["timestamp" => "-"]);
-                            for ($i = 0; $i < min($ping_attempts, $max_pings_to_show); $i++) {
-                                $timestamp = $latest_pings[$i]['timestamp'] ?? "-";
-                                if ($timestamp !== '-') {
-                                    $date = new DateTime($timestamp);
-                                    $now = new DateTime();
-                                    if ($date->format('Y-m-d') === $now->format('Y-m-d')) {
-                                        $timestamp = $date->format('H:i:s');
+                            $latest_pings = $ping_data[$sample_ip] ?? [];
+                            $num_pings = count($latest_pings);
+                            $header_labels = [];
+                            for ($i = 0; $i < $max_pings_to_show; $i++) {
+                                if ($num_pings >= $max_pings_to_show && $i === 0) {
+                                    $header_labels[] = 'now';
+                                } else {
+                                    $ping_index = $num_pings >= $max_pings_to_show ? $num_pings - $max_pings_to_show + $i : $i;
+                                    $timestamp = isset($latest_pings[$ping_index]) ? ($latest_pings[$ping_index]['timestamp'] ?? '-') : '-';
+                                    if ($timestamp !== '-') {
+                                        $date = new DateTime($timestamp);
+                                        $now = new DateTime();
+                                        if ($date->format('Y-m-d') === $now->format('Y-m-d')) {
+                                            $timestamp = $date->format('H:i:s');
+                                        }
                                     }
+                                    $header_labels[] = $timestamp;
                                 }
-                                echo "<th class='p-2 text-center text-xs whitespace-nowrap'>{$timestamp}</th>";
+                            }
+                            $header_labels = array_reverse($header_labels);
+                            foreach ($header_labels as $label) {
+                                echo "<th class='p-2 text-center text-xs whitespace-nowrap'>{$label}</th>";
                             }
                             ?>
                             <th class='p-3 text-center whitespace-nowrap'>Actions</th>
@@ -188,7 +200,7 @@ if (isset($_GET['imported'])) {
                     <tbody class='divide-y divide-gray-200 dark:divide-gray-700'>
                         <?php if (empty($ips_to_monitor)): ?>
                             <tr>
-                                <td colspan='<?php echo 7 + $ping_attempts; ?>'
+                                <td colspan='<?php echo 7 + $max_pings_to_show; ?>'
                                     class='p-4 text-center text-gray-500 dark:text-gray-400'>
                                     <div class='py-8'>
                                         <i class='fas fa-info-circle text-blue-500 text-4xl mb-3'></i>
@@ -248,24 +260,45 @@ if (isset($_GET['imported'])) {
                                     <td class='p-3 font-medium <?php echo $response_styling['class']; ?>'>
                                         <?php
                                         if (is_numeric($average_response_time)) {
-                                            echo number_format($average_response_time, 2);
+                                            echo number_format($average_response_time, 2).' ms';
                                         } else {
                                             echo $response_styling['display'];
                                         }
                                         ?>
                                     </td>
                                     <?php
-                                    foreach ($ping_results as $idx => $ping) {
-                                        if ($idx >= $max_pings_to_show)
-                                            break;
-                                        if (($ping['status'] ?? "-") === "UP") {
-                                            echo "<td class='p-2 text-center'><span class='inline-block w-4 h-4 rounded-full bg-green-500 dark:bg-green-400' title='UP - " . ($ping['response_time'] ?? 'N/A') . "'></span></td>";
-                                        } else {
-                                            echo "<td class='p-2 text-center'><span class='inline-block w-4 h-4 rounded-full bg-red-500 dark:bg-red-400' title='DOWN'></span></td>";
-                                        }
+                                    // Mostrar los pings de derecha a izquierda, primero celdas vacías (izquierda), luego pings reales (derecha)
+                                    $max_pings_to_show = 5;
+                                    $ping_results = $result['ping_results'];
+                                    $num_pings = count($ping_results);
+                                    $pings_to_show = array_slice($ping_results, -$max_pings_to_show);
+                                    $empty_cells = $max_pings_to_show - count($pings_to_show);
+                                    // Primero las celdas vacías (izquierda)
+                                    for ($i = 0; $i < $empty_cells; $i++) {
+                                        echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-gray-300 text-gray-500 rounded-md shadow-sm' title='No data'><i class='fas fa-minus text-xs'></i></div></td>";
                                     }
-                                    for ($i = count($ping_results); $i < min($ping_attempts, $max_pings_to_show); $i++) {
-                                        echo "<td class='p-2 text-center'><span class='inline-block w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600'></span></td>";
+                                    // Luego los pings reales (derecha)
+                                    for ($i = count($pings_to_show) - 1; $i >= 0; $i--) {
+                                        $ping = $pings_to_show[$i];
+                                        if ($num_pings >= $max_pings_to_show && $i === 0) {
+                                            // Última columna (derecha), mostrar 'now' si hay 5 o más pings
+                                            if (($ping['status'] ?? '-') === 'UP') {
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='UP - now'><i class='fas fa-check text-xs'></i></div></td>";
+                                            } elseif (($ping['status'] ?? '-') === 'DOWN') {
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-red-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='DOWN - now'><i class='fas fa-times text-xs'></i></div></td>";
+                                            } else {
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-gray-300 text-gray-500 rounded-md shadow-sm' title='No data'><i class='fas fa-minus text-xs'></i></div></td>";
+                                            }
+                                        } else {
+                                            if (($ping['status'] ?? 'EMPTY') === 'UP') {
+                                                $response_time = isset($ping['response_time']) ? $ping['response_time'] : 'N/A';
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='UP - {$response_time}'><i class='fas fa-check text-xs'></i></div></td>";
+                                            } elseif (($ping['status'] ?? 'EMPTY') === 'DOWN') {
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-red-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='DOWN'><i class='fas fa-times text-xs'></i></div></td>";
+                                            } else {
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-gray-300 text-gray-500 rounded-md shadow-sm' title='No data'><i class='fas fa-minus text-xs'></i></div></td>";
+                                            }
+                                        }
                                     }
                                     ?>
                                     <td class='p-3 text-center'>
@@ -294,14 +327,14 @@ if (isset($_GET['imported'])) {
                 </button>
                 <div class="flex items-center mb-6">
                     <i class="fas fa-network-wired text-blue-500 text-2xl mr-3"></i>
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200" id="modalIpTitle">IP Detalle</h3>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200" id="modalIpTitle">IP Detail</h3>
                 </div>
                 <div id="modalIpContent"></div>
 
                 <div class="mt-6">
                     <h4 class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center">
                         <i class="fas fa-chart-line mr-2 text-blue-500"></i>
-                        Gráfica de Latencia
+                        Latency History
                     </h4>
                     <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                         <canvas id="pingChart" width="400" height="200"></canvas>
@@ -310,11 +343,11 @@ if (isset($_GET['imported'])) {
                 <div class="flex mt-2 gap-2 justify-between">
                     <button type="button" onclick="closeIpModal()"
                         class="btn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 flex items-center gap-2">
-                        <i class="fas fa-times"></i> Cerrar
+                        <i class="fas fa-times"></i> Close
                     </button>
                     <button type="button" onclick="showDeleteConfirmFromDetail()"
                         class="btn bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 flex items-center gap-2">
-                        <i class="fas fa-trash-alt"></i> Eliminar IP
+                        <i class="fas fa-trash-alt"></i> Delete IP
                     </button>
                 </div>
             </div>
