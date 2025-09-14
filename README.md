@@ -22,6 +22,21 @@ https://negociatumente.com/guia-redes
 ✅ Almacena el estado de los pings.  
 ✅ Compatible con **Windows, Linux y macOS**.  
 
+## 📁 Estructura del proyecto
+```
+monitor-ip/
+├── index.php          # Página principal y lógica de backend
+├── menu.php           # Menú de navegación y acciones rápidas
+├── views.php          # Vista principal del dashboard
+├── conf/              # Archivos de configuración y resultados
+│   ├── config.ini     # Configuración de IPs y servicios
+│   └── ping_results.json # Resultados de los pings
+├── lib/               # Librerías y recursos
+│   ├── functions.php  # Funciones PHP reutilizables
+│   ├── script.js      # Scripts JavaScript para la interfaz
+│   └── styles.css     # Estilos CSS personalizados
+```
+
 ## 🛠️ Instalación en Linux y MacOS  
 
 ### 1️⃣ Requisitos  

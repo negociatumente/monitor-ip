@@ -1,462 +1,229 @@
+<?php
+
+// Centralizar rutas
+$functions_path = __DIR__ . '/lib/functions.php';
+$config_path = __DIR__ . '/conf/config.ini';
+$ping_file = __DIR__ . '/conf/ping_results.json';
+
+// Require functions
+require_once $functions_path;
+
+// Cargar configuración desde config.ini
+$config = parse_ini_file($config_path, true);
+$ips_to_monitor = $config['ips'] ?? [];
+$services = $config['services'] ?? [];
+$ping_attempts = $config['settings']['ping_attempts'] ?? 5;
+$ping_interval = $config['settings']['ping_interval'] ?? 30;
+
+// Cargar resultados previos si existen
+if (file_exists($ping_file)) {
+    $ping_data = json_decode(file_get_contents($ping_file), true);
+} else {
+    $ping_data = [];
+}
+
+// Manejo de importación/exportación de configuración
+$import_export_message = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_config'])) {
+    $import_export_message = import_config_ini($_FILES['import_config']);
+}
+if (isset($_GET['export_config'])) {
+    export_config_ini();
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor</title>
+    <meta name="description" content="IP Monitor - Track and monitor your network devices">
+    <title>IP Monitor Dashboard</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 50;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.75);
-            justify-content: center;
-            align-items: center;
-        }
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="lib/styles.css">
 
-        .modal-content {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            width: 25%;
-            max-width: 400px;
-            margin: auto;
-        }
-    </style>
     <script>
+        // Global variables
         let pingInterval = <?php echo $ping_interval; ?>;
         let countdown = pingInterval;
-
-        function showAddIpForm() {
-            document.getElementById('addIpForm').style.display = 'flex';
-        }
-
-        function hideAddIpForm() {
-            document.getElementById('addIpForm').style.display = 'none';
-        }
-
-        function confirmDelete(ip) {
-            document.getElementById('deleteIpForm').style.display = 'flex';
-            document.getElementById('delete_ip').value = ip;
-        }
-
-        function hideDeleteIpForm() {
-            document.getElementById('deleteIpForm').style.display = 'none';
-        }
-
-        function reloadPage() {
-            window.location.href = window.location.pathname;
-        }
-
-        function showAddServiceForm() {
-            document.getElementById('addServiceForm').style.display = 'flex';
-        }
-
-        function hideAddServiceForm() {
-            document.getElementById('addServiceForm').style.display = 'none';
-        }
-        function updateCountdown() {
-            document.getElementById('countdown').innerText = countdown;
-            countdown--;
-            if (countdown < 0) {
-                countdown = pingInterval;
-                reloadPage();
-            }
-        }
-
-        // Temporizador para recargar la página a intervalos regulares
-        setInterval(updateCountdown, 1000);
-
-        function showChangeTimerForm() {
-            document.getElementById('changeTimerForm').style.display = 'flex';
-        }
-
-        function hideChangeTimerForm() {
-            document.getElementById('changeTimerForm').style.display = 'none';
-        }
-
-        function showChangePingAttemptsForm() {
-            document.getElementById('changePingAttemptsForm').style.display = 'flex';
-        }
-
-        function hideChangePingAttemptsForm() {
-            document.getElementById('changePingAttemptsForm').style.display = 'none';
-        }
-
-        function showClearDataConfirmation() {
-            document.getElementById('clearDataConfirmation').style.display = 'flex';
-        }
-
-        function hideClearDataConfirmation() {
-            document.getElementById('clearDataConfirmation').style.display = 'none';
-        }
-
-        function updateTimer(event) {
-            event.preventDefault(); // Evitar el envío del formulario
-            const newTimerValue = parseInt(document.getElementById('new_timer_value').value, 10);
-            if (newTimerValue > 0) {
-                pingInterval = newTimerValue; // Actualizar el valor global del temporizador
-                countdown = pingInterval; // Reiniciar el contador con el nuevo valor
-                hideChangeTimerForm(); // Cerrar la ventana modal
-            } else {
-                alert("Please enter a valid number greater than 0.");
-            }
-        }
-
+        let countdownInterval = null;
+        let pingStopped = false;
     </script>
+
+    <script src="lib/script.js"></script>
+
 </head>
 
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-    <!-- Banner superior -->
-    <div class="bg-gray-400 text-center py-2 shadow-lg">
-    <p>
-        Proyecto hecho por 
-        <a href="https://negociatumente.com" target="_blank" class="font-bold hover:underline">
-            Antonio Cañavate | Telemático
-        </a>
-        <a href="https://github.com/negociatumente/monitor-ip" target="_blank" class="hover:underline mx-4">
-            Ver en GitHub
-        </a> <a href="https://negociatumente.com/guia-redes/" target="_blank" class="hover:underline mx-4">
-            Quiero aprender más
-        </a>
-    </p>
-     
-    
-    </div>
-</div>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    <!-- Header/Navigation Bar -->
+    <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+        <div class="container mx-auto py-4 px-6 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center mb-4 md:mb-0">
+                <i class="fas fa-network-wired text-2xl mr-3"></i>
+                <h1 class="text-xl font-bold">IP Monitor Dashboard</h1>
+            </div>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="https://negociatumente.com" target="_blank"
+                    class="text-white hover:text-blue-200 transition flex items-center gap-2">
+                    <i class="fas fa-user"></i> Antonio Cañavate
+                </a>
+                <a href="https://github.com/negociatumente/monitor-ip" target="_blank"
+                    class="text-white hover:text-blue-200 transition flex items-center gap-2">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+                <a href="https://negociatumente.com/guia-redes/" target="_blank"
+                    class="text-white hover:text-blue-200 transition flex items-center gap-2">
+                    <i class="fas fa-book"></i> Aprender más
+                </a>
+            </div>
+        </div>
+    </header>
 
-    <div class="container mx-auto p-2">
-        <div class="text-center my-2">
-            <!-- Barra de navegación -->
-            <nav>
-                <div class="container mx-auto px-4 py-2 flex justify-center items-center space-x-4">
-                    <button onclick="showAddServiceForm();"
-                        class="font-bold bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300">
-                        Add Service
-                    </button>
-                    <button onclick="showAddIpForm();"
-                        class="font-bold bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300">
-                        Add IP
-                    </button>
-                    <button onclick="showChangeTimerForm();"
-                        class="font-bold bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 transition duration-300">
-                        Change Timer
-                    </button>
-                    <button onclick="showChangePingAttemptsForm();"
-                        class="font-bold bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 transition duration-300">
-                        Change Ping History
-                    </button>
-                    <form method="POST" action="" class="inline">
-                        <button type="button" onclick="showClearDataConfirmation();"
-                            class="font-bold bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-300">
-                            Clear Data
-                        </button>
-                    </form>
-                </div>
-            </nav>
+    <div class="container mx-auto px-4 py-6">
+        <!-- Notifications -->
+        <?php if (isset($_GET['action'])): ?>
+            <?php echo renderNotification($_GET['action'], $_GET['msg'] ?? null); ?>
+        <?php endif; ?>
+
+        <!-- Dash Menu -->
+        <?php require_once __DIR__ . '/menu.php'; ?>
 
 
-            <div id="addIpForm" class="modal">
-                <div class="modal-content">
-                    <h2 class="text-2xl font-bold mb-4">Add New IP</h2>
-                    <form method="POST" action="">
-                        <div class="mb-4">
-                            <label for="new_service" class="block text-gray-700">Service</label>
-                            <select id="new_service" name="new_service"
-                                class="w-full p-2 border border-gray-300 rounded mt-1" required>
-                                <option value="" disabled selected>Select a service</option>
-                                <?php foreach ($services as $service_name => $color): ?>
-                                    <?php if ($service_name !== "DEFAULT"): ?>
-                                        <option value="<?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>"
-                                            style="background-color: <?php echo htmlspecialchars($color, ENT_QUOTES, 'UTF-8'); ?>; color: #fff;">
-                                            <?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>
-                                        </option>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="mb-4">
-                            <label for="new_ip" class="block text-gray-700">IP Address</label>
-                            <input type="text" id="new_ip" name="new_ip"
-                                class="w-full p-2 border border-gray-300 rounded mt-1" required>
-                        </div>
-                        <div class="flex justify-end">
-                            <button type="button" onclick="hideAddIpForm();"
-                                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 transition duration-300 mr-2">Cancel</button>
-                            <button type="submit" name="add_ip"
-                                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 transition duration-300">Add</button>
-                        </div>
-                    </form>
+        <!-- IP Monitoring Table -->
+        <div class='bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-8'>
+            <div class='p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center'>
+                <h2 class='text-lg font-semibold text-gray-800 dark:text-gray-200'>
+                    <i class='fas fa-table mr-2'></i> IP Monitoring Table
+                </h2>
+                <div class='text-sm text-gray-500 dark:text-gray-400'>
+                    <?php echo count($ips_to_monitor); ?> IPs monitored • Last updated: <?php echo date('H:i:s'); ?>
                 </div>
             </div>
-            <div id="addServiceForm" class="modal">
-                <div class="modal-content">
-                    <h2 class="text-2xl font-bold mb-4">Add New Service</h2>
-                    <form method="POST" action="">
-                        <div class="mb-4">
-                            <label for="new_service_name" class="block text-gray-700">Service Name</label>
-                            <input type="text" id="new_service_name" name="new_service_name"
-                                class="w-full p-2 border border-gray-300 rounded mt-1" required>
-                        </div>
-                        <div class="mb-4">
-                            <label for="new_service_color" class="block text-gray-700">Service Color</label>
-                            <input type="color" id="new_service_color" name="new_service_color"
-                                class="w-full p-2 border border-gray-300 rounded mt-1" required>
-                        </div>
-                        <div class="flex justify-end">
-                            <button type="button" onclick="hideAddServiceForm();"
-                                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 transition duration-300 mr-2">Cancel</button>
-                            <button type="submit" name="add_service"
-                                class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-300">Add</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <div id="deleteIpForm" class="modal">
-                <div class="modal-content">
-                    <h2 class="text-2xl font-bold mb-4">Delete IP</h2>
-                    <form method="POST" action="">
-                        <input type="hidden" id="delete_ip" name="delete_ip">
-                        <p>Are you sure you want to delete this IP?</p>
-                        <div class="flex justify-end mt-4">
-                            <button type="button" onclick="hideDeleteIpForm();"
-                                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 transition duration-300 mr-2">Cancel</button>
-                            <button type="submit"
-                                class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-300">Delete</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <div id="changeTimerForm" class="modal">
-                <div class="modal-content">
-                    <h2 class="text-2xl font-bold mb-4">Change Timer Interval</h2>
-                    <form method="POST" action="">
-                        <div class="mb-4">
-                            <label for="new_timer_value" class="block text-gray-700">New Timer Value (seconds):</label>
-                            <input type="number" id="new_timer_value" name="new_timer_value"
-                                class="w-full p-2 border border-gray-300 rounded mt-1"
-                                value="<?php echo $ping_interval; ?>" min="1" required>
-                        </div>
-                        <div class="flex justify-end">
-                            <button type="button" onclick="hideChangeTimerForm();"
-                                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 transition duration-300 mr-2">Cancel</button>
-                            <button type="submit" name="change_timer"
-                                class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-300">Update</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <div id="changePingAttemptsForm" class="modal">
-                <div class="modal-content">
-                    <h2 class="text-2xl font-bold mb-4">Change Ping History</h2>
-                    <form method="POST" action="">
-                        <div class="mb-4">
-                            <label for="new_ping_attempts" class="block text-gray-700">New Ping History:</label>
-                            <input type="number" id="new_ping_attempts" name="new_ping_attempts"
-                                class="w-full p-2 border border-gray-300 rounded mt-1"
-                                value="<?php echo $ping_attempts; ?>" min="1" required>
-                        </div>
-                        <div class="flex justify-end">
-                            <button type="button" onclick="hideChangePingAttemptsForm();"
-                                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 transition duration-300 mr-2">Cancel</button>
-                            <button type="submit" name="change_ping_attempts"
-                                class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-300">Update</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <div id="clearDataConfirmation" class="modal">
-                <div class="modal-content">
-                    <h2 class="text-2xl font-bold mb-4">Confirm Clear Data</h2>
-                    <p class="mb-4">Are you sure you want to delete the ping history? IPs and services will be
-                        maintained.</p>
-                    <form method="POST" action="">
-                        <div class="flex justify-end">
-                            <button type="button" onclick="hideClearDataConfirmation();"
-                                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 transition duration-300 mr-2">Cancel</button>
-                            <button type="submit" name="clear_data"
-                                class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-300">Confirm</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <h1 class="text-3xl font-bold text-center my-6">IP Status Monitor</h1>
-            <!-- Tabla de resumen -->
-            <div class="my-6">
-                <div class="overflow-x-auto">
-                    <table
-                        class="w-full max-w-2xl mx-auto border-collapse shadow-lg rounded-lg overflow-hidden bg-white">
-                        <thead>
-                            <tr class="bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                                <th class="p-3 text-center">Total IPs</th>
-                                <th class="p-3 text-center">UP IPs</th>
-                                <th class="p-3 text-center">DOWN IPs</th>
-                                <th class="p-3 text-center">Average Ping</th>
-                                <th class="p-3 text-center">System Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            // Variables para el resumen
-                            $total_ips = count($ips_to_monitor);
-                            $ips_up = 0;
-                            $ips_down = 0;
-                            $total_ping = 0;
-                            $ping_count = 0;
-
-                            foreach ($ips_to_monitor as $ip => $service) {
-                                $result = analyze_ip($ip);
-                                if ($result['status'] === "UP") {
-                                    $ips_up++;
-                                } else {
-                                    $ips_down++;
-                                }
-
-                                if ($result['average_response_time'] !== 'N/A') {
-                                    $total_ping += $result['average_response_time'];
-                                    $ping_count++;
-                                }
-                            }
-
-                            $average_ping = $ping_count > 0 ? round($total_ping / $ping_count, 2) : 'N/A';
-                            $system_status = $ips_down === 0 ? "Healthy" : ($ips_up > $ips_down ? "Degraded" : "Critical");
-                            $system_status_color = $system_status === "Healthy" ? "text-green-500" : ($system_status === "Degraded" ? "text-yellow-500" : "text-red-500");
-                            ?>
-                            <tr class="border-b border-gray-300 dark:border-gray-700">
-                                <td class="p-3 text-center font-bold"><?php echo $total_ips; ?></td>
-                                <td class="p-3 text-center font-bold text-green-500"><?php echo $ips_up; ?></td>
-                                <td class="p-3 text-center font-bold text-red-500"><?php echo $ips_down; ?></td>
-                                <td class="p-3 text-center font-bold">
-                                    <?php echo $average_ping !== 'N/A' ? $average_ping . " ms" : "N/A"; ?></td>
-                                <td class="p-3 text-center font-bold <?php echo $system_status_color; ?>">
-                                    <?php echo $system_status; ?></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-
-            <div class="container mx-auto  m-2">
-                <p class="text-white text-lg m-2 bg-gray-800 bg-opacity-50 p-2 rounded-lg inline-block shadow-lg">Next
-                    ping in <span id="countdown" class="font-bold"><?php echo $ping_interval; ?></span> seconds!</p>
-                <button onclick="reloadPage();"
-                    class="font-bold bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition duration-300">
-                    Check Status Now
-                </button>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full max-w-5xl mx-auto border-collapse shadow-lg rounded-lg overflow-hidden">
+            <div class='overflow-x-auto'>
+                <table class='w-full'>
                     <thead>
-                        <tr class="bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                            <th class="p-3">Service</th>
-                            <th class="p-3">IP Address</th>
-                            <th class="p-3">Status</th>
-                            <th class="p-3">Label</th>
-                            <th class="p-3">Percentage</th>
-                            <th class="p-3">Average Ping</th>
+                        <tr class='bg-gray-50 dark:bg-gray-700 text-left'>
+                            <th class='p-3 whitespace-nowrap'>Service</th>
+                            <th class='p-3 whitespace-nowrap'>IP Address</th>
+                            <th class='p-3 whitespace-nowrap'>Status</th>
+                            <th class='p-3 whitespace-nowrap'>Reliability</th>
+                            <th class='p-3 whitespace-nowrap'>Uptime %</th>
+                            <th class='p-3 whitespace-nowrap'>Response</th>
                             <?php
-                            // Obtener una IP de ejemplo para mostrar fechas (si existen datos previos)
                             $sample_ip = array_key_last($ping_data);
-                            $latest_pings = $ping_data[$sample_ip] ?? array_fill(0, 5, ["timestamp" => "-"]);
-                            //Haz un for que vaya hasta el ping_attempts y muestre las fechas
+                            $latest_pings = $ping_data[$sample_ip] ?? array_fill(0, $ping_attempts, ["timestamp" => "-"]);
                             for ($i = 0; $i < $ping_attempts; $i++) {
-                                if (!isset($latest_pings[$i])) {
-                                    $latest_pings[$i] = ["timestamp" => "-"];
+                                $timestamp = $latest_pings[$i]['timestamp'] ?? "-";
+                                if ($timestamp !== '-') {
+                                    $date = new DateTime($timestamp);
+                                    $now = new DateTime();
+                                    if ($date->format('Y-m-d') === $now->format('Y-m-d')) {
+                                        $timestamp = $date->format('H:i:s');
+                                    }
                                 }
-                                echo "<th class='p-2 text-center'>" . ($latest_pings[$i]['timestamp']) . "</th>";
+                                echo "<th class='p-2 text-center text-xs whitespace-nowrap'>{$timestamp}</th>";
                             }
                             ?>
-                            <th class="p-3">Actions</th>
+                            <th class='p-3 text-center whitespace-nowrap'>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <?php foreach ($ips_to_monitor as $ip => $service): ?>
-                            <?php
-                            $result = analyze_ip($ip);
-                            $status = $result['status'];
-                            $percentage = $result['percentage'];
-                            $label = $result['label'];
-                            $ping_results = $result['ping_results'];
-                            $average_response_time = $result['average_response_time'];
-
-                            $status_color = $status === "UP" ? "bg-green-500" : "bg-red-500";
-                            $label_color = $label === "Good" ? "bg-green-400" : ($label === "Stable" ? "bg-yellow-400" : "bg-red-400");
-                            $service_color = $services[$service] ?? $services["DEFAULT"];
-
-                            // Determinar el color del percentage
-                            if ($percentage !== 'N/A') {
-                                $percentage = round($percentage, 1);
-                                if ($percentage > 80) {
-                                    $response_time_percentage = "text-green-500";
-                                } elseif ($percentage > 60) {
-                                    $response_time_percentage = "text-yellow-500";
-                                } else {
-                                    $response_time_percentage = "text-red-500";
-                                }
-                            } else {
-                                $response_time_percentage = "text-gray-500";
-                            }
-
-                            // Determinar el color del tiempo de respuesta
-                            if ($average_response_time !== 'N/A') {
-                                $average_response_time = round($average_response_time, 1);
-                                if ($average_response_time < 50) {
-                                    $response_time_color = "text-green-500";
-                                } elseif ($average_response_time < 100) {
-                                    $response_time_color = "text-yellow-500";
-                                } else {
-                                    $response_time_color = "text-red-500";
-                                }
-                            } else {
-                                $response_time_color = "text-gray-500";
-                            }
-
-                            ?>
-                            <tr
-                                class="border-b border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition duration-300">
-                                <td class="p-3 text-center font-semibold"
-                                    style="background-color:<?php echo $service_color; ?>"><?php echo $service; ?></td>
-                                <td class="p-3 text-center"><?php echo $ip; ?></td>
-                                <td class="p-3 text-center <?php echo $status_color; ?> text-white font-bold rounded-lg">
-                                    <?php echo $status; ?></td>
-                                <td class="p-3 text-center <?php echo $label_color; ?> text-white font-bold rounded-lg">
-                                    <?php echo $label; ?></td>
-                                <td class="p-3 text-center font-bold <?php echo $response_time_percentage; ?>">
-                                    <?php echo $percentage; ?>%</td>
-                                <td class="p-3 text-center font-bold <?php echo $response_time_color; ?>">
-                                    <?php echo $average_response_time . " ms"; ?> </td>
-                                <?php foreach ($ping_results as $ping): ?>
-                                    <td class="p-3 text-center">
-                                        <span
-                                            class="<?php echo ($ping['status'] ?? "-") === "UP" ? "text-green-500" : "text-red-500"; ?>">
-                                            <?php echo $ping['status'] ?? "-"; ?>
-                                        </span>
-                                    </td>
-                                <?php endforeach; ?>
-                                <?php for ($i = count($ping_results); $i < $ping_attempts; $i++): ?>
-                                    <td class="p-3 text-center">-</td>
-                                <?php endfor; ?>
-                                <td class="p-3 text-center">
-                                    <button type="button"
-                                        class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-300"
-                                        onclick="confirmDelete('<?php echo $ip; ?>')">Delete</button>
+                    <tbody class='divide-y divide-gray-200 dark:divide-gray-700'>
+                        <?php if (empty($ips_to_monitor)): ?>
+                            <tr>
+                                <td colspan='<?php echo 7 + $ping_attempts; ?>'
+                                    class='p-4 text-center text-gray-500 dark:text-gray-400'>
+                                    <div class='py-8'>
+                                        <i class='fas fa-info-circle text-blue-500 text-4xl mb-3'></i>
+                                        <p class='text-lg'>No IPs being monitored yet</p>
+                                        <p class='text-sm'>Click "Add IP" button above to start monitoring</p>
+                                    </div>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php foreach ($ips_to_monitor as $ip => $service): ?>
+                                <?php
+                                $result = analyze_ip($ip);
+                                $status = $result['status'];
+                                $percentage = $result['percentage'];
+                                $label = $result['label'];
+                                $ping_results = $result['ping_results'];
+                                $average_response_time = $result['average_response_time'];
+                                $status_styling = getStatusStyling($status);
+                                $label_styling = getLabelStyling($label);
+                                $service_styling = getServiceStyling($service, $services);
+                                $percentage_styling = getPercentageStyling($percentage);
+                                $response_styling = getResponseTimeStyling($average_response_time);
+                                ?>
+                                <tr class='hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-150'>
+                                    <td class='p-3'>
+                                        <span class='inline-block px-3 py-1 rounded-full text-sm font-medium'
+                                            style='background-color: <?php echo $service_styling['color']; ?>; color: <?php echo $service_styling['text_color']; ?>'>
+                                            <?php echo $service; ?>
+                                        </span>
+                                    </td>
+                                    <td class='p-3 font-mono text-sm'><?php echo $ip; ?></td>
+                                    <td class='p-3'>
+                                        <span class='status-badge <?php echo $status_styling['badge']; ?>'>
+                                            <i class='fas fa-<?php echo $status_styling['icon']; ?> mr-1'></i>
+                                            <?php echo $status; ?>
+                                        </span>
+                                    </td>
+                                    <td class='p-3'>
+                                        <span class='status-badge <?php echo $label_styling['badge']; ?>'>
+                                            <i class='fas fa-<?php echo $label_styling['icon']; ?> mr-1'></i>
+                                            <?php echo $label; ?>
+                                        </span>
+                                    </td>
+                                    <td class='p-3'>
+                                        <div class='flex items-center'>
+                                            <div class='w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2 progress-animated'
+                                                style='overflow:hidden;'>
+                                                <div class='progress-inner <?php echo $percentage_styling['bar_class']; ?>'
+                                                    style='width: <?php echo $percentage_styling['percentage']; ?>%'></div>
+                                            </div>
+                                            <span class='font-medium <?php echo $percentage_styling['text_class']; ?>'>
+                                                <?php echo $percentage_styling['percentage']; ?>%
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class='p-3 font-medium <?php echo $response_styling['class']; ?>'>
+                                        <?php echo $response_styling['display']; ?>
+                                    </td>
+                                    <?php
+                                    foreach ($ping_results as $ping) {
+                                        if (($ping['status'] ?? "-") === "UP") {
+                                            echo "<td class='p-2 text-center'><span class='inline-block w-4 h-4 rounded-full bg-green-500 dark:bg-green-400' title='UP - " . ($ping['response_time'] ?? 'N/A') . "'></span></td>";
+                                        } else {
+                                            echo "<td class='p-2 text-center'><span class='inline-block w-4 h-4 rounded-full bg-red-500 dark:bg-red-400' title='DOWN'></span></td>";
+                                        }
+                                    }
+                                    for ($i = count($ping_results); $i < $ping_attempts; $i++) {
+                                        echo "<td class='p-2 text-center'><span class='inline-block w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600'></span></td>";
+                                    }
+                                    ?>
+                                    <td class='p-3 text-center'>
+                                        <button type='button' onclick="confirmDelete('<?php echo $ip; ?>')"
+                                            class='btn bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 p-2 rounded-md'>
+                                            <i class='fas fa-trash-alt'></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
+    </div>
 </body>
 
 </html>
