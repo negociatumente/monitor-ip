@@ -1,33 +1,94 @@
 <!-- Dashboard Menu -->
 <div class="mb-8">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4 md:mb-0">
-            <i class="fas fa-chart-line mr-2"></i> IP Status Monitor
-        </h1>
+    <!-- Monitoring Controls Panel -->
+    <div
+        class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl shadow-sm border border-blue-100 dark:border-blue-800 p-4 mb-6">
+        <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
+            <!-- Monitoring Status -->
+            <div class="flex items-center space-x-6">
+                 <!-- System Uptime -->
+                <div class="flex items-center">
+                    <div class="bg-blue-500 bg-opacity-20 p-2 rounded-lg mr-3">
+                        <i class="fas fa-signal text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">System Uptime</p>
+                        <p class="font-semibold text-gray-800 dark:text-gray-200">
+                            <?php 
+                            $total_ips = count($ips_to_monitor);
+                            $online_count = 0;
+                            foreach ($ips_to_monitor as $ip => $service) {
+                                $result = analyze_ip($ip);
+                                if ($result['status'] === 'UP') $online_count++;
+                            }
+                            echo $total_ips > 0 ? round(($online_count/$total_ips)*100, 1) . '%' : 'N/A';
+                            ?>
+                        </p>
+                    </div>
+                </div>
 
-        <div class="flex items-center bg-white dark:bg-gray-800 rounded-lg shadow-sm px-4 py-2">
-            <div id="nextPingBlock" class="text-gray-600 dark:text-gray-300 mr-3 flex items-center">
-                <i class="fas fa-sync-alt mr-2"></i> Next ping in
-                <span id="countdown" class="font-mono font-bold text-blue-600 dark:text-blue-400 ml-1">
-                    <?php echo $ping_interval; ?>
-                </span> s
+                <div class="flex items-center">
+                    <div class="bg-blue-500 bg-opacity-20 p-2 rounded-lg mr-3">
+                        <i class="fas fa-clock text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Timer Interval</p>
+                        <p class="font-semibold text-gray-800 dark:text-gray-200"><?php echo $ping_interval; ?>s</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center">
+                    <div class="bg-blue-500 bg-opacity-20 p-2 rounded-lg mr-3">
+                        <i class="fas fa-history text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Ping History</p>
+                        <p class="font-semibold text-gray-800 dark:text-gray-200"><?php echo $ping_attempts; ?> pings
+                        </p>
+                    </div>
+                </div>
             </div>
-            <div id="stoppedMsg" style="display:none;" class="flex items-center mr-3">
-                <i class="fas fa-pause-circle text-orange-500 mr-2"></i>
-                <span class="text-orange-600 dark:text-orange-400 font-semibold">Monitorización parada</span>
+
+            <!-- Control Buttons -->
+            <div
+                class="flex items-center bg-white dark:bg-gray-800 rounded-lg shadow-sm px-4 py-2 border border-gray-200 dark:border-gray-700">
+                <div id="nextPingBlock" class="text-gray-600 dark:text-gray-300 mr-4 flex items-center">
+                    <div class="bg-blue-100 dark:bg-blue-900/50 p-1.5 rounded-full mr-2">
+                        <i class="fas fa-sync-alt text-blue-600 dark:text-blue-400 text-sm"></i>
+                    </div>
+                    <span class="text-sm">Next ping in</span>
+                    <span id="countdown"
+                        class="font-mono font-bold text-blue-600 dark:text-blue-400 ml-2 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded">
+                        <?php echo $ping_interval; ?>
+                    </span>
+                    <span class="text-sm text-gray-500 ml-1">s</span>
+                </div>
+
+                <div id="stoppedMsg" style="display:none;" class="flex items-center mr-4">
+                    <div class="bg-orange-100 dark:bg-orange-900/50 p-1.5 rounded-full mr-2">
+                        <i class="fas fa-pause-circle text-orange-500"></i>
+                    </div>
+                    <span class="text-orange-600 dark:text-orange-400 font-semibold text-sm">Monitoring Paused</span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="checkNowBtn" onclick="reloadPage();"
+                        class="btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-1">
+                        <i class="fas fa-redo-alt text-xs"></i>
+                        <span class="hidden sm:inline">Check Now</span>
+                    </button>
+                    <button id="stopPingBtn" onclick="stopPing();"
+                        class="btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-1">
+                        <i class="fas fa-stop text-xs"></i>
+                        <span class="hidden sm:inline">Pause</span>
+                    </button>
+                    <button id="resumePingBtn" onclick="startPing();" style="display:none;"
+                        class="btn bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-1">
+                        <i class="fas fa-play text-xs"></i>
+                        <span class="hidden sm:inline">Resume</span>
+                    </button>
+                </div>
             </div>
-            <button id="checkNowBtn" onclick="reloadPage();"
-                class="btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md ml-2">
-                <i class="fas fa-redo-alt mr-1"></i> Check Now
-            </button>
-            <button id="stopPingBtn" onclick="stopPing();"
-                class="btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-md ml-2">
-                <i class="fas fa-stop mr-1"></i> Stop
-            </button>
-            <button id="resumePingBtn" onclick="startPing();" style="display:none;"
-                class="btn bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md ml-2">
-                <i class="fas fa-play mr-1"></i> Reanudar
-            </button>
         </div>
     </div>
 
@@ -40,7 +101,7 @@
             </button>
             <button onclick="showChangeTimerForm();"
                 class="btn bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md">
-                <i class="fas fa-clock"></i> Change Timer
+                <i class="fas fa-clock"></i> Change Timer Interval
             </button>
             <button onclick="showChangePingAttemptsForm();"
                 class="btn bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md">
@@ -310,7 +371,8 @@
                             <div class="flex flex-col items-center">
                                 <div
                                     class="mb-3 p-3 rounded-full <?php echo ($ping_interval == 300 ? 'bg-white/20' : 'bg-green-100 dark:bg-green-900/30'); ?>">
-                                    <i class="fas fa-leaf text-2xl <?php echo ($ping_interval == 300 ? 'text-green' : 'text-green-500'); ?>"></i>
+                                    <i
+                                        class="fas fa-leaf text-2xl <?php echo ($ping_interval == 300 ? 'text-green' : 'text-green-500'); ?>"></i>
                                 </div>
                                 <div class="text-2xl font-bold mb-1">5m</div>
                                 <div class="text-sm font-medium">Non-Critical Services</div>

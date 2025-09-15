@@ -113,27 +113,59 @@ if (isset($_GET['imported'])) {
 
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <!-- Header/Navigation Bar -->
-    <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
-        <div class="container mx-auto py-4 px-6 flex flex-col md:flex-row justify-between items-center">
-            <div class="flex items-center mb-4 md:mb-0">
-                <i class="fas fa-network-wired text-2xl mr-3"></i>
-                <h1 class="text-xl font-bold">IP Monitor Dashboard</h1>
-            </div>
-            <div class="flex flex-wrap justify-center gap-4">
-                <a href="https://negociatumente.com" target="_blank"
-                    class="text-white hover:text-blue-200 transition flex items-center gap-2">
-                    <i class="fas fa-user"></i> Antonio Cañavate
-                </a>
-                <a href="https://github.com/negociatumente/monitor-ip" target="_blank"
-                    class="text-white hover:text-blue-200 transition flex items-center gap-2">
-                    <i class="fab fa-github"></i> GitHub
-                </a>
-                <a href="https://negociatumente.com/guia-redes/" target="_blank"
-                    class="text-white hover:text-blue-200 transition flex items-center gap-2">
-                    <i class="fas fa-book"></i> Aprender más
-                </a>
+    <header
+        class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 text-white shadow-2xl relative overflow-hidden">
+        <!-- Background pattern -->
+        <div class="absolute inset-0 opacity-10">
+            <div
+                class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-transparent via-white to-transparent transform rotate-12">
             </div>
         </div>
+
+        <div class="container mx-auto py-6 px-6 relative z-10">
+            <!-- Top row with logo and actions -->
+            <div class="flex flex-col lg:flex-row justify-between items-center mb-4 lg:mb-0">
+                <!-- Logo and title -->
+                <div class="flex items-center mb-4 lg:mb-0 group">
+                    <div
+                        class="bg-white bg-opacity-20 p-3 rounded-full mr-4 group-hover:bg-opacity-30 transition-all duration-300">
+                        <i class="fas fa-network-wired text-2xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl lg:text-3xl font-bold tracking-tight">
+                            IP Monitor
+                            <?php if (isset($config['settings']['version'])): ?>
+                                <span class="text-sm font-normal bg-white bg-opacity-20 px-2 py-1 rounded-full ml-2">
+                                    v<?php echo htmlspecialchars($config['settings']['version'], ENT_QUOTES, 'UTF-8'); ?>
+                                </span>
+                            <?php endif; ?>
+                        </h1>
+                        <p class="text-blue-100 text-sm mt-1">Real-time network monitoring & analytics</p>
+                    </div>
+                </div>
+
+                <!-- Navigation links -->
+                <div
+                    class="flex flex-wrap justify-center lg:justify-end gap-2 pt-4 border-t border-white border-opacity-20">
+                    <a href="https://negociatumente.com" target="_blank"
+                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
+                        <i class="fas fa-user"></i>
+                        <span class="hidden sm:inline">Antonio Cañavate</span>
+                    </a>
+                    <a href="https://github.com/negociatumente/monitor-ip" target="_blank"
+                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
+                        <i class="fab fa-github"></i>
+                        <span class="hidden sm:inline">GitHub</span>
+                    </a>
+                    <a href="https://negociatumente.com/guia-redes/" target="_blank"
+                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
+                        <i class="fas fa-book"></i>
+                        <span class="hidden sm:inline">Learn More</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
     </header>
 
     <div class="container mx-auto px-4 py-6">
@@ -260,7 +292,7 @@ if (isset($_GET['imported'])) {
                                     <td class='p-3 font-medium <?php echo $response_styling['class']; ?>'>
                                         <?php
                                         if (is_numeric($average_response_time)) {
-                                            echo number_format($average_response_time, 2).' ms';
+                                            echo number_format($average_response_time, 2) . ' ms';
                                         } else {
                                             echo $response_styling['display'];
                                         }
@@ -353,6 +385,69 @@ if (isset($_GET['imported'])) {
             </div>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="bg-gradient-to-r from-gray-800 to-gray-900 dark:from-gray-900 dark:to-black text-white py-8 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Project Info -->
+                <div class="text-center md:text-left">
+                    <div class="flex items-center justify-center md:justify-start mb-4">
+                        <i class="fas fa-network-wired text-2xl text-blue-400 mr-3"></i>
+                        <h3 class="text-xl font-bold">IP Monitor</h3>
+                    </div>
+                    <p class="text-gray-300 text-sm leading-relaxed">
+                        A powerful and elegant network monitoring solution to keep track of your critical
+                        infrastructure.
+                    </p>
+                </div>
+
+                <!-- Links -->
+                <div class="text-center">
+                    <h4 class="text-lg font-semibold mb-4 text-blue-400">Resources</h4>
+                    <div class="space-y-2">
+                        <a href="https://github.com/negociatumente/monitor-ip" target="_blank"
+                            class="block text-gray-300 hover:text-white transition-colors duration-200 text-sm">
+                            <i class="fab fa-github mr-2"></i>Source Code
+                        </a>
+                        <a href="https://negociatumente.com/guia-redes/" target="_blank"
+                            class="block text-gray-300 hover:text-white transition-colors duration-200 text-sm">
+                            <i class="fas fa-book mr-2"></i>Documentation
+                        </a>
+                        <a href="https://negociatumente.com" target="_blank"
+                            class="block text-gray-300 hover:text-white transition-colors duration-200 text-sm">
+                            <i class="fas fa-globe mr-2"></i>Visit Website
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Author & Copyright -->
+                <div class="text-center md:text-right">
+                    <h4 class="text-lg font-semibold mb-4 text-blue-400">Developer</h4>
+                    <div class="space-y-2">
+                        <a href="https://negociatumente.com" target="_blank"
+                            class="block text-gray-300 hover:text-white transition-colors duration-200 text-sm">
+                            <i class="fas fa-user mr-2"></i>Antonio Cañavate
+                        </a>
+                        <p class="text-gray-400 text-xs">
+                            &copy; <?php echo date('Y'); ?> All rights reserved
+                        </p>
+                        <p class="text-gray-500 text-xs">
+                            Made with <i class="fas fa-heart text-red-400"></i> for the community
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom bar -->
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center">
+                <p class="text-gray-400 text-xs">
+                    IP Monitor Dashboard • Open Source Network Monitoring Tool • Version
+                    <?php echo isset($config['settings']['version']) ? htmlspecialchars($config['settings']['version'], ENT_QUOTES, 'UTF-8') : '1.0'; ?>
+                </p>
+            </div>
+        </div>
+    </footer>
 </body>
 
 </html>
