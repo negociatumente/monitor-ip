@@ -25,12 +25,25 @@ if (file_exists($ping_file)) {
 // Manejo de importación/exportación de configuración
 $import_export_message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_config'])) {
-    $import_export_message = import_config_ini($_FILES['import_config']);
+    $success = import_config_ini($_FILES['import_config']);
+    // Limpiar datos de ping automáticamente tras importar
+    if (file_exists($ping_file)) {
+        file_put_contents($ping_file, json_encode([]));
+    }
+    $import_export_message = $success ? 'Configuración importada correctamente. (Datos de ping limpiados)' : 'Error al importar configuración.';
+    // Redirigir para evitar reenvío del archivo
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '?imported=1');
+    exit;
 }
 if (isset($_GET['export_config'])) {
     export_config_ini();
     exit;
 }
+if (isset($_GET['imported'])) {
+    $import_export_message = 'Configuración importada correctamente.';
+}
+
+
 ?>
 
 <!DOCTYPE html>
@@ -50,6 +63,8 @@ if (isset($_GET['export_config'])) {
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="lib/styles.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         // Global variables
@@ -57,6 +72,39 @@ if (isset($_GET['export_config'])) {
         let countdown = pingInterval;
         let countdownInterval = null;
         let pingStopped = false;
+        let currentPage = 1;
+        const pingsPerPage = 5;
+
+        window.ipDetails = {
+            <?php
+            $ip_entries = [];
+            foreach ($ips_to_monitor as $ip => $service) {
+                $result = analyze_ip($ip);
+                $service_styling = getServiceStyling($service, $services);
+                $status_styling = getStatusStyling($result['status']);
+                $label_styling = getLabelStyling($result['label']);
+                $percentage_styling = getPercentageStyling($result['percentage']);
+                $response_styling = getResponseTimeStyling($result['average_response_time']);
+                $ip_entries[] = "'" . addslashes($ip) . "': " . json_encode([
+                    'service' => $service,
+                    'service_color' => $service_styling['color'],
+                    'service_text_color' => $service_styling['text_color'],
+                    'status' => $result['status'],
+                    'status_badge' => $status_styling['badge'],
+                    'status_icon' => $status_styling['icon'],
+                    'label' => $result['label'],
+                    'label_badge' => $label_styling['badge'],
+                    'label_icon' => $label_styling['icon'],
+                    'percentage' => $result['percentage'],
+                    'percentage_text_class' => $percentage_styling['text_class'],
+                    'average_response_time' => $result['average_response_time'],
+                    'response_class' => $response_styling['class'],
+                    'ping_results' => $result['ping_results'],
+                ]);
+            }
+            echo implode(",\n", $ip_entries);
+            ?>
+        };
     </script>
 
     <script src="lib/script.js"></script>
@@ -65,27 +113,59 @@ if (isset($_GET['export_config'])) {
 
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <!-- Header/Navigation Bar -->
-    <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
-        <div class="container mx-auto py-4 px-6 flex flex-col md:flex-row justify-between items-center">
-            <div class="flex items-center mb-4 md:mb-0">
-                <i class="fas fa-network-wired text-2xl mr-3"></i>
-                <h1 class="text-xl font-bold">IP Monitor Dashboard</h1>
-            </div>
-            <div class="flex flex-wrap justify-center gap-4">
-                <a href="https://negociatumente.com" target="_blank"
-                    class="text-white hover:text-blue-200 transition flex items-center gap-2">
-                    <i class="fas fa-user"></i> Antonio Cañavate
-                </a>
-                <a href="https://github.com/negociatumente/monitor-ip" target="_blank"
-                    class="text-white hover:text-blue-200 transition flex items-center gap-2">
-                    <i class="fab fa-github"></i> GitHub
-                </a>
-                <a href="https://negociatumente.com/guia-redes/" target="_blank"
-                    class="text-white hover:text-blue-200 transition flex items-center gap-2">
-                    <i class="fas fa-book"></i> Aprender más
-                </a>
+    <header
+        class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 text-white shadow-2xl relative overflow-hidden">
+        <!-- Background pattern -->
+        <div class="absolute inset-0 opacity-10">
+            <div
+                class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-transparent via-white to-transparent transform rotate-12">
             </div>
         </div>
+
+        <div class="container mx-auto py-6 px-6 relative z-10">
+            <!-- Top row with logo and actions -->
+            <div class="flex flex-col lg:flex-row justify-between items-center mb-4 lg:mb-0">
+                <!-- Logo and title -->
+                <div class="flex items-center mb-4 lg:mb-0 group">
+                    <div
+                        class="bg-white bg-opacity-20 p-3 rounded-full mr-4 group-hover:bg-opacity-30 transition-all duration-300">
+                        <i class="fas fa-network-wired text-2xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl lg:text-3xl font-bold tracking-tight">
+                            IP Monitor
+                            <?php if (isset($config['settings']['version'])): ?>
+                                <span class="text-sm font-normal bg-white bg-opacity-20 px-2 py-1 rounded-full ml-2">
+                                    v<?php echo htmlspecialchars($config['settings']['version'], ENT_QUOTES, 'UTF-8'); ?>
+                                </span>
+                            <?php endif; ?>
+                        </h1>
+                        <p class="text-blue-100 text-sm mt-1">Real-time network monitoring & analytics</p>
+                    </div>
+                </div>
+
+                <!-- Navigation links -->
+                <div
+                    class="flex flex-wrap justify-center lg:justify-end gap-2 pt-4 border-t border-white border-opacity-20">
+                    <a href="https://negociatumente.com" target="_blank"
+                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
+                        <i class="fas fa-user"></i>
+                        <span class="hidden sm:inline">Antonio Cañavate</span>
+                    </a>
+                    <a href="https://github.com/negociatumente/monitor-ip" target="_blank"
+                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
+                        <i class="fab fa-github"></i>
+                        <span class="hidden sm:inline">GitHub</span>
+                    </a>
+                    <a href="https://negociatumente.com/guia-redes/" target="_blank"
+                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
+                        <i class="fas fa-book"></i>
+                        <span class="hidden sm:inline">Learn More</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
     </header>
 
     <div class="container mx-auto px-4 py-6">
@@ -109,28 +189,41 @@ if (isset($_GET['export_config'])) {
                 </div>
             </div>
             <div class='overflow-x-auto'>
-                <table class='w-full'>
+                <table class='min-w-max w-full'>
                     <thead>
                         <tr class='bg-gray-50 dark:bg-gray-700 text-left'>
                             <th class='p-3 whitespace-nowrap'>Service</th>
                             <th class='p-3 whitespace-nowrap'>IP Address</th>
                             <th class='p-3 whitespace-nowrap'>Status</th>
                             <th class='p-3 whitespace-nowrap'>Reliability</th>
-                            <th class='p-3 whitespace-nowrap'>Uptime %</th>
-                            <th class='p-3 whitespace-nowrap'>Response</th>
+                            <th class='p-3 whitespace-nowrap'>Uptime</th>
+                            <th class='p-3 whitespace-nowrap'>LATENCY</th>
                             <?php
+                            // Encabezados de pings (de derecha a izquierda)
+                            $max_pings_to_show = 5;
                             $sample_ip = array_key_last($ping_data);
-                            $latest_pings = $ping_data[$sample_ip] ?? array_fill(0, $ping_attempts, ["timestamp" => "-"]);
-                            for ($i = 0; $i < $ping_attempts; $i++) {
-                                $timestamp = $latest_pings[$i]['timestamp'] ?? "-";
-                                if ($timestamp !== '-') {
-                                    $date = new DateTime($timestamp);
-                                    $now = new DateTime();
-                                    if ($date->format('Y-m-d') === $now->format('Y-m-d')) {
-                                        $timestamp = $date->format('H:i:s');
+                            $latest_pings = $ping_data[$sample_ip] ?? [];
+                            $num_pings = count($latest_pings);
+                            $header_labels = [];
+                            for ($i = 0; $i < $max_pings_to_show; $i++) {
+                                if ($num_pings >= $max_pings_to_show && $i === 0) {
+                                    $header_labels[] = 'now';
+                                } else {
+                                    $ping_index = $num_pings >= $max_pings_to_show ? $num_pings - $max_pings_to_show + $i : $i;
+                                    $timestamp = isset($latest_pings[$ping_index]) ? ($latest_pings[$ping_index]['timestamp'] ?? '-') : '-';
+                                    if ($timestamp !== '-') {
+                                        $date = new DateTime($timestamp);
+                                        $now = new DateTime();
+                                        if ($date->format('Y-m-d') === $now->format('Y-m-d')) {
+                                            $timestamp = $date->format('H:i:s');
+                                        }
                                     }
+                                    $header_labels[] = $timestamp;
                                 }
-                                echo "<th class='p-2 text-center text-xs whitespace-nowrap'>{$timestamp}</th>";
+                            }
+                            $header_labels = array_reverse($header_labels);
+                            foreach ($header_labels as $label) {
+                                echo "<th class='p-2 text-center text-xs whitespace-nowrap'>{$label}</th>";
                             }
                             ?>
                             <th class='p-3 text-center whitespace-nowrap'>Actions</th>
@@ -139,7 +232,7 @@ if (isset($_GET['export_config'])) {
                     <tbody class='divide-y divide-gray-200 dark:divide-gray-700'>
                         <?php if (empty($ips_to_monitor)): ?>
                             <tr>
-                                <td colspan='<?php echo 7 + $ping_attempts; ?>'
+                                <td colspan='<?php echo 7 + $max_pings_to_show; ?>'
                                     class='p-4 text-center text-gray-500 dark:text-gray-400'>
                                     <div class='py-8'>
                                         <i class='fas fa-info-circle text-blue-500 text-4xl mb-3'></i>
@@ -163,7 +256,8 @@ if (isset($_GET['export_config'])) {
                                 $percentage_styling = getPercentageStyling($percentage);
                                 $response_styling = getResponseTimeStyling($average_response_time);
                                 ?>
-                                <tr class='hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-150'>
+                                <tr class='hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-150 cursor-pointer'
+                                    onclick="showIpDetailModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')">
                                     <td class='p-3'>
                                         <span class='inline-block px-3 py-1 rounded-full text-sm font-medium'
                                             style='background-color: <?php echo $service_styling['color']; ?>; color: <?php echo $service_styling['text_color']; ?>'>
@@ -196,22 +290,52 @@ if (isset($_GET['export_config'])) {
                                         </div>
                                     </td>
                                     <td class='p-3 font-medium <?php echo $response_styling['class']; ?>'>
-                                        <?php echo $response_styling['display']; ?>
+                                        <?php
+                                        if (is_numeric($average_response_time)) {
+                                            echo number_format($average_response_time, 2) . ' ms';
+                                        } else {
+                                            echo $response_styling['display'];
+                                        }
+                                        ?>
                                     </td>
                                     <?php
-                                    foreach ($ping_results as $ping) {
-                                        if (($ping['status'] ?? "-") === "UP") {
-                                            echo "<td class='p-2 text-center'><span class='inline-block w-4 h-4 rounded-full bg-green-500 dark:bg-green-400' title='UP - " . ($ping['response_time'] ?? 'N/A') . "'></span></td>";
-                                        } else {
-                                            echo "<td class='p-2 text-center'><span class='inline-block w-4 h-4 rounded-full bg-red-500 dark:bg-red-400' title='DOWN'></span></td>";
-                                        }
+                                    // Mostrar los pings de derecha a izquierda, primero celdas vacías (izquierda), luego pings reales (derecha)
+                                    $max_pings_to_show = 5;
+                                    $ping_results = $result['ping_results'];
+                                    $num_pings = count($ping_results);
+                                    $pings_to_show = array_slice($ping_results, -$max_pings_to_show);
+                                    $empty_cells = $max_pings_to_show - count($pings_to_show);
+                                    // Primero las celdas vacías (izquierda)
+                                    for ($i = 0; $i < $empty_cells; $i++) {
+                                        echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-gray-300 text-gray-500 rounded-md shadow-sm' title='No data'><i class='fas fa-minus text-xs'></i></div></td>";
                                     }
-                                    for ($i = count($ping_results); $i < $ping_attempts; $i++) {
-                                        echo "<td class='p-2 text-center'><span class='inline-block w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600'></span></td>";
+                                    // Luego los pings reales (derecha)
+                                    for ($i = count($pings_to_show) - 1; $i >= 0; $i--) {
+                                        $ping = $pings_to_show[$i];
+                                        if ($num_pings >= $max_pings_to_show && $i === 0) {
+                                            // Última columna (derecha), mostrar 'now' si hay 5 o más pings
+                                            if (($ping['status'] ?? '-') === 'UP') {
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='UP - now'><i class='fas fa-check text-xs'></i></div></td>";
+                                            } elseif (($ping['status'] ?? '-') === 'DOWN') {
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-red-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='DOWN - now'><i class='fas fa-times text-xs'></i></div></td>";
+                                            } else {
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-gray-300 text-gray-500 rounded-md shadow-sm' title='No data'><i class='fas fa-minus text-xs'></i></div></td>";
+                                            }
+                                        } else {
+                                            if (($ping['status'] ?? 'EMPTY') === 'UP') {
+                                                $response_time = isset($ping['response_time']) ? $ping['response_time'] : 'N/A';
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='UP - {$response_time}'><i class='fas fa-check text-xs'></i></div></td>";
+                                            } elseif (($ping['status'] ?? 'EMPTY') === 'DOWN') {
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-red-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='DOWN'><i class='fas fa-times text-xs'></i></div></td>";
+                                            } else {
+                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-gray-300 text-gray-500 rounded-md shadow-sm' title='No data'><i class='fas fa-minus text-xs'></i></div></td>";
+                                            }
+                                        }
                                     }
                                     ?>
                                     <td class='p-3 text-center'>
-                                        <button type='button' onclick="confirmDelete('<?php echo $ip; ?>')"
+                                        <button type='button'
+                                            onclick="event.stopPropagation();confirmDelete('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')"
                                             class='btn bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 p-2 rounded-md'>
                                             <i class='fas fa-trash-alt'></i>
                                         </button>
@@ -223,7 +347,107 @@ if (isset($_GET['export_config'])) {
                 </table>
             </div>
         </div>
+
+        <!-- Modal para información detallada de IP -->
+        <div id="ipDetailModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+            <div
+                class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+                <button onclick="closeIpModal()"
+                    class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 z-10">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+                <div class="flex items-center mb-6">
+                    <i class="fas fa-network-wired text-blue-500 text-2xl mr-3"></i>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200" id="modalIpTitle">IP Detail</h3>
+                </div>
+                <div id="modalIpContent"></div>
+
+                <div class="mt-6">
+                    <h4 class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                        <i class="fas fa-chart-line mr-2 text-blue-500"></i>
+                        Latency History
+                    </h4>
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <canvas id="pingChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="flex mt-2 gap-2 justify-between">
+                    <button type="button" onclick="closeIpModal()"
+                        class="btn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 flex items-center gap-2">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button type="button" onclick="showDeleteConfirmFromDetail()"
+                        class="btn bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 flex items-center gap-2">
+                        <i class="fas fa-trash-alt"></i> Delete IP
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="bg-gradient-to-r from-gray-800 to-gray-900 dark:from-gray-900 dark:to-black text-white py-8 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Project Info -->
+                <div class="text-center md:text-left">
+                    <div class="flex items-center justify-center md:justify-start mb-4">
+                        <i class="fas fa-network-wired text-2xl text-blue-400 mr-3"></i>
+                        <h3 class="text-xl font-bold">IP Monitor</h3>
+                    </div>
+                    <p class="text-gray-300 text-sm leading-relaxed">
+                        A powerful and elegant network monitoring solution to keep track of your critical
+                        infrastructure.
+                    </p>
+                </div>
+
+                <!-- Links -->
+                <div class="text-center">
+                    <h4 class="text-lg font-semibold mb-4 text-blue-400">Resources</h4>
+                    <div class="space-y-2">
+                        <a href="https://github.com/negociatumente/monitor-ip" target="_blank"
+                            class="block text-gray-300 hover:text-white transition-colors duration-200 text-sm">
+                            <i class="fab fa-github mr-2"></i>Source Code
+                        </a>
+                        <a href="https://negociatumente.com/guia-redes/" target="_blank"
+                            class="block text-gray-300 hover:text-white transition-colors duration-200 text-sm">
+                            <i class="fas fa-book mr-2"></i>Documentation
+                        </a>
+                        <a href="https://negociatumente.com" target="_blank"
+                            class="block text-gray-300 hover:text-white transition-colors duration-200 text-sm">
+                            <i class="fas fa-globe mr-2"></i>Visit Website
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Author & Copyright -->
+                <div class="text-center md:text-right">
+                    <h4 class="text-lg font-semibold mb-4 text-blue-400">Developer</h4>
+                    <div class="space-y-2">
+                        <a href="https://negociatumente.com" target="_blank"
+                            class="block text-gray-300 hover:text-white transition-colors duration-200 text-sm">
+                            <i class="fas fa-user mr-2"></i>Antonio Cañavate
+                        </a>
+                        <p class="text-gray-400 text-xs">
+                            &copy; <?php echo date('Y'); ?> All rights reserved
+                        </p>
+                        <p class="text-gray-500 text-xs">
+                            Made with <i class="fas fa-heart text-red-400"></i> for the community
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom bar -->
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center">
+                <p class="text-gray-400 text-xs">
+                    IP Monitor Dashboard • Open Source Network Monitoring Tool • Version
+                    <?php echo isset($config['settings']['version']) ? htmlspecialchars($config['settings']['version'], ENT_QUOTES, 'UTF-8') : '1.0'; ?>
+                </p>
+            </div>
+        </div>
+    </footer>
 </body>
 
 </html>

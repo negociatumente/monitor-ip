@@ -92,7 +92,7 @@ function analyze_ip($ip)
 // Función para eliminar una IP del archivo config.ini y ping_results.json
 function delete_ip_from_config($ip)
 {
-    global $ping_file, $ping_data;
+    global $ping_data;
 
     // Eliminar del archivo config.ini
     global $config_path;
@@ -112,8 +112,8 @@ function delete_ip_from_config($ip)
     // Eliminar del archivo ping_results.json
     if (isset($ping_data[$ip])) {
         unset($ping_data[$ip]);
-    global $ping_file_path;
-    file_put_contents($ping_file_path, json_encode($ping_data));
+        global $ping_file;
+        file_put_contents($ping_file, json_encode($ping_data));
     }
 }
 
@@ -164,12 +164,13 @@ function export_config_ini()
 }
 
 // Importa un archivo config.ini subido y lo reemplaza
-function import_config_ini($uploaded_file_tmp_path)
+function import_config_ini($uploaded_file)
 {
     global $config_path;
     $destination = $config_path;
-    if (is_uploaded_file($uploaded_file_tmp_path)) {
-        move_uploaded_file($uploaded_file_tmp_path, $destination);
+    $tmp_path = is_array($uploaded_file) ? ($uploaded_file['tmp_name'] ?? '') : $uploaded_file;
+    if ($tmp_path && is_uploaded_file($tmp_path)) {
+        move_uploaded_file($tmp_path, $destination);
         return true;
     }
     return false;
@@ -429,4 +430,5 @@ function getResponseTimeStyling($average_response_time)
         ];
     }
 }
+
 ?>
