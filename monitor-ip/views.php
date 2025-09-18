@@ -206,10 +206,14 @@ if (isset($_GET['imported'])) {
                             $num_pings = count($latest_pings);
                             $header_labels = [];
                             for ($i = 0; $i < $max_pings_to_show; $i++) {
-                                if ($num_pings >= $max_pings_to_show && $i === 0) {
+                                if ($i === 0) {
                                     $header_labels[] = 'now';
                                 } else {
-                                    $ping_index = $num_pings >= $max_pings_to_show ? $num_pings - $max_pings_to_show + $i : $i;
+                                    if($num_pings >= $max_pings_to_show){
+                                        $ping_index = $i - 1;
+                                    } else {
+                                        $ping_index = $i;
+                                    }
                                     $timestamp = isset($latest_pings[$ping_index]) ? ($latest_pings[$ping_index]['timestamp'] ?? '-') : '-';
                                     if ($timestamp !== '-') {
                                         $date = new DateTime($timestamp);
@@ -282,10 +286,11 @@ if (isset($_GET['imported'])) {
                                             <div class='w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2 progress-animated'
                                                 style='overflow:hidden;'>
                                                 <div class='progress-inner <?php echo $percentage_styling['bar_class']; ?>'
-                                                    style='width: <?php echo $percentage_styling['percentage']; ?>%'></div>
+                                                    style='width: <?php echo round($percentage_styling['percentage']); ?>%'>
+                                                </div>
                                             </div>
                                             <span class='font-medium <?php echo $percentage_styling['text_class']; ?>'>
-                                                <?php echo $percentage_styling['percentage']; ?>%
+                                                <?php echo round($percentage_styling['percentage']); ?>%
                                             </span>
                                         </div>
                                     </td>
@@ -302,8 +307,8 @@ if (isset($_GET['imported'])) {
                                     // Mostrar los pings de derecha a izquierda, primero celdas vacías (izquierda), luego pings reales (derecha)
                                     $max_pings_to_show = 5;
                                     $ping_results = $result['ping_results'];
-                                    $num_pings = count($ping_results);
-                                    $pings_to_show = array_slice($ping_results, -$max_pings_to_show);
+                                    $num_pings = count(value: $ping_results);
+                                    $pings_to_show = array_slice($ping_results, 0, $max_pings_to_show);
                                     $empty_cells = $max_pings_to_show - count($pings_to_show);
                                     // Primero las celdas vacías (izquierda)
                                     for ($i = 0; $i < $empty_cells; $i++) {

@@ -68,7 +68,7 @@ function analyze_ip($ip)
         }
     }
     $percentage = ($success_count / count($ping_results)) * 100;
-    $status = ($percentage > 50) ? "UP" : "DOWN";
+    $status = ($ping_results[0]['status']);
 
     if ($percentage >= 80) {
         $label = "Good";

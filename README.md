@@ -11,13 +11,14 @@ https://negociatumente.com/guia-redes
 ## ⚠️ Aviso  
 - Este proyecto es solo para **uso personal y diagnóstico de red**.  
 - **No** se debe **abusar** de los pings a IPs públicas para evitar tráfico innecesario.
-- Los pings se lanzan **cada minuto** o al pulsar el botón manual.
-- Solo se almacenan los estados de los **últimos 5 pings lanzados**.
-- Si no se refrescan los pings en la tabla, **borrar el contenido del archivo "ping_results.json"**.
+- Este proyecto es solo para **uso personal y diagnóstico de red**.  
+- Los pings se lanzan según el parámetro **Timer Interval** o al pulsar el botón manual.
+- Solo se almacenan los estados de los últimos pings lanzados según el parámetro **Ping History**.
+- Si no se refrescan los pings en la tabla, borrar los pings anteriores con el botón de **Clear Data**.
   
 ## 🚀 Características  
 ✅ Monitoriza servidores desde tu red.  
-✅ Configurable desde el archivo `config.php`.  
+✅ Configurable desde el archivo `config.ini`.  
 ✅ **Diseño moderno y visual**.  
 ✅ Almacena el estado de los pings.  
 ✅ Compatible con **Windows, Linux y macOS**.  
