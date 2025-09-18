@@ -548,7 +548,7 @@ function showIpDetailModal(ip) {
         <div class='mb-6'>
             <div class='grid grid-cols-1 md:grid-cols-3 gap-4 mb-4'>
                 <div class='${uptimeColors} rounded-lg p-4 text-center'>
-                    <div class='text-2xl font-bold'>${ipData.percentage}%</div>
+                    <div class='text-2xl font-bold'>${Math.round(ipData.percentage)}%</div>
                     <div class='text-sm ${uptimeTextColor}'>Uptime</div>
                 </div>
                 <div class='${pingColors} rounded-lg p-4 text-center'>
