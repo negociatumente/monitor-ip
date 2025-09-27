@@ -46,9 +46,9 @@ monitor-ip/
 ⚙️ **Un navegador web**    
 
 ### 2️⃣ Instalación  
-**🔹Instalar PHP y Apache:**  
+**🔹Instalar PHP, Apache y Git:**  
 ```bash
-sudo apt update && sudo apt install apache2 php -y
+sudo apt update && sudo apt install apache2 php git -y
 ```
 
 **🔹Clona el repositorio:**  
@@ -63,7 +63,7 @@ sudo mv ~/monitor-ip/monitor-ip /var/www/html/monitor-ip
 
 **🔹Da permisos de lectura y escritura al archivo ping_results.json:**
 ```bash
-sudo chmod 664 /var/www/html/monitor-ip/ping_results.json
+sudo chmod 664 /var/www/html/monitor-ip/conf/ping_results.json
 ```
 
 ### 3️⃣ Configuración
