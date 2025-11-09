@@ -196,11 +196,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {
     }
 }
 
-// Ejecutar un solo ping por ciclo solo si no se está eliminando una IP o añadiendo una nueva
+// Ejecutar pings en paralelo solo si no se está eliminando una IP o añadiendo una nueva
 if (!isset($_GET['action'])) {
-    foreach ($ips_to_monitor as $ip => $service) {
-        update_ping_results($ip);
-    }
+    // Obtener solo las IPs en un array
+    $ips_array = array_keys($ips_to_monitor);
+    update_ping_results_parallel($ips_array);
 
     // Guardar resultados actualizados en JSON
     file_put_contents($ping_file, json_encode($ping_data));

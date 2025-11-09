@@ -47,6 +47,74 @@ function update_ping_results($ip)
     }
 }
 
+// Nueva función para hacer pings en paralelo
+function update_ping_results_parallel($ips)
+{
+    global $ping_attempts, $ping_data;
+
+    $isWindows = (PHP_OS_FAMILY === 'Windows');
+    $processes = [];
+    $pipes = [];
+    $results = [];
+
+    foreach ($ips as $ip) {
+        $pingCommand = $isWindows
+            ? "ping -n 1 -w 1000 $ip"
+            : "ping -c 1 -W 1 $ip";
+
+        $descriptorspec = [
+            0 => ["pipe", "r"],
+            1 => ["pipe", "w"],
+            2 => ["pipe", "w"]
+        ];
+
+        $process = proc_open($pingCommand, $descriptorspec, $pipe);
+        if (is_resource($process)) {
+            $processes[$ip] = $process;
+            $pipes[$ip] = $pipe;
+        }
+    }
+
+    // Leer resultados
+    foreach ($processes as $ip => $process) {
+        $output = stream_get_contents($pipes[$ip][1]);
+        fclose($pipes[$ip][1]);
+        fclose($pipes[$ip][2]);
+        proc_close($process);
+
+        // Evaluar si la IP respondió correctamente
+        $ping_status = (strpos($output, 'TTL=') !== false || strpos($output, 'bytes from') !== false) ? "UP" : "DOWN";
+
+        // Captura la fecha y hora actual
+        $timestamp = date('Y-m-d H:i:s');
+
+        // Captura el tiempo de respuesta
+        if ($isWindows) {
+            preg_match('/tiempo[=<]\s*(\d+ms)/', $output, $matches);
+        } else {
+            preg_match('/time[=<]\s*(\d+\.\d+ ms)/', $output, $matches);
+        }
+        $response_time = $matches[1] ?? 'N/A';
+        if ($response_time !== 'N/A' && $response_time !== '-') {
+            $num = floatval(str_replace(['ms', ' '], '', $response_time));
+            $response_time = round($num, 2) . ' ms';
+        }
+
+        if (!isset($ping_data[$ip])) {
+            $ping_data[$ip] = [];
+        }
+
+        array_unshift($ping_data[$ip], [
+            "status" => $ping_status,
+            "timestamp" => $timestamp,
+            "response_time" => $response_time,
+        ]);
+        if (count($ping_data[$ip]) > $ping_attempts) {
+            array_pop($ping_data[$ip]);
+        }
+    }
+}
+
 // Función para calcular el estado de la IP
 function analyze_ip($ip)
 {
