@@ -552,7 +552,7 @@ function showIpDetailModal(ip) {
 
     document.getElementById('modalIpContent').innerHTML = `
         <div class='mb-6'>
-            <div class='grid grid-cols-1 md:grid-cols-3 gap-4 mb-4'>
+            <div class='grid grid-cols-1 md:grid-cols-4 gap-4 mb-4'>
                 <div class='${uptimeColors} rounded-lg p-4 text-center'>
                     <div class='text-2xl font-bold'>${Math.round(ipData.percentage)}%</div>
                     <div class='text-sm ${uptimeTextColor}'>Uptime</div>
@@ -564,6 +564,10 @@ function showIpDetailModal(ip) {
                 <div class='rounded-lg p-4 text-center' style='background-color: ${ipData.service_color}; color: ${ipData.service_text_color};'>
                     <div class='text-xl font-bold'>${ipData.service}</div>
                     <div class='text-sm opacity-80 mt-1'>Service</div>
+                </div>
+                <div class='bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900 dark:to-purple-800 text-indigo-600 dark:text-indigo-300 rounded-lg p-4 text-center'>
+                    <div class='text-xl font-bold'>${ipData.method || 'ICMP'}</div>
+                    <div class='text-sm text-indigo-700 dark:text-indigo-400 mt-1'>Method</div>
                 </div>
             </div>
         </div>
@@ -785,6 +789,58 @@ function resetFilters() {
     filterTable();
 }
 
+/**
+ * Changes the number of items per page and reloads with page 1
+ */
+function changePerPage(perPage) {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('per_page', perPage);
+    urlParams.set('page', '1'); // Reset to first page when changing items per page
+    window.location.search = urlParams.toString();
+}
+
 // Expose functions to global scope
 window.filterTable = filterTable;
 window.resetFilters = resetFilters;
+window.changePerPage = changePerPage;
+
+// Funciones para Manage Services
+function showManageServiceForm() {
+    showServicesList();
+    modalFunctions.showModal('manageServiceForm');
+}
+
+function hideManageServiceForm() {
+    modalFunctions.hideModal('manageServiceForm');
+}
+
+function showServicesList() {
+    document.getElementById('servicesList').style.display = 'block';
+    document.getElementById('serviceDetailsForm').style.display = 'none';
+}
+
+function editService(serviceName) {
+    const config = window.servicesConfig[serviceName];
+    if (config) {
+        document.getElementById('old_service_name').value = serviceName;
+        document.getElementById('edit_service_name').value = serviceName;
+        document.getElementById('edit_service_color').value = config.color;
+        document.getElementById('edit_service_method').value = config.method;
+
+        document.getElementById('servicesList').style.display = 'none';
+        document.getElementById('serviceDetailsForm').style.display = 'block';
+    }
+}
+
+function deleteService(serviceName) {
+    if (confirm('Are you sure you want to delete the service "' + serviceName + '"? This will delete ALL IPs associated with this service. This action cannot be undone.')) {
+        document.getElementById('delete_service_name_input').value = serviceName;
+        document.getElementById('deleteServiceForm').submit();
+    }
+}
+
+window.showManageServiceForm = showManageServiceForm;
+window.hideManageServiceForm = hideManageServiceForm;
+window.showServicesList = showServicesList;
+window.editService = editService;
+window.deleteService = deleteService;

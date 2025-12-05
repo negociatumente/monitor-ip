@@ -2,12 +2,15 @@
 // Cargar configuración desde config.ini
 $config_path = __DIR__ . '/conf/config.ini';
 $config = parse_ini_file($config_path, true);
-$ips_to_monitor = $config['ips'];
-$services = $config['services'];
+$ips_to_monitor = $config['ips-services'];
+$services = $config['services-colors'];
+$services_methods = $config['services-methods'] ?? [];
 $ping_attempts = $config['settings']['ping_attempts'];
 $ping_interval = $config['settings']['ping_interval'];
 
+// Cargar archivos
 $ping_file = __DIR__ . '/conf/ping_results.json';
+require_once __DIR__ . '/lib/functions.php';
 
 // Cargar resultados previos si existen
 if (file_exists($ping_file)) {
@@ -16,8 +19,6 @@ if (file_exists($ping_file)) {
     $ping_data = [];
 }
 
-// Cargar funciones
-require_once __DIR__ . '/lib/functions.php';
 
 // Manejar la adición de IP
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
@@ -51,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
         $config = parse_ini_file($config_path, true);
 
         // Verificar si el servicio ya existe
-        if (isset($config['services'][$new_service_name])) {
+        if (isset($config['services-colors'][$new_service_name])) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_exists");
             exit;
         }
@@ -59,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
         // Añadir el nuevo servicio
         $new_service_name = htmlspecialchars($new_service_name, ENT_QUOTES, 'UTF-8');
         $new_service_color = htmlspecialchars($new_service_color, ENT_QUOTES, 'UTF-8');
-        $config['services'][$new_service_name] = $new_service_color;
+        $config['services-colors'][$new_service_name] = $new_service_color;
 
         // Guardar los cambios en config.ini
         $new_content = '';
@@ -87,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
 
     // Verificar si la IP ya existe
     $config = parse_ini_file($config_path, true);
-    if (isset($config['ips'][$validated_ip])) {
+    if (isset($config['ips-services'][$validated_ip])) {
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=ip_exists");
         exit;
     }
@@ -179,6 +180,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_data'])) {
     exit;
 }
 
+// Manejar la actualización de servicio (Renombrar, Color, Método)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_service'])) {
+    $old_service_name = trim($_POST['old_service_name']);
+    $new_service_name = trim($_POST['service_name']);
+    $new_service_color = trim($_POST['service_color']);
+    $new_service_method = trim($_POST['service_method']);
+
+    if (empty($old_service_name) || empty($new_service_name)) {
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=empty_service_name");
+        exit;
+    }
+
+    // Si el nombre cambió, verificar que el nuevo no exista ya (a menos que sea el mismo)
+    $config = parse_ini_file($config_path, true);
+    if ($old_service_name !== $new_service_name && isset($config['services-colors'][$new_service_name])) {
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_exists");
+        exit;
+    }
+
+    if (update_service_config($old_service_name, $new_service_name, $new_service_color, $new_service_method)) {
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_updated");
+        exit;
+    } else {
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_update_failed");
+        exit;
+    }
+}
+
 // Manejar la eliminación de servicio
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {
     $service_to_delete = trim($_POST['service_name']);
@@ -207,14 +236,13 @@ if (!isset($_GET['action'])) {
     file_put_contents($ping_file, json_encode($ping_data));
 }
 
-// Incluir la vista
-require_once __DIR__ . '/views.php';
 
 // Manejar notificaciones
 $notifications = [
     'added' => ['type' => 'success', 'icon' => 'fas fa-check-circle', 'message' => 'IP/Dominio añadido exitosamente al monitoreo.'],
     'deleted' => ['type' => 'success', 'icon' => 'fas fa-trash', 'message' => 'IP/Dominio eliminado exitosamente del monitoreo.'],
     'service_added' => ['type' => 'success', 'icon' => 'fas fa-plus-circle', 'message' => 'Servicio creado exitosamente.'],
+    'service_updated' => ['type' => 'success', 'icon' => 'fas fa-edit', 'message' => 'Servicio actualizado exitosamente.'],
     'service_cleared' => ['type' => 'success', 'icon' => 'fas fa-server', 'message' => 'Servicio eliminado exitosamente.'],
     'timer_updated' => ['type' => 'success', 'icon' => 'fas fa-clock', 'message' => 'Intervalo de ping actualizado exitosamente.'],
     'ping_attempts_updated' => ['type' => 'success', 'icon' => 'fas fa-network-wired', 'message' => 'Número de intentos de ping actualizado exitosamente.'],
@@ -233,6 +261,7 @@ if ($_GET['action'] === 'error' && isset($_GET['msg'])) {
         'invalid_service' => 'Error: Debe seleccionar un servicio válido.',
         'ip_exists' => 'Error: Esta IP o Dominio ya está siendo monitoreada.',
         'add_ip_failed' => 'Error: No se pudo agregar la IP al sistema.',
+        'service_update_failed' => 'Error: No se pudo actualizar el servicio.',
         'service_clear_failed' => 'Error: No se pudo eliminar el servicio.',
         'invalid_service_name' => 'Error: Nombre de servicio inválido.'
     ];
@@ -242,4 +271,14 @@ if ($_GET['action'] === 'error' && isset($_GET['msg'])) {
         $notifications['error']['message'] = $error_messages[$error_msg];
     }
 }
+
+// Recargar configuración después de procesar POST requests
+$config = parse_ini_file($config_path, true);
+$ips_to_monitor = $config['ips-services'] ?? [];
+$services = $config['services-colors'] ?? [];
+$ping_attempts = $config['settings']['ping_attempts'] ?? 5;
+$ping_interval = $config['settings']['ping_interval'] ?? 30;
+
+// Cargar la vista al final, con los datos actualizados
+require_once __DIR__ . '/views.php';
 ?>

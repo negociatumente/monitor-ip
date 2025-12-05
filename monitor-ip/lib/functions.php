@@ -54,8 +54,10 @@ function update_ping_results_parallel($ips)
     global $ping_attempts, $ping_data, $config_path;
 
     // Load methods configuration
+    // Load configuration
     $config = parse_ini_file($config_path, true);
-    $methods = $config['methods'] ?? [];
+    $services_methods = $config['services-methods'] ?? [];
+    $ips_services = $config['ips-services'] ?? [];
 
     $isWindows = (PHP_OS_FAMILY === 'Windows');
     $processes = [];
@@ -63,7 +65,9 @@ function update_ping_results_parallel($ips)
     $results = [];
 
     foreach ($ips as $ip) {
-        $method = $methods[$ip] ?? 'icmp'; // Default to ICMP if not set
+        // Determine method based on service
+        $service = $ips_services[$ip] ?? 'DEFAULT';
+        $method = $services_methods[$service] ?? ($services_methods['DEFAULT'] ?? 'icmp');
         $escaped_ip = escapeshellarg($ip);
 
         // Choose command based on monitoring method
@@ -74,14 +78,13 @@ function update_ping_results_parallel($ips)
                 $command = "curl -Is --connect-timeout 1 --max-time 2 $protocol://$escaped_ip 2>&1";
                 break;
 
-            case 'arp':
-                // For ARP, we use arping (Linux) or arp (Windows)
+            case 'dns':
+                // For DNS, we use nslookup to resolve domain names
                 if ($isWindows) {
-                    $command = "arp -a $escaped_ip 2>&1";
+                    $command = "nslookup $escaped_ip 2>&1";
                 } else {
-                    // arping -c 1 -w 1 requires root, so we use ping as fallback for now
-                    // In production, you might want to use: arping -c 1 -w 1 $escaped_ip
-                    $command = "timeout 1 arping -c 1 $escaped_ip 2>&1 || ping -c 1 -W 1 $escaped_ip";
+                    // Use dig for better timing info, fallback to nslookup
+                    $command = "dig +time=1 +tries=1 $escaped_ip 2>&1 || nslookup -timeout=1 $escaped_ip 2>&1";
                 }
                 break;
 
@@ -134,23 +137,20 @@ function update_ping_results_parallel($ips)
                 }
                 break;
 
-            case 'arp':
-                // Check for ARP response
+            case 'dns':
+                // Check for successful DNS resolution
                 if (
-                    strpos($output, 'bytes from') !== false ||
-                    preg_match('/\d+\.\d+\.\d+\.\d+/', $output) ||
-                    strpos($output, 'reply') !== false
+                    preg_match('/Address(?:es)?:\s*([\d\.]+)/', $output, $addr_matches) ||
+                    preg_match('/ANSWER SECTION/', $output) ||
+                    preg_match('/Name:\s*(.+)/', $output)
                 ) {
                     $ping_status = "UP";
-                }
-                // Try to extract time if ping was used as fallback
-                if ($isWindows) {
-                    preg_match('/tiempo[=<]\s*(\d+ms)/', $output, $matches);
-                } else {
-                    preg_match('/time[=<]\s*([\d\.]+\s*ms)/', $output, $matches);
-                }
-                if (isset($matches[1])) {
-                    $response_time = $matches[1];
+                    // Try to extract query time from dig output
+                    if (preg_match('/Query time:\s*(\d+)\s*msec/', $output, $time_matches)) {
+                        $response_time = $time_matches[1] . ' ms';
+                    } elseif (preg_match('/time[=<]\s*([\d\.]+\s*ms)/', $output, $time_matches)) {
+                        $response_time = $time_matches[1];
+                    }
                 }
                 break;
 
@@ -243,8 +243,8 @@ function delete_ip_from_config($ip)
     // Eliminar del archivo config.ini
     global $config_path;
     $config = parse_ini_file($config_path, true);
-    if (isset($config['ips'][$ip])) {
-        unset($config['ips'][$ip]);
+    if (isset($config['ips-services'][$ip])) {
+        unset($config['ips-services'][$ip]);
         $new_content = '';
         foreach ($config as $section => $values) {
             $new_content .= "[$section]\n";
@@ -292,7 +292,7 @@ function add_ip_to_config($ip, $service, $method = 'icmp')
     }
 
     // Validar método
-    $valid_methods = ['icmp', 'curl', 'arp'];
+    $valid_methods = ['icmp', 'curl', 'dns'];
     if (!in_array($method, $valid_methods)) {
         $method = 'icmp'; // Default fallback
     }
@@ -307,13 +307,16 @@ function add_ip_to_config($ip, $service, $method = 'icmp')
     $clean_service = htmlspecialchars($service, ENT_QUOTES, 'UTF-8');
     $clean_method = htmlspecialchars($method, ENT_QUOTES, 'UTF-8');
 
-    $config['ips'][$clean_ip] = $clean_service;
+    $config['ips-services'][$clean_ip] = $clean_service;
 
-    // Store monitoring method in a new section
-    if (!isset($config['methods'])) {
-        $config['methods'] = [];
+    // Store monitoring method for the service in services-methods
+    if (!isset($config['services-methods'])) {
+        $config['services-methods'] = [];
     }
-    $config['methods'][$clean_ip] = $clean_method;
+    // Only set method if it doesn't exist for this service (prevent overwriting existing service methods)
+    if (!isset($config['services-methods'][$clean_service])) {
+        $config['services-methods'][$clean_service] = $clean_method;
+    }
 
     $new_content = '';
     foreach ($config as $section => $values) {
@@ -363,17 +366,22 @@ function delete_service_from_config($service_name)
     }
 
     // Remove all IPs that use this service
-    if (isset($config['ips'])) {
-        foreach ($config['ips'] as $ip => $service) {
+    if (isset($config['ips-services'])) {
+        foreach ($config['ips-services'] as $ip => $service) {
             if ($service === $service_name) {
-                unset($config['ips'][$ip]);
+                unset($config['ips-services'][$ip]);
             }
         }
     }
 
-    // Remove the service itself
-    if (isset($config['services'][$service_name])) {
-        unset($config['services'][$service_name]);
+    // Remove the service itself (color)
+    if (isset($config['services-colors'][$service_name])) {
+        unset($config['services-colors'][$service_name]);
+    }
+
+    // Remove service method
+    if (isset($config['services-methods'][$service_name])) {
+        unset($config['services-methods'][$service_name]);
     }
 
     // Write the updated config back to file
@@ -605,6 +613,64 @@ function getResponseTimeStyling($average_response_time)
             'class' => 'text-red-600 dark:text-red-400'
         ];
     }
+}
+
+// Función para actualizar un servicio (renombrar, cambiar color y método)
+function update_service_config($old_name, $new_name, $new_color, $new_method)
+{
+    global $config_path;
+    $config = parse_ini_file($config_path, true);
+
+    if (!$config) {
+        return false;
+    }
+
+    $old_name = htmlspecialchars($old_name, ENT_QUOTES, 'UTF-8');
+    $new_name = htmlspecialchars($new_name, ENT_QUOTES, 'UTF-8');
+    $new_color = htmlspecialchars($new_color, ENT_QUOTES, 'UTF-8');
+    $new_method = htmlspecialchars($new_method, ENT_QUOTES, 'UTF-8');
+
+    // Si el nombre cambió
+    if ($old_name !== $new_name) {
+        // Actualizar referencias en ips-services
+        if (isset($config['ips-services'])) {
+            foreach ($config['ips-services'] as $ip => $service) {
+                if ($service === $old_name) {
+                    $config['ips-services'][$ip] = $new_name;
+                }
+            }
+        }
+
+        // Eliminar entradas antiguas
+        if (isset($config['services-colors'][$old_name])) {
+            unset($config['services-colors'][$old_name]);
+        }
+        if (isset($config['services-methods'][$old_name])) {
+            unset($config['services-methods'][$old_name]);
+        }
+    }
+
+    // Establecer nuevos valores
+    if (!isset($config['services-colors'])) {
+        $config['services-colors'] = [];
+    }
+    $config['services-colors'][$new_name] = $new_color;
+
+    if (!isset($config['services-methods'])) {
+        $config['services-methods'] = [];
+    }
+    $config['services-methods'][$new_name] = $new_method;
+
+    // Guardar configuración
+    $new_content = '';
+    foreach ($config as $section => $values) {
+        $new_content .= "[$section]\n";
+        foreach ($values as $key => $value) {
+            $new_content .= "$key = \"$value\"\n";
+        }
+    }
+
+    return file_put_contents($config_path, $new_content) !== false;
 }
 
 ?>

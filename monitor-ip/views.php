@@ -8,12 +8,7 @@ $ping_file = __DIR__ . '/conf/ping_results.json';
 // Require functions
 require_once $functions_path;
 
-// Cargar configuración desde config.ini
-$config = parse_ini_file($config_path, true);
-$ips_to_monitor = $config['ips'] ?? [];
-$services = $config['services'] ?? [];
-$ping_attempts = $config['settings']['ping_attempts'] ?? 5;
-$ping_interval = $config['settings']['ping_interval'] ?? 30;
+
 
 // Cargar resultados previos si existen
 if (file_exists($ping_file)) {
@@ -85,10 +80,17 @@ if (isset($_GET['imported'])) {
                 $label_styling = getLabelStyling($result['label']);
                 $percentage_styling = getPercentageStyling($result['percentage']);
                 $response_styling = getResponseTimeStyling($result['average_response_time']);
+
+                // Get monitoring method
+                $config_methods = parse_ini_file($config_path, true);
+                $services_methods_conf = $config_methods['services-methods'] ?? [];
+                $method = $services_methods_conf[$service] ?? ($services_methods_conf['DEFAULT'] ?? 'icmp');
+
                 $ip_entries[] = "'" . addslashes($ip) . "': " . json_encode([
                     'service' => $service,
                     'service_color' => $service_styling['color'],
                     'service_text_color' => $service_styling['text_color'],
+                    'method' => strtoupper($method),
                     'status' => $result['status'],
                     'status_badge' => $status_styling['badge'],
                     'status_icon' => $status_styling['icon'],
@@ -287,7 +289,19 @@ if (isset($_GET['imported'])) {
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($ips_to_monitor as $ip => $service): ?>
+                            <?php
+                            // Pagination logic
+                            $items_per_page = isset($_GET['per_page']) ? (int) $_GET['per_page'] : 10;
+                            $current_page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+                            $total_ips = count($ips_to_monitor);
+                            $total_pages = max(1, ceil($total_ips / $items_per_page));
+                            $current_page = min($current_page, $total_pages);
+                            $offset = ($current_page - 1) * $items_per_page;
+
+                            // Get IPs for current page
+                            $ips_on_page = array_slice($ips_to_monitor, $offset, $items_per_page, true);
+                            ?>
+                            <?php foreach ($ips_on_page as $ip => $service): ?>
                                 <?php
                                 $result = analyze_ip($ip);
                                 $status = $result['status'];
@@ -303,10 +317,10 @@ if (isset($_GET['imported'])) {
 
                                 // Get monitoring method
                                 $config = parse_ini_file($config_path, true);
-                                $methods = $config['methods'] ?? [];
-                                $method = $methods[$ip] ?? 'icmp';
+                                $services_methods = $config['services-methods'] ?? [];
+                                $method = $services_methods[$service] ?? ($services_methods['DEFAULT'] ?? 'icmp');
                                 $method_display = strtoupper($method);
-                                $method_icon = $method === 'icmp' ? 'network-wired' : ($method === 'curl' ? 'globe' : 'ethernet');
+                                $method_icon = $method === 'icmp' ? 'network-wired' : ($method === 'curl' ? 'globe' : 'server');
                                 ?>
                                 <tr class='hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-150 cursor-pointer'
                                     onclick="showIpDetailModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')">
@@ -406,6 +420,103 @@ if (isset($_GET['imported'])) {
                     </tbody>
                 </table>
             </div>
+
+            <?php if ($total_ips > 0): ?>
+                <!-- Pagination Controls -->
+                <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <!-- Items per page selector -->
+                        <div class="flex items-center gap-2">
+                            <label for="perPageSelect" class="text-sm text-gray-600 dark:text-gray-400">Show:</label>
+                            <select id="perPageSelect" onchange="changePerPage(this.value)"
+                                class="p-2 text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="10" <?php echo $items_per_page == 10 ? 'selected' : ''; ?>>10</option>
+                                <option value="25" <?php echo $items_per_page == 25 ? 'selected' : ''; ?>>25</option>
+                                <option value="50" <?php echo $items_per_page == 50 ? 'selected' : ''; ?>>50</option>
+                                <option value="100" <?php echo $items_per_page == 100 ? 'selected' : ''; ?>>100</option>
+                                <option value="<?php echo $total_ips; ?>" <?php echo $items_per_page >= $total_ips ? 'selected' : ''; ?>>All</option>
+                            </select>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">of <?php echo $total_ips; ?> hosts</span>
+                        </div>
+
+                        <!-- Page info -->
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            Showing <?php echo $offset + 1; ?> to <?php echo min($offset + $items_per_page, $total_ips); ?>
+                            of <?php echo $total_ips; ?> hosts
+                        </div>
+
+                        <!-- Page navigation -->
+                        <div class="flex items-center gap-2">
+                            <?php if ($current_page > 1): ?>
+                                <a href="?page=<?php echo $current_page - 1; ?>&per_page=<?php echo $items_per_page; ?>"
+                                    class="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                            <?php else: ?>
+                                <span
+                                    class="px-3 py-2 text-sm bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed dark:bg-gray-600 dark:text-gray-400">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </span>
+                            <?php endif; ?>
+
+                            <!-- Page numbers -->
+                            <div class="flex items-center gap-1">
+                                <?php
+                                $max_visible_pages = 5;
+                                $start_page = max(1, $current_page - floor($max_visible_pages / 2));
+                                $end_page = min($total_pages, $start_page + $max_visible_pages - 1);
+
+                                if ($end_page - $start_page + 1 < $max_visible_pages) {
+                                    $start_page = max(1, $end_page - $max_visible_pages + 1);
+                                }
+
+                                if ($start_page > 1): ?>
+                                    <a href="?page=1&per_page=<?php echo $items_per_page; ?>"
+                                        class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        1
+                                    </a>
+                                    <?php if ($start_page > 2): ?>
+                                        <span class="px-2 text-gray-500">...</span>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+
+                                <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
+                                    <?php if ($i == $current_page): ?>
+                                        <span class="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg"><?php echo $i; ?></span>
+                                    <?php else: ?>
+                                        <a href="?page=<?php echo $i; ?>&per_page=<?php echo $items_per_page; ?>"
+                                            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                            <?php echo $i; ?>
+                                        </a>
+                                    <?php endif; ?>
+                                <?php endfor; ?>
+
+                                <?php if ($end_page < $total_pages): ?>
+                                    <?php if ($end_page < $total_pages - 1): ?>
+                                        <span class="px-2 text-gray-500">...</span>
+                                    <?php endif; ?>
+                                    <a href="?page=<?php echo $total_pages; ?>&per_page=<?php echo $items_per_page; ?>"
+                                        class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        <?php echo $total_pages; ?>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+
+                            <?php if ($current_page < $total_pages): ?>
+                                <a href="?page=<?php echo $current_page + 1; ?>&per_page=<?php echo $items_per_page; ?>"
+                                    class="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            <?php else: ?>
+                                <span
+                                    class="px-3 py-2 text-sm bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed dark:bg-gray-600 dark:text-gray-400">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Modal para información detallada de IP -->

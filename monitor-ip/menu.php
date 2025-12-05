@@ -1,4 +1,16 @@
 <!-- Dashboard Menu -->
+<script>
+    window.servicesConfig = <?php
+    $services_config = [];
+    foreach ($services as $name => $color) {
+        $services_config[$name] = [
+            'color' => $color,
+            'method' => $services_methods[$name] ?? ($services_methods['DEFAULT'] ?? 'icmp')
+        ];
+    }
+    echo json_encode($services_config);
+    ?>;
+</script>
 <div class="mb-8">
     <!-- Monitoring Controls Panel -->
     <div
@@ -99,6 +111,9 @@
             <button onclick="showAddIpForm();"
                 class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
                 <i class="fas fa-network-wired"></i> Add IP
+            </button> <button type="button" onclick="showManageServiceForm();"
+                class="btn bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md">
+                <i class="fas fa-tasks"></i> Manage Services
             </button>
             <button onclick="showChangeTimerForm();"
                 class="btn bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md">
@@ -111,11 +126,7 @@
 
             <button onclick="showConfigModal();"
                 class="btn bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md">
-                <i class="fas fa-file-import"></i> Import/Export
-            </button>
-            <button type="button" onclick="showClearServiceForm();"
-                class="btn bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md">
-                <i class="fas fa-server"></i> Delete Service
+                <i class="fas fa-file-import"></i> Import/Export Config
             </button>
             <button type="button" onclick="showClearDataConfirmation();"
                 class="btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md">
@@ -235,6 +246,26 @@
                     </div>
                 </div>
 
+                <div class="mb-3">
+                    <label for="new_method"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monitoring
+                        Method</label>
+                    <div class="relative">
+                        <select id="new_method" name="new_method"
+                            class="w-full p-2.5 bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="icmp" selected>Ping (ICMP)</option>
+                            <option value="curl">HTTP/HTTPS (Curl)</option>
+                            <option value="dns">DNS Lookup</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Select the monitoring protocol for this
+                        service</p>
+                </div>
+
             </div>
 
             <div class="mb-5">
@@ -252,23 +283,7 @@
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Enter a valid IPv4 address or Domain name</p>
             </div>
 
-            <div class="mb-5">
-                <label for="new_method"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monitoring Method</label>
-                <div class="relative">
-                    <select id="new_method" name="new_method"
-                        class="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <option value="icmp" selected>Ping (ICMP)</option>
-                        <option value="curl">HTTP/HTTPS (Curl)</option>
-                        <option value="arp">ARP</option>
-                    </select>
-                    <div
-                        class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                </div>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Select the protocol to use for monitoring</p>
-            </div>
+
 
             <div class="flex justify-end gap-3 mt-6">
                 <button type="button" onclick="hideAddIpForm();"
@@ -644,67 +659,133 @@
     </div>
 </div>
 
-<!-- Modal: Clear Service Form -->
-<div id="clearServiceForm" class="modal">
+<!-- Modal: Manage Services -->
+<div id="manageServiceForm" class="modal">
     <div class="modal-content">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-trash-alt text-orange-500 mr-2"></i> Delete Service
+                <i class="fas fa-tasks text-blue-500 mr-2"></i> Manage Services
             </h2>
-            <button type="button" onclick="hideClearServiceForm();"
+            <button type="button" onclick="hideManageServiceForm();"
                 class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
 
-        <div class="bg-orange-50 dark:bg-orange-900/30 p-4 rounded-lg mb-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-server text-orange-500 text-2xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-medium text-orange-800 dark:text-orange-300">Confirm service
-                        deletion</h3>
-                    <p class="text-orange-700 dark:text-orange-200 mt-1">This will permanently delete the
-                        selected service and all its associated IP addresses.</p>
-                </div>
+        <!-- Services List -->
+        <div id="servicesList">
+            <div class="space-y-2 max-h-96 overflow-y-auto pr-2">
+                <?php foreach ($services as $service_name => $color): ?>
+                    <?php if ($service_name !== "DEFAULT"):
+                        $method = $services_methods[$service_name] ?? ($services_methods['DEFAULT'] ?? 'icmp');
+                        $method_label = strtoupper($method);
+                        $method_class = $method === 'icmp' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                            ($method === 'curl' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300');
+                        ?>
+                        <div
+                            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full shadow-sm"
+                                    style="background-color: <?php echo htmlspecialchars($color); ?>;"></div>
+                                <div>
+                                    <div class="font-medium text-gray-800 dark:text-gray-200">
+                                        <?php echo htmlspecialchars($service_name); ?>
+                                    </div>
+                                    <div class="text-xs mt-0.5">
+                                        <span
+                                            class="px-1.5 py-0.5 rounded text-[10px] font-medium <?php echo $method_class; ?>">
+                                            <?php echo $method_label; ?>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button"
+                                    onclick="editService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
+                                    class="p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                    title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button"
+                                    onclick="deleteService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
+                                    class="p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                    title="Delete">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+
+                <?php if (count($services) <= 1): // Only DEFAULT exists ?>
+                    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-info-circle text-2xl mb-2"></i>
+                        <p>No custom services created yet.</p>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
 
-        <div class="mb-5">
-            <label for="service_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select
-                Service</label>
-            <div class="relative">
-                <select id="service_name" name="service_name"
-                    class="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    required>
-                    <option value="">Select service to delete</option>
-                    <?php foreach ($services as $service_name => $color): ?>
-                        <?php if ($service_name !== "DEFAULT"): ?>
-                            <option value="<?php echo htmlspecialchars($service_name); ?>"
-                                style="background-color: <?php echo htmlspecialchars($color); ?>; color: #fff;">
-                                <?php echo htmlspecialchars($service_name); ?>
-                            </option>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </select>
-                <div
-                    class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                    <i class="fas fa-chevron-down"></i>
-                </div>
+        <!-- Edit Form (Hidden by default) -->
+        <div id="serviceDetailsForm" style="display:none;" class="pt-2">
+            <div class="flex items-center mb-4">
+                <button type="button" onclick="showServicesList()"
+                    class="mr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Edit Service</h3>
             </div>
+
+            <form method="POST" action="">
+                <input type="hidden" id="old_service_name" name="old_service_name">
+
+                <div class="mb-4">
+                    <label for="edit_service_name"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service Name</label>
+                    <input type="text" id="edit_service_name" name="service_name" required
+                        class="w-full p-2.5 bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="edit_service_color"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="edit_service_color" name="service_color" required
+                                class="h-10 w-full p-1 bg-white border border-gray-300 rounded-lg cursor-pointer dark:bg-gray-700 dark:border-gray-600">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="edit_service_method"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Method</label>
+                        <select id="edit_service_method" name="service_method"
+                            class="w-full p-2.5 bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="icmp">Ping (ICMP)</option>
+                            <option value="curl">HTTP/HTTPS (Curl)</option>
+                            <option value="dns">DNS Lookup</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="showServicesList();"
+                        class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                        Cancel
+                    </button>
+                    <button type="submit" name="update_service"
+                        class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                        <i class="fas fa-save mr-2"></i> Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
 
-        <div class="flex justify-end gap-3 mt-6">
-            <button type="button" onclick="hideClearServiceForm();"
-                class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                <i class="fas fa-times mr-2"></i> Cancel
-            </button>
-            <button type="button" onclick="confirmClearService();"
-                class="btn px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
-                <i class="fas fa-trash-alt mr-2"></i> Delete Service
-            </button>
-        </div>
+        <!-- Hidden form for deletion -->
+        <form id="deleteServiceForm" method="POST" action="" style="display:none;">
+            <input type="hidden" id="delete_service_name_input" name="service_name">
+            <input type="hidden" name="clear_service" value="1">
+        </form>
     </div>
 </div>
 
