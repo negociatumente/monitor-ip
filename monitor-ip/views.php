@@ -117,10 +117,17 @@ if (isset($_GET['imported'])) {
 
 </head>
 
+<?php
+$header_bg = isset($is_local_network) && $is_local_network
+    ? 'from-emerald-600 via-teal-600 to-cyan-700'
+    : 'from-blue-600 via-blue-700 to-indigo-800';
+$header_icon = isset($is_local_network) && $is_local_network ? 'fa-house-signal' : 'fa-globe';
+$network_label = isset($is_local_network) && $is_local_network ? 'Local Network' : 'External Network';
+?>
+
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <!-- Header/Navigation Bar -->
-    <header
-        class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 text-white shadow-2xl relative overflow-hidden">
+    <header class="bg-gradient-to-r <?php echo $header_bg; ?> text-white shadow-2xl relative overflow-hidden">
         <!-- Background pattern -->
         <div class="absolute inset-0 opacity-10">
             <div
@@ -135,11 +142,12 @@ if (isset($_GET['imported'])) {
                 <div class="flex items-center mb-4 lg:mb-0 group">
                     <div
                         class="bg-white bg-opacity-20 p-3 rounded-full mr-4 group-hover:bg-opacity-30 transition-all duration-300">
-                        <i class="fas fa-network-wired text-2xl text-white"></i>
+                        <i class="fas <?php echo $header_icon; ?> text-2xl text-white"></i>
                     </div>
                     <div>
                         <h1 class="text-2xl lg:text-3xl font-bold tracking-tight">
-                            IP Monitor
+                            IP Monitor <span
+                                class="text-lg font-normal opacity-90 border-l border-white/30 pl-3 ml-2"><?php echo $network_label; ?></span>
                             <?php if (isset($config['settings']['version'])): ?>
                                 <span class="text-sm font-normal bg-white bg-opacity-20 px-2 py-1 rounded-full ml-2">
                                     v<?php echo htmlspecialchars($config['settings']['version'], ENT_QUOTES, 'UTF-8'); ?>
@@ -193,11 +201,11 @@ if (isset($_GET['imported'])) {
         <div class="mb-2">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-1 inline-flex">
                 <button onclick="switchNetworkType('external')" id="externalTab"
-                    class="network-tab px-6 py-2 rounded-md text-sm font-medium transition-all active">
+                    class="external-network-tab px-6 py-2 rounded-md text-sm font-medium transition-all active">
                     <i class="fas fa-globe mr-2"></i> External Network
                 </button>
                 <button onclick="switchNetworkType('local')" id="localTab"
-                    class="network-tab px-6 py-2 rounded-md text-sm font-medium transition-all">
+                    class="local-network-tab px-6 py-2 rounded-md text-sm font-medium transition-all">
                     <i class="fas fa-home mr-2"></i> Local Network
                 </button>
             </div>

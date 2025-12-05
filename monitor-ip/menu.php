@@ -110,7 +110,7 @@
         <div class="flex flex-wrap gap-3 justify-center md:justify-start">
             <?php if (isset($network_type) && $network_type === 'local'): ?>
                 <button type="button" onclick="showScanNetworkModal();"
-                    class="btn bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md">
+                    class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
                     <i class="fas fa-radar"></i> Scan Local Network
                 </button>
                 <button type="button" onclick="showSpeedTestModal();"
@@ -123,7 +123,7 @@
                     <i class="fas fa-network-wired"></i> Add IP
                 </button>
                 <button type="button" onclick="showManageServiceForm();"
-                    class="btn bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md">
+                    class="btn bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md">
                     <i class="fas fa-tasks"></i> Manage Services
                 </button>
             <?php endif; ?>

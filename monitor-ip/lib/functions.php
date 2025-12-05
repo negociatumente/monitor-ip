@@ -558,7 +558,7 @@ function getLabelStyling($label)
 
 function getServiceStyling($service, $services)
 {
-    $service_color = $services[$service] ?? '#6B7280';
+    $service_color = $services[$service] ?? ($services['DEFAULT'] ?? '#6B7280');
     return [
         'color' => $service_color,
         'text_color' => getContrastColor($service_color)
