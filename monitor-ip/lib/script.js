@@ -211,9 +211,15 @@ function validateAddIpForm() {
     const serviceNameInput = document.getElementById('new_service_name_inline');
 
     // Validate IP address
+    // Validate IP address or Domain/Hostname
+    // Allows IPv4, FQDNs, and single-word hostnames (e.g. localhost, server1)
     const ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-    if (!ipPattern.test(ipInput.value.trim())) {
-        modalFunctions.showAlert('Por favor, ingresa una dirección IP válida (ej: 192.168.1.1)', 'error');
+    // Regex for hostname: alphanumeric, hyphens, dots. 
+    const hostnamePattern = /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$/;
+
+    const inputVal = ipInput.value.trim();
+    if (!ipPattern.test(inputVal) && !hostnamePattern.test(inputVal)) {
+        modalFunctions.showAlert('Por favor, ingresa una dirección IP válida (ej: 192.168.1.1) o un dominio/hostname (ej: google.com, localhost)', 'error');
         ipInput.focus();
         return false;
     }
@@ -730,3 +736,55 @@ function createPaginationHtml(ip, currentPage, totalPages) {
 
     return html;
 }
+
+/**
+ * Filters the monitoring table based on search input, service, and status.
+ */
+function filterTable() {
+    const searchInput = document.getElementById('searchFilter').value.toLowerCase();
+    const serviceFilter = document.getElementById('serviceFilter').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+    const tableBody = document.getElementById('monitoringTableBody');
+    const rows = tableBody.getElementsByTagName('tr');
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        // Skip if it's the "No IPs" row (usually has colspan)
+        if (row.cells.length < 2) continue;
+
+        const serviceCell = row.cells[0];
+        const ipCell = row.cells[1];
+        const methodCell = row.cells[2]; // New Method column
+        const statusCell = row.cells[3]; // Status moved to column 3
+
+        if (!serviceCell || !ipCell || !statusCell) continue;
+
+        const serviceText = serviceCell.textContent.trim().toLowerCase();
+        const ipText = ipCell.textContent.trim().toLowerCase();
+        const statusText = statusCell.textContent.trim().toLowerCase();
+
+        const matchesSearch = ipText.includes(searchInput);
+        const matchesService = serviceFilter === '' || serviceText.includes(serviceFilter);
+        const matchesStatus = statusFilter === '' || statusText.includes(statusFilter);
+
+        if (matchesSearch && matchesService && matchesStatus) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+}
+
+/**
+ * Resets all filters to default values.
+ */
+function resetFilters() {
+    document.getElementById('searchFilter').value = '';
+    document.getElementById('serviceFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    filterTable();
+}
+
+// Expose functions to global scope
+window.filterTable = filterTable;
+window.resetFilters = resetFilters;

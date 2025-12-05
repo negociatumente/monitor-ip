@@ -23,13 +23,14 @@ require_once __DIR__ . '/lib/functions.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
     $new_ip = trim($_POST['new_ip']);
     $new_service = trim($_POST['new_service']);
+    $new_method = trim($_POST['new_method'] ?? 'icmp'); // Default to ICMP
 
-    // Validar IP
-    $validated_ip = filter_var($new_ip, FILTER_VALIDATE_IP);
-    if (!$validated_ip) {
+    // Validar IP o Dominio
+    if (!isValidHost($new_ip)) {
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=invalid_ip");
         exit;
     }
+    $validated_ip = $new_ip;
 
     // Verificar si se está creando un nuevo servicio
     if ($new_service === 'create_new') {
@@ -46,11 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
             exit;
         }
 
-    // Cargar la configuración actual
-    $config = parse_ini_file($config_path, true);
+        // Cargar la configuración actual
+        $config = parse_ini_file($config_path, true);
 
         // Verificar si el servicio ya existe
-    if (isset($config['services'][$new_service_name])) {
+        if (isset($config['services'][$new_service_name])) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_exists");
             exit;
         }
@@ -69,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
             }
         }
 
-    if (!file_put_contents($config_path, $new_content)) {
+        if (!file_put_contents($config_path, $new_content)) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=config_write_error");
             exit;
         }
@@ -92,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
     }
 
     // Añadir la IP
-    if (add_ip_to_config($validated_ip, $new_service)) {
+    if (add_ip_to_config($validated_ip, $new_service, $new_method)) {
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=added");
         exit;
     } else {
@@ -103,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
 
 // Manejar la eliminación de IP
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_ip'])) {
-    $ip_to_delete = filter_var($_POST['delete_ip'], FILTER_VALIDATE_IP);
+    $ip_to_delete = $_POST['delete_ip']; // No strict IP validation here to allow deleting domains
     delete_ip_from_config($ip_to_delete);
     header("Location: " . $_SERVER['PHP_SELF'] . "?action=deleted");
     exit;
@@ -115,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_timer'])) {
 
     if ($new_timer_value > 0) {
         // Cargar la configuración actual
-    $config = parse_ini_file($config_path, true);
+        $config = parse_ini_file($config_path, true);
 
         // Actualizar el valor del temporizador
         $config['settings']['ping_interval'] = $new_timer_value;
@@ -128,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_timer'])) {
                 $new_content .= "$key = \"$value\"\n";
             }
         }
-    file_put_contents($config_path, $new_content);
+        file_put_contents($config_path, $new_content);
 
         // Redirigir para evitar reenvío del formulario
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=timer_updated");
@@ -144,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_ping_attempts'
 
     if ($new_ping_attempts > 0) {
         // Cargar la configuración actual
-    $config = parse_ini_file($config_path, true);
+        $config = parse_ini_file($config_path, true);
 
         // Actualizar el valor de ping_attempts
         $config['settings']['ping_attempts'] = $new_ping_attempts;
@@ -157,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_ping_attempts'
                 $new_content .= "$key = \"$value\"\n";
             }
         }
-    file_put_contents($config_path, $new_content);
+        file_put_contents($config_path, $new_content);
 
         // Redirigir para evitar reenvío del formulario
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=ping_attempts_updated");
@@ -211,8 +212,8 @@ require_once __DIR__ . '/views.php';
 
 // Manejar notificaciones
 $notifications = [
-    'added' => ['type' => 'success', 'icon' => 'fas fa-check-circle', 'message' => 'IP añadida exitosamente al monitoreo.'],
-    'deleted' => ['type' => 'success', 'icon' => 'fas fa-trash', 'message' => 'IP eliminada exitosamente del monitoreo.'],
+    'added' => ['type' => 'success', 'icon' => 'fas fa-check-circle', 'message' => 'IP/Dominio añadido exitosamente al monitoreo.'],
+    'deleted' => ['type' => 'success', 'icon' => 'fas fa-trash', 'message' => 'IP/Dominio eliminado exitosamente del monitoreo.'],
     'service_added' => ['type' => 'success', 'icon' => 'fas fa-plus-circle', 'message' => 'Servicio creado exitosamente.'],
     'service_cleared' => ['type' => 'success', 'icon' => 'fas fa-server', 'message' => 'Servicio eliminado exitosamente.'],
     'timer_updated' => ['type' => 'success', 'icon' => 'fas fa-clock', 'message' => 'Intervalo de ping actualizado exitosamente.'],
@@ -224,13 +225,13 @@ $notifications = [
 // Handle specific error messages
 if ($_GET['action'] === 'error' && isset($_GET['msg'])) {
     $error_messages = [
-        'invalid_ip' => 'Error: La dirección IP ingresada no es válida.',
+        'invalid_ip' => 'Error: La dirección IP o Dominio ingresado no es válido.',
         'empty_service_name' => 'Error: El nombre del servicio no puede estar vacío.',
         'empty_service_color' => 'Error: Debe seleccionar un color para el servicio.',
         'service_exists' => 'Error: Ya existe un servicio con ese nombre.',
         'config_write_error' => 'Error: No se pudo guardar la configuración.',
         'invalid_service' => 'Error: Debe seleccionar un servicio válido.',
-        'ip_exists' => 'Error: Esta IP ya está siendo monitoreada.',
+        'ip_exists' => 'Error: Esta IP o Dominio ya está siendo monitoreada.',
         'add_ip_failed' => 'Error: No se pudo agregar la IP al sistema.',
         'service_clear_failed' => 'Error: No se pudo eliminar el servicio.',
         'invalid_service_name' => 'Error: Nombre de servicio inválido.'

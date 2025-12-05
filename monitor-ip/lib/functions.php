@@ -8,7 +8,8 @@ function update_ping_results($ip)
     $isWindows = (PHP_OS_FAMILY === 'Windows');
 
     // Comando de ping según el sistema operativo
-    $pingCommand = $isWindows ? "ping -n 1 -w 1000 $ip" : "ping -c 1 -W 1 $ip";
+    $escaped_ip = escapeshellarg($ip);
+    $pingCommand = $isWindows ? "ping -n 1 -w 1000 $escaped_ip" : "ping -c 1 -W 1 $escaped_ip";
 
     // Ejecutar el ping
     $ping = shell_exec($pingCommand);
@@ -23,7 +24,7 @@ function update_ping_results($ip)
     if ($isWindows) {
         preg_match('/tiempo[=<]\s*(\d+ms)/', $ping, $matches);
     } else {
-        preg_match('/time[=<]\s*(\d+\.\d+ ms)/', $ping, $matches);
+        preg_match('/time[=<]\s*([\d\.]+\s*ms)/', $ping, $matches);
     }
     $response_time = $matches[1] ?? 'N/A';
     // Redondear a 2 decimales si es numérico
@@ -50,7 +51,11 @@ function update_ping_results($ip)
 // Nueva función para hacer pings en paralelo
 function update_ping_results_parallel($ips)
 {
-    global $ping_attempts, $ping_data;
+    global $ping_attempts, $ping_data, $config_path;
+
+    // Load methods configuration
+    $config = parse_ini_file($config_path, true);
+    $methods = $config['methods'] ?? [];
 
     $isWindows = (PHP_OS_FAMILY === 'Windows');
     $processes = [];
@@ -58,9 +63,36 @@ function update_ping_results_parallel($ips)
     $results = [];
 
     foreach ($ips as $ip) {
-        $pingCommand = $isWindows
-            ? "ping -n 1 -w 1000 $ip"
-            : "ping -c 1 -W 1 $ip";
+        $method = $methods[$ip] ?? 'icmp'; // Default to ICMP if not set
+        $escaped_ip = escapeshellarg($ip);
+
+        // Choose command based on monitoring method
+        switch ($method) {
+            case 'curl':
+                // For cURL, we check HTTP/HTTPS connectivity
+                $protocol = filter_var($ip, FILTER_VALIDATE_IP) ? 'http' : 'https';
+                $command = "curl -Is --connect-timeout 1 --max-time 2 $protocol://$escaped_ip 2>&1";
+                break;
+
+            case 'arp':
+                // For ARP, we use arping (Linux) or arp (Windows)
+                if ($isWindows) {
+                    $command = "arp -a $escaped_ip 2>&1";
+                } else {
+                    // arping -c 1 -w 1 requires root, so we use ping as fallback for now
+                    // In production, you might want to use: arping -c 1 -w 1 $escaped_ip
+                    $command = "timeout 1 arping -c 1 $escaped_ip 2>&1 || ping -c 1 -W 1 $escaped_ip";
+                }
+                break;
+
+            case 'icmp':
+            default:
+                // Standard ICMP ping
+                $command = $isWindows
+                    ? "ping -n 1 -w 1000 $escaped_ip"
+                    : "ping -c 1 -W 1 $escaped_ip";
+                break;
+        }
 
         $descriptorspec = [
             0 => ["pipe", "r"],
@@ -68,37 +100,83 @@ function update_ping_results_parallel($ips)
             2 => ["pipe", "w"]
         ];
 
-        $process = proc_open($pingCommand, $descriptorspec, $pipe);
+        $process = proc_open($command, $descriptorspec, $pipe);
         if (is_resource($process)) {
-            $processes[$ip] = $process;
+            $processes[$ip] = ['process' => $process, 'method' => $method];
             $pipes[$ip] = $pipe;
         }
     }
 
     // Leer resultados
-    foreach ($processes as $ip => $process) {
+    foreach ($processes as $ip => $proc_info) {
+        $process = $proc_info['process'];
+        $method = $proc_info['method'];
+
         $output = stream_get_contents($pipes[$ip][1]);
         fclose($pipes[$ip][1]);
         fclose($pipes[$ip][2]);
         proc_close($process);
 
-        // Evaluar si la IP respondió correctamente
-        $ping_status = (strpos($output, 'TTL=') !== false || strpos($output, 'bytes from') !== false) ? "UP" : "DOWN";
+        // Evaluar si la IP respondió correctamente según el método
+        $ping_status = "DOWN";
+        $response_time = "N/A";
 
-        // Captura la fecha y hora actual
-        $timestamp = date('Y-m-d H:i:s');
+        switch ($method) {
+            case 'curl':
+                // Check for HTTP response codes (200, 301, 302, etc.)
+                if (preg_match('/HTTP\/[\d\.]+ (\d+)/', $output, $code_matches)) {
+                    $http_code = intval($code_matches[1]);
+                    $ping_status = ($http_code >= 200 && $http_code < 500) ? "UP" : "DOWN";
+                }
+                // Try to extract time from curl verbose output
+                if (preg_match('/time_total:\s*([\d\.]+)/', $output, $time_matches)) {
+                    $response_time = round(floatval($time_matches[1]) * 1000, 2) . ' ms';
+                }
+                break;
 
-        // Captura el tiempo de respuesta
-        if ($isWindows) {
-            preg_match('/tiempo[=<]\s*(\d+ms)/', $output, $matches);
-        } else {
-            preg_match('/time[=<]\s*(\d+\.\d+ ms)/', $output, $matches);
+            case 'arp':
+                // Check for ARP response
+                if (
+                    strpos($output, 'bytes from') !== false ||
+                    preg_match('/\d+\.\d+\.\d+\.\d+/', $output) ||
+                    strpos($output, 'reply') !== false
+                ) {
+                    $ping_status = "UP";
+                }
+                // Try to extract time if ping was used as fallback
+                if ($isWindows) {
+                    preg_match('/tiempo[=<]\s*(\d+ms)/', $output, $matches);
+                } else {
+                    preg_match('/time[=<]\s*([\d\.]+\s*ms)/', $output, $matches);
+                }
+                if (isset($matches[1])) {
+                    $response_time = $matches[1];
+                }
+                break;
+
+            case 'icmp':
+            default:
+                // Standard ICMP ping evaluation
+                $ping_status = (strpos($output, 'TTL=') !== false || strpos($output, 'bytes from') !== false) ? "UP" : "DOWN";
+
+                // Captura el tiempo de respuesta
+                if ($isWindows) {
+                    preg_match('/tiempo[=<]\s*(\d+ms)/', $output, $matches);
+                } else {
+                    preg_match('/time[=<]\s*([\d\.]+\s*ms)/', $output, $matches);
+                }
+                $response_time = $matches[1] ?? 'N/A';
+                break;
         }
-        $response_time = $matches[1] ?? 'N/A';
+
+        // Normalize response time
         if ($response_time !== 'N/A' && $response_time !== '-') {
             $num = floatval(str_replace(['ms', ' '], '', $response_time));
             $response_time = round($num, 2) . ' ms';
         }
+
+        // Captura la fecha y hora actual
+        $timestamp = date('Y-m-d H:i:s');
 
         if (!isset($ping_data[$ip])) {
             $ping_data[$ip] = [];
@@ -174,7 +252,7 @@ function delete_ip_from_config($ip)
                 $new_content .= "$key = \"$value\"\n";
             }
         }
-    file_put_contents($config_path, $new_content);
+        file_put_contents($config_path, $new_content);
     }
 
     // Eliminar del archivo ping_results.json
@@ -185,11 +263,26 @@ function delete_ip_from_config($ip)
     }
 }
 
-// Función para agregar una IP al archivo config.ini
-function add_ip_to_config($ip, $service)
+// Helper function to validate IP or Domain/Hostname
+function isValidHost($host)
 {
-    // Validar IP
-    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+    // Check if it's a valid IP
+    if (filter_var($host, FILTER_VALIDATE_IP)) {
+        return true;
+    }
+    // Check if it's a valid Hostname (Domain or local hostname)
+    // Allows alphanumeric, hyphens, and dots.
+    // Must start and end with alphanumeric.
+    // Length 1-253 chars.
+    return preg_match('/^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$/', $host)
+        && strlen($host) <= 253;
+}
+
+// Función para agregar una IP al archivo config.ini
+function add_ip_to_config($ip, $service, $method = 'icmp')
+{
+    // Validar IP o Dominio
+    if (!isValidHost($ip)) {
         return false;
     }
 
@@ -198,14 +291,29 @@ function add_ip_to_config($ip, $service)
         return false;
     }
 
+    // Validar método
+    $valid_methods = ['icmp', 'curl', 'arp'];
+    if (!in_array($method, $valid_methods)) {
+        $method = 'icmp'; // Default fallback
+    }
+
     global $config_path;
     $config = parse_ini_file($config_path, true);
 
     // Sanitizar los datos
-    $clean_ip = filter_var($ip, FILTER_VALIDATE_IP);
+    // For domains, we just sanitize special chars, for IPs filter_var is good but we need to handle both.
+    // htmlspecialchars is generally safe for config values if we treat them as strings.
+    $clean_ip = htmlspecialchars($ip, ENT_QUOTES, 'UTF-8');
     $clean_service = htmlspecialchars($service, ENT_QUOTES, 'UTF-8');
+    $clean_method = htmlspecialchars($method, ENT_QUOTES, 'UTF-8');
 
     $config['ips'][$clean_ip] = $clean_service;
+
+    // Store monitoring method in a new section
+    if (!isset($config['methods'])) {
+        $config['methods'] = [];
+    }
+    $config['methods'][$clean_ip] = $clean_method;
 
     $new_content = '';
     foreach ($config as $section => $values) {

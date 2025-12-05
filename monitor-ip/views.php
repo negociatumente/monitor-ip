@@ -182,18 +182,59 @@ if (isset($_GET['imported'])) {
         <div class='bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-8'>
             <div class='p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center'>
                 <h2 class='text-lg font-semibold text-gray-800 dark:text-gray-200'>
-                    <i class='fas fa-table mr-2'></i> IP Monitoring Table
+                    <i class='fas fa-table mr-2'></i> IP / Domain Monitoring Table
                 </h2>
                 <div class='text-sm text-gray-500 dark:text-gray-400'>
-                    <?php echo count($ips_to_monitor); ?> IPs monitored • Last updated: <?php echo date('H:i:s'); ?>
+                    <?php echo count($ips_to_monitor); ?> Hosts monitored • Last updated: <?php echo date('H:i:s'); ?>
                 </div>
+            </div>
+
+            <!-- Filters -->
+            <div
+                class="p-4 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-4 items-center">
+                <div class="flex-1 min-w-[200px]">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                        <input type="text" id="searchFilter" onkeyup="filterTable()"
+                            placeholder="Search IP or Domain..."
+                            class="w-full pl-10 p-2 text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                </div>
+                <div class="w-full sm:w-auto">
+                    <select id="serviceFilter" onchange="filterTable()"
+                        class="w-full p-2 text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="">All Services</option>
+                        <?php foreach ($services as $service_name => $color): ?>
+                            <?php if ($service_name !== "DEFAULT"): ?>
+                                <option value="<?php echo htmlspecialchars($service_name); ?>">
+                                    <?php echo htmlspecialchars($service_name); ?>
+                                </option>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="w-full sm:w-auto">
+                    <select id="statusFilter" onchange="filterTable()"
+                        class="w-full p-2 text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="">All Statuses</option>
+                        <option value="UP">UP</option>
+                        <option value="DOWN">DOWN</option>
+                    </select>
+                </div>
+                <button onclick="resetFilters()"
+                    class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                    Reset Filters
+                </button>
             </div>
             <div class='overflow-x-auto'>
                 <table class='min-w-max w-full'>
                     <thead>
                         <tr class='bg-gray-50 dark:bg-gray-700 text-left'>
                             <th class='p-3 whitespace-nowrap'>Service</th>
-                            <th class='p-3 whitespace-nowrap'>IP Address</th>
+                            <th class='p-3 whitespace-nowrap'>IP / Domain</th>
+                            <th class='p-3 whitespace-nowrap'>Method</th>
                             <th class='p-3 whitespace-nowrap'>Status</th>
                             <th class='p-3 whitespace-nowrap'>Reliability</th>
                             <th class='p-3 whitespace-nowrap'>Uptime</th>
@@ -209,7 +250,7 @@ if (isset($_GET['imported'])) {
                                 if ($i === 0) {
                                     $header_labels[] = 'now';
                                 } else {
-                                    if($num_pings >= $max_pings_to_show){
+                                    if ($num_pings >= $max_pings_to_show) {
                                         $ping_index = $i - 1;
                                     } else {
                                         $ping_index = $i;
@@ -233,15 +274,15 @@ if (isset($_GET['imported'])) {
                             <th class='p-3 text-center whitespace-nowrap'>Actions</th>
                         </tr>
                     </thead>
-                    <tbody class='divide-y divide-gray-200 dark:divide-gray-700'>
+                    <tbody id="monitoringTableBody" class='divide-y divide-gray-200 dark:divide-gray-700'>
                         <?php if (empty($ips_to_monitor)): ?>
                             <tr>
-                                <td colspan='<?php echo 7 + $max_pings_to_show; ?>'
+                                <td colspan='<?php echo 8 + $max_pings_to_show; ?>'
                                     class='p-4 text-center text-gray-500 dark:text-gray-400'>
                                     <div class='py-8'>
                                         <i class='fas fa-info-circle text-blue-500 text-4xl mb-3'></i>
-                                        <p class='text-lg'>No IPs being monitored yet</p>
-                                        <p class='text-sm'>Click "Add IP" button above to start monitoring</p>
+                                        <p class='text-lg'>No IPs or Domains being monitored yet</p>
+                                        <p class='text-sm'>Click "Add IP / Domain" button above to start monitoring</p>
                                     </div>
                                 </td>
                             </tr>
@@ -259,6 +300,13 @@ if (isset($_GET['imported'])) {
                                 $service_styling = getServiceStyling($service, $services);
                                 $percentage_styling = getPercentageStyling($percentage);
                                 $response_styling = getResponseTimeStyling($average_response_time);
+
+                                // Get monitoring method
+                                $config = parse_ini_file($config_path, true);
+                                $methods = $config['methods'] ?? [];
+                                $method = $methods[$ip] ?? 'icmp';
+                                $method_display = strtoupper($method);
+                                $method_icon = $method === 'icmp' ? 'network-wired' : ($method === 'curl' ? 'globe' : 'ethernet');
                                 ?>
                                 <tr class='hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-150 cursor-pointer'
                                     onclick="showIpDetailModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')">
@@ -269,6 +317,13 @@ if (isset($_GET['imported'])) {
                                         </span>
                                     </td>
                                     <td class='p-3 font-mono text-sm'><?php echo $ip; ?></td>
+                                    <td class='p-3'>
+                                        <span
+                                            class='inline-block px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300'>
+                                            <i class='fas fa-<?php echo $method_icon; ?> mr-1'></i>
+                                            <?php echo $method_display; ?>
+                                        </span>
+                                    </td>
                                     <td class='p-3'>
                                         <span class='status-badge <?php echo $status_styling['badge']; ?>'>
                                             <i class='fas fa-<?php echo $status_styling['icon']; ?> mr-1'></i>
@@ -364,7 +419,7 @@ if (isset($_GET['imported'])) {
                 </button>
                 <div class="flex items-center mb-6">
                     <i class="fas fa-network-wired text-blue-500 text-2xl mr-3"></i>
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200" id="modalIpTitle">IP Detail</h3>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200" id="modalIpTitle">Host Detail</h3>
                 </div>
                 <div id="modalIpContent"></div>
 

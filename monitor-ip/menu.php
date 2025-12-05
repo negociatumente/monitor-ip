@@ -6,7 +6,7 @@
         <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
             <!-- Monitoring Status -->
             <div class="flex items-center space-x-6">
-                 <!-- System Uptime -->
+                <!-- System Uptime -->
                 <div class="flex items-center">
                     <div class="bg-blue-500 bg-opacity-20 p-2 rounded-lg mr-3">
                         <i class="fas fa-signal text-blue-600 dark:text-blue-400"></i>
@@ -14,14 +14,15 @@
                     <div>
                         <p class="text-sm text-gray-600 dark:text-gray-400">System Uptime</p>
                         <p class="font-semibold text-gray-800 dark:text-gray-200">
-                            <?php 
+                            <?php
                             $total_ips = count($ips_to_monitor);
                             $online_count = 0;
                             foreach ($ips_to_monitor as $ip => $service) {
                                 $result = analyze_ip($ip);
-                                if ($result['status'] === 'UP') $online_count++;
+                                if ($result['status'] === 'UP')
+                                    $online_count++;
                             }
-                            echo $total_ips > 0 ? round(($online_count/$total_ips)*100, 1) . '%' : 'N/A';
+                            echo $total_ips > 0 ? round(($online_count / $total_ips) * 100, 1) . '%' : 'N/A';
                             ?>
                         </p>
                     </div>
@@ -169,7 +170,7 @@
     <div class="modal-content">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-plus-circle text-blue-500 mr-2"></i> Add New IP
+                <i class="fas fa-plus-circle text-blue-500 mr-2"></i> Add New IP / Domain
             </h2>
             <button type="button" onclick="hideAddIpForm();"
                 class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
@@ -237,19 +238,36 @@
             </div>
 
             <div class="mb-5">
-                <label for="new_ip" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IP
-                    Address</label>
+                <label for="new_ip" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IP Address /
+                    Domain</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <i class="fas fa-network-wired text-gray-400"></i>
                     </div>
-                    <input type="text" id="new_ip" name="new_ip" placeholder="192.168.1.1"
-                        pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-                        title="Ingresa una dirección IP válida (ej: 192.168.1.1)"
+                    <input type="text" id="new_ip" name="new_ip" placeholder="192.168.1.1 or example.com"
+                        title="Ingresa una dirección IP válida o un dominio (ej: 192.168.1.1 o google.com)"
                         class="w-full pl-10 p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         required>
                 </div>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Enter a valid IPv4 address</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Enter a valid IPv4 address or Domain name</p>
+            </div>
+
+            <div class="mb-5">
+                <label for="new_method"
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monitoring Method</label>
+                <div class="relative">
+                    <select id="new_method" name="new_method"
+                        class="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="icmp" selected>Ping (ICMP)</option>
+                        <option value="curl">HTTP/HTTPS (Curl)</option>
+                        <option value="arp">ARP</option>
+                    </select>
+                    <div
+                        class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Select the protocol to use for monitoring</p>
             </div>
 
             <div class="flex justify-end gap-3 mt-6">
@@ -270,7 +288,7 @@
     <div class="modal-content">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i> Delete IP
+                <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i> Delete IP / Domain
             </h2>
             <button type="button" onclick="hideDeleteIpForm();"
                 class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
@@ -288,7 +306,7 @@
                     </div>
                     <div class="ml-4">
                         <h3 class="text-lg font-medium text-red-800 dark:text-red-300">Confirm deletion</h3>
-                        <p class="text-red-700 dark:text-red-200 mt-1">Are you sure you want to delete this IP?
+                        <p class="text-red-700 dark:text-red-200 mt-1">Are you sure you want to delete this IP/Domain?
                             This action cannot be undone.</p>
                     </div>
                 </div>
