@@ -1,15 +1,27 @@
 <?php
-// Cargar configuración desde config.ini
-$config_path = __DIR__ . '/conf/config.ini';
+// Determine which network type to load
+$network_type = isset($_GET['network']) ? $_GET['network'] : 'external';
+$is_local_network = ($network_type === 'local');
+$network_param = isset($_GET['network']) ? '&network=' . urlencode($_GET['network']) : '';
+
+// Load configuration from appropriate config file
+$config_path = __DIR__ . '/conf/' . ($is_local_network ? 'config_local.ini' : 'config.ini');
+
+// Create config_local.ini if it doesn't exist
+if ($is_local_network && !file_exists($config_path)) {
+    $default_local_config = "[settings]\nversion = \"0.7.0\"\nping_attempts = \"5\"\nping_interval = \"300\"\n[services-colors]\nDEFAULT = \"#6B7280\"\n\"Local Network\" = \"#10B981\"\n[services-methods]\nDEFAULT = \"icmp\"\n\"Local Network\" = \"icmp\"\n[ips-services]\n";
+    file_put_contents($config_path, $default_local_config);
+}
+
 $config = parse_ini_file($config_path, true);
-$ips_to_monitor = $config['ips-services'];
+$ips_to_monitor = $config['ips-services'] ?? [];
 $services = $config['services-colors'];
 $services_methods = $config['services-methods'] ?? [];
 $ping_attempts = $config['settings']['ping_attempts'];
 $ping_interval = $config['settings']['ping_interval'];
 
 // Cargar archivos
-$ping_file = __DIR__ . '/conf/ping_results.json';
+$ping_file = __DIR__ . '/conf/' . ($is_local_network ? 'ping_results_local.json' : 'ping_results.json');
 require_once __DIR__ . '/lib/functions.php';
 
 // Cargar resultados previos si existen
@@ -17,6 +29,110 @@ if (file_exists($ping_file)) {
     $ping_data = json_decode(file_get_contents($ping_file), true);
 } else {
     $ping_data = [];
+}
+
+
+// Handle AJAX requests for network scanning
+if (isset($_GET['action'])) {
+    if ($_GET['action'] === 'scan_network' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+
+        try {
+            $devices = scan_local_network();
+            echo json_encode([
+                'success' => true,
+                'devices' => $devices,
+                'count' => count($devices)
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
+    if ($_GET['action'] === 'save_scanned_devices' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+
+        try {
+            $json = file_get_contents('php://input');
+            $data = json_decode($json, true);
+
+            if (!isset($data['devices']) || !is_array($data['devices'])) {
+                throw new Exception('Invalid devices data');
+            }
+
+            $result = save_local_network_scan($data['devices']);
+
+            echo json_encode([
+                'success' => $result,
+                'message' => $result ? 'Devices saved successfully' : 'Failed to save devices'
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
+    // Speed Test Endpoints
+    if ($_GET['action'] === 'speed_test_ping' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+
+        try {
+            $latency = test_network_latency();
+            echo json_encode([
+                'success' => true,
+                'latency' => $latency
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
+    if ($_GET['action'] === 'speed_test_download' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+
+        try {
+            $speed = test_download_speed();
+            echo json_encode([
+                'success' => true,
+                'speed' => $speed
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
+    if ($_GET['action'] === 'speed_test_upload' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+
+        try {
+            $speed = test_upload_speed();
+            echo json_encode([
+                'success' => true,
+                'speed' => $speed
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+        exit;
+    }
 }
 
 
@@ -28,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
 
     // Validar IP o Dominio
     if (!isValidHost($new_ip)) {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=invalid_ip");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=invalid_ip" . $network_param);
         exit;
     }
     $validated_ip = $new_ip;
@@ -39,12 +155,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
         $new_service_color = trim($_POST['new_service_color_inline'] ?? '');
 
         if (empty($new_service_name)) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=empty_service_name");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=empty_service_name" . $network_param);
             exit;
         }
 
         if (empty($new_service_color)) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=empty_service_color");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=empty_service_color" . $network_param);
             exit;
         }
 
@@ -53,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
 
         // Verificar si el servicio ya existe
         if (isset($config['services-colors'][$new_service_name])) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_exists");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_exists" . $network_param);
             exit;
         }
 
@@ -72,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
         }
 
         if (!file_put_contents($config_path, $new_content)) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=config_write_error");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=config_write_error" . $network_param);
             exit;
         }
 
@@ -82,23 +198,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
 
     // Validar que tenemos un servicio válido
     if (empty($new_service) || $new_service === 'create_new') {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=invalid_service");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=invalid_service" . $network_param);
         exit;
     }
 
     // Verificar si la IP ya existe
     $config = parse_ini_file($config_path, true);
     if (isset($config['ips-services'][$validated_ip])) {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=ip_exists");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=ip_exists" . $network_param);
         exit;
     }
 
     // Añadir la IP
     if (add_ip_to_config($validated_ip, $new_service, $new_method)) {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=added");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=added" . $network_param);
         exit;
     } else {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=add_ip_failed");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=add_ip_failed" . $network_param);
         exit;
     }
 }
@@ -107,7 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_ip'])) {
     $ip_to_delete = $_POST['delete_ip']; // No strict IP validation here to allow deleting domains
     delete_ip_from_config($ip_to_delete);
-    header("Location: " . $_SERVER['PHP_SELF'] . "?action=deleted");
+    header("Location: " . $_SERVER['PHP_SELF'] . "?action=deleted" . $network_param);
     exit;
 }
 
@@ -133,7 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_timer'])) {
         file_put_contents($config_path, $new_content);
 
         // Redirigir para evitar reenvío del formulario
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=timer_updated");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=timer_updated" . $network_param);
         exit;
     } else {
         echo "<script>alert('Please enter a valid number greater than 0.');</script>";
@@ -162,7 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_ping_attempts'
         file_put_contents($config_path, $new_content);
 
         // Redirigir para evitar reenvío del formulario
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=ping_attempts_updated");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=ping_attempts_updated" . $network_param);
         exit;
     } else {
         echo "<script>alert('Please enter a valid number greater than 0.');</script>";
@@ -176,7 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_data'])) {
     }
 
     // Redirigir para evitar reenvío del formulario
-    header("Location: " . $_SERVER['PHP_SELF'] . "?action=data_cleared");
+    header("Location: " . $_SERVER['PHP_SELF'] . "?action=data_cleared" . $network_param);
     exit;
 }
 
@@ -188,22 +304,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_service'])) {
     $new_service_method = trim($_POST['service_method']);
 
     if (empty($old_service_name) || empty($new_service_name)) {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=empty_service_name");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=empty_service_name" . $network_param);
         exit;
     }
 
     // Si el nombre cambió, verificar que el nuevo no exista ya (a menos que sea el mismo)
     $config = parse_ini_file($config_path, true);
     if ($old_service_name !== $new_service_name && isset($config['services-colors'][$new_service_name])) {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_exists");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_exists" . $network_param);
         exit;
     }
 
     if (update_service_config($old_service_name, $new_service_name, $new_service_color, $new_service_method)) {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_updated");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_updated" . $network_param);
         exit;
     } else {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_update_failed");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_update_failed" . $network_param);
         exit;
     }
 }
@@ -214,14 +330,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {
 
     if (!empty($service_to_delete)) {
         if (delete_service_from_config($service_to_delete)) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_cleared");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_cleared" . $network_param);
             exit;
         } else {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_clear_failed");
+            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_clear_failed" . $network_param);
             exit;
         }
     } else {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=invalid_service_name");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=invalid_service_name" . $network_param);
         exit;
     }
 }

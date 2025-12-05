@@ -112,7 +112,7 @@ function updateCountdown() {
  * Reloads the current page.
  */
 function reloadPage() {
-    window.location.href = window.location.pathname;
+    window.location.reload();
 }
 
 /**

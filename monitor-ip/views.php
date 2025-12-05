@@ -1,14 +1,15 @@
 <?php
 
-// Centralizar rutas
-$functions_path = __DIR__ . '/lib/functions.php';
-$config_path = __DIR__ . '/conf/config.ini';
-$ping_file = __DIR__ . '/conf/ping_results.json';
+// Centralizar rutas (solo si no están definidas previamente por index.php)
+if (!isset($functions_path))
+    $functions_path = __DIR__ . '/lib/functions.php';
+if (!isset($config_path))
+    $config_path = __DIR__ . '/conf/config.ini';
+if (!isset($ping_file))
+    $ping_file = __DIR__ . '/conf/ping_results.json';
 
 // Require functions
 require_once $functions_path;
-
-
 
 // Cargar resultados previos si existen
 if (file_exists($ping_file)) {
@@ -26,8 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_config'])) {
         file_put_contents($ping_file, json_encode([]));
     }
     $import_export_message = $success ? 'Configuración importada correctamente. (Datos de ping limpiados)' : 'Error al importar configuración.';
+
     // Redirigir para evitar reenvío del archivo
-    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '?imported=1');
+    $network_param = isset($_GET['network']) ? '&network=' . urlencode($_GET['network']) : '';
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '?imported=1' . $network_param);
     exit;
 }
 if (isset($_GET['export_config'])) {
@@ -110,6 +113,7 @@ if (isset($_GET['imported'])) {
     </script>
 
     <script src="lib/script.js"></script>
+    <script src="lib/network_scan.js"></script>
 
 </head>
 
@@ -124,9 +128,9 @@ if (isset($_GET['imported'])) {
             </div>
         </div>
 
-        <div class="container mx-auto py-6 px-6 relative z-10">
+        <div class="container mx-auto py-4 px-6 relative z-10">
             <!-- Top row with logo and actions -->
-            <div class="flex flex-col lg:flex-row justify-between items-center mb-4 lg:mb-0">
+            <div class="flex flex-col lg:flex-row justify-between items-center mb- lg:mb-0">
                 <!-- Logo and title -->
                 <div class="flex items-center mb-4 lg:mb-0 group">
                     <div
@@ -149,6 +153,11 @@ if (isset($_GET['imported'])) {
                 <!-- Navigation links -->
                 <div
                     class="flex flex-wrap justify-center lg:justify-end gap-2 pt-4 border-t border-white border-opacity-20">
+                    <a href="https://nordvpn.com/es/pricing/" target="_blank"
+                        class="bg-green-400 hover:bg-green-500 text-blue-900 font-bold px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm shadow-lg transform hover:scale-105">
+                        <i class="fas fa-shield-alt"></i>
+                        <span class="hidden sm:inline">Get Secure VPN</span>
+                    </a>
                     <a href="https://negociatumente.com" target="_blank"
                         class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
                         <i class="fas fa-user"></i>
@@ -170,7 +179,7 @@ if (isset($_GET['imported'])) {
 
     </header>
 
-    <div class="container mx-auto px-4 py-6">
+    <div class="container mx-auto px-4 py-4">
         <!-- Notifications -->
         <?php if (isset($_GET['action'])): ?>
             <?php echo renderNotification($_GET['action'], $_GET['msg'] ?? null); ?>
@@ -180,11 +189,25 @@ if (isset($_GET['imported'])) {
         <?php require_once __DIR__ . '/menu.php'; ?>
 
 
+        <!-- Network Type Tabs -->
+        <div class="mb-2">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-1 inline-flex">
+                <button onclick="switchNetworkType('external')" id="externalTab"
+                    class="network-tab px-6 py-2 rounded-md text-sm font-medium transition-all active">
+                    <i class="fas fa-globe mr-2"></i> External Network
+                </button>
+                <button onclick="switchNetworkType('local')" id="localTab"
+                    class="network-tab px-6 py-2 rounded-md text-sm font-medium transition-all">
+                    <i class="fas fa-home mr-2"></i> Local Network
+                </button>
+            </div>
+        </div>
+
         <!-- IP Monitoring Table -->
-        <div class='bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-8'>
-            <div class='p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center'>
+        <div class='bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden'>
+            <div class='p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center'>
                 <h2 class='text-lg font-semibold text-gray-800 dark:text-gray-200'>
-                    <i class='fas fa-table mr-2'></i> IP / Domain Monitoring Table
+                    <i class='fas fa-table mr-2'></i> IP Monitoring Table
                 </h2>
                 <div class='text-sm text-gray-500 dark:text-gray-400'>
                     <?php echo count($ips_to_monitor); ?> Hosts monitored • Last updated: <?php echo date('H:i:s'); ?>

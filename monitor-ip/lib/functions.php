@@ -673,4 +673,348 @@ function update_service_config($old_name, $new_name, $new_color, $new_method)
     return file_put_contents($config_path, $new_content) !== false;
 }
 
+/**
+ * Scan local network for active devices
+ * Returns array of discovered IPs with their MAC addresses and hostnames
+ */
+function scan_local_network()
+{
+    $isWindows = (PHP_OS_FAMILY === 'Windows');
+    $discovered_devices = [];
+
+    // Get local network range
+    if ($isWindows) {
+        // Windows: use ipconfig to get network info
+        $ipconfig = shell_exec('ipconfig');
+        preg_match('/IPv4.*?:\s*(\d+\.\d+\.\d+\.\d+)/', $ipconfig, $matches);
+        $local_ip = $matches[1] ?? '192.168.1.1';
+
+        // Extract network prefix (e.g., 192.168.1)
+        $parts = explode('.', $local_ip);
+        $network_prefix = implode('.', array_slice($parts, 0, 3));
+
+        // Use arp -a to scan
+        $arp_output = shell_exec('arp -a');
+        preg_match_all('/(\d+\.\d+\.\d+\.\d+)\s+([0-9a-f\-]+)/i', $arp_output, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $ip = $match[1];
+            $mac = $match[2];
+
+            // Filter only local network IPs
+            if (strpos($ip, $network_prefix) === 0 && $ip !== $local_ip) {
+                // Try to get hostname
+                $hostname = gethostbyaddr($ip);
+                if ($hostname === $ip) {
+                    $hostname = 'Unknown';
+                }
+
+                $discovered_devices[] = [
+                    'ip' => $ip,
+                    'mac' => strtoupper(str_replace('-', ':', $mac)),
+                    'hostname' => $hostname
+                ];
+            }
+        }
+    } else {
+        // Linux: try to use nmap or arp-scan
+        $local_ip = shell_exec("hostname -I | awk '{print $1}'");
+        $local_ip = trim($local_ip);
+
+        if (empty($local_ip)) {
+            $local_ip = '192.168.1.1';
+        }
+
+        // Extract network prefix
+        $parts = explode('.', $local_ip);
+        $network_prefix = implode('.', array_slice($parts, 0, 3));
+        $network_range = $network_prefix . '.0/24';
+
+
+        // Fallback: use arp command
+        $nmap_output = shell_exec("nmap -sn $network_range");
+        preg_match_all('/Nmap scan report for (.*?)\n/', $nmap_output, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $ip = $match[1];
+
+            if (strpos($ip, $network_prefix) === 0 && $ip !== $local_ip) {
+                // Try to get hostname
+                $hostname = gethostbyaddr($ip);
+                if ($hostname === $ip) {
+                    $hostname = 'Unknown';
+                }
+
+                $discovered_devices[] = [
+                    'ip' => $ip,
+                    'hostname' => $hostname
+                ];
+            }
+        }
+    }
+
+    // Add local device itself
+    $hostname = gethostname();
+    $discovered_devices[] = [
+        'ip' => $local_ip,
+        'mac' => 'SELF',
+        'hostname' => $hostname ?: 'Local Device'
+    ];
+
+    // Add Gateway
+    $gateway_ip = '';
+    if ($isWindows) {
+        $route_output = shell_exec('route print 0.0.0.0');
+        if (preg_match('/0\.0\.0\.0\s+0\.0\.0\.0\s+(\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
+            $gateway_ip = $matches[1];
+        }
+    } else {
+        $route_output = shell_exec('ip route | grep default');
+        if (preg_match('/default via (\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
+            $gateway_ip = $matches[1];
+        }
+    }
+
+    if (!empty($gateway_ip)) {
+        // Check if gateway is already in the list
+        $gateway_found = false;
+        foreach ($discovered_devices as &$device) {
+            if ($device['ip'] === $gateway_ip) {
+                $device['hostname'] = 'Gateway'; // Update name if found
+                $device['mac'] = ($device['mac'] === 'SELF') ? 'SELF/GATEWAY' : $device['mac'];
+                $gateway_found = true;
+                break;
+            }
+        }
+        unset($device); // Break reference
+
+        // If not found, add it
+        if (!$gateway_found) {
+            $discovered_devices[] = [
+                'ip' => $gateway_ip,
+                'mac' => 'GATEWAY',
+                'hostname' => 'Gateway'
+            ];
+        }
+    }
+
+    return $discovered_devices;
+}
+
+/**
+ * Save discovered local network devices to config_local.ini
+ */
+function save_local_network_scan($devices)
+{
+    $config_path = __DIR__ . '/../conf/config_local.ini';
+
+    // Load existing config or create new
+    if (file_exists($config_path)) {
+        $config = parse_ini_file($config_path, true);
+    } else {
+        $config = [
+            'settings' => [
+                'version' => '0.7.0',
+                'ping_attempts' => '5',
+                'ping_interval' => '300'
+            ],
+            'services-colors' => [
+                'DEFAULT' => '#6B7280',
+                'Local Network' => '#10B981'
+            ],
+            'services-methods' => [
+                'DEFAULT' => 'icmp',
+                'Local Network' => 'icmp'
+            ],
+            'ips-services' => []
+        ];
+    }
+
+    // Add discovered devices
+    foreach ($devices as $device) {
+        $ip = $device['ip'];
+        // Use custom name if provided, otherwise hostname or default
+        $name = !empty($device['name']) ? $device['name'] : (!empty($device['hostname']) ? $device['hostname'] : 'Local Device');
+
+        // Check if IP already exists to avoid overwriting existing names unless explicitly requested
+        // But here we want to update if user provided a name
+        $config['ips-services'][$ip] = $name;
+    }
+
+    // Save config
+    $content = '';
+    foreach ($config as $section => $values) {
+        $content .= "[$section]\n";
+        foreach ($values as $key => $value) {
+            $content .= "$key = \"$value\"\n";
+        }
+    }
+
+    return file_put_contents($config_path, $content) !== false;
+}
+
+
+/**
+ * Test network latency using speedtest
+ */
+function test_network_latency()
+{
+    // Check if speedtest-cli is installed
+    $speedtest_check = shell_exec('which speedtest-cli 2>/dev/null');
+
+    if (empty($speedtest_check)) {
+        // Fallback to simple ping test
+        $ping_output = shell_exec('ping -c 3 8.8.8.8 2>/dev/null');
+        preg_match('/rtt min\/avg\/max\/mdev = [\d\.]+\/([\d\.]+)/', $ping_output, $matches);
+        return isset($matches[1]) ? round(floatval($matches[1]), 1) : 'N/A';
+    }
+
+    // Use speedtest-cli for accurate latency
+    $output = shell_exec('speedtest-cli --simple 2>/dev/null');
+
+    if (preg_match('/Ping:\s+([\d\.]+)\s+ms/', $output, $matches)) {
+        return round(floatval($matches[1]), 1);
+    }
+
+    return 'N/A';
+}
+
+/**
+ * Test download speed using speedtest-cli
+ */
+function test_download_speed()
+{
+    // Check if speedtest-cli is installed
+    $speedtest_check = shell_exec('which speedtest-cli 2>/dev/null');
+
+    if (empty($speedtest_check)) {
+        // Check for speedtest (Ookla official)
+        $speedtest_ookla = shell_exec('which speedtest 2>/dev/null');
+
+        if (!empty($speedtest_ookla)) {
+            // Use Ookla speedtest
+            $output = shell_exec('speedtest --format=json 2>/dev/null');
+            $data = json_decode($output, true);
+
+            if (isset($data['download']['bandwidth'])) {
+                // Convert from bytes/s to Mbps
+                $mbps = round(($data['download']['bandwidth'] * 8) / 1000000, 2);
+                return $mbps;
+            }
+        }
+
+        return 'N/A';
+    }
+
+    // Use speedtest-cli
+    $output = shell_exec('speedtest-cli --simple 2>/dev/null');
+
+    if (preg_match('/Download:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
+        return round(floatval($matches[1]), 2);
+    }
+
+    return 'N/A';
+}
+
+/**
+ * Test upload speed using speedtest-cli
+ */
+function test_upload_speed()
+{
+    // Check if speedtest-cli is installed
+    $speedtest_check = shell_exec('which speedtest-cli 2>/dev/null');
+
+    if (empty($speedtest_check)) {
+        // Check for speedtest (Ookla official)
+        $speedtest_ookla = shell_exec('which speedtest 2>/dev/null');
+
+        if (!empty($speedtest_ookla)) {
+            // Use Ookla speedtest
+            $output = shell_exec('speedtest --format=json 2>/dev/null');
+            $data = json_decode($output, true);
+
+            if (isset($data['upload']['bandwidth'])) {
+                // Convert from bytes/s to Mbps
+                $mbps = round(($data['upload']['bandwidth'] * 8) / 1000000, 2);
+                return $mbps;
+            }
+        }
+
+        return 'N/A';
+    }
+
+    // Use speedtest-cli
+    $output = shell_exec('speedtest-cli --simple 2>/dev/null');
+
+    if (preg_match('/Upload:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
+        return round(floatval($matches[1]), 2);
+    }
+
+    return 'N/A';
+}
+
+/**
+ * Run complete speedtest and return all results
+ */
+function run_complete_speedtest()
+{
+    $results = [
+        'success' => false,
+        'latency' => 'N/A',
+        'download' => 'N/A',
+        'upload' => 'N/A',
+        'server' => 'N/A',
+        'isp' => 'N/A'
+    ];
+
+    // Check if speedtest-cli is installed
+    $speedtest_check = shell_exec('which speedtest-cli 2>/dev/null');
+
+    if (empty($speedtest_check)) {
+        // Check for Ookla speedtest
+        $speedtest_ookla = shell_exec('which speedtest 2>/dev/null');
+
+        if (!empty($speedtest_ookla)) {
+            // Use Ookla speedtest (JSON format)
+            $output = shell_exec('speedtest --format=json --accept-license --accept-gdpr 2>/dev/null');
+            $data = json_decode($output, true);
+
+            if ($data && isset($data['download'])) {
+                $results['success'] = true;
+                $results['latency'] = round($data['ping']['latency'], 1);
+                $results['download'] = round(($data['download']['bandwidth'] * 8) / 1000000, 2);
+                $results['upload'] = round(($data['upload']['bandwidth'] * 8) / 1000000, 2);
+                $results['server'] = $data['server']['name'] ?? 'Unknown';
+                $results['isp'] = $data['isp'] ?? 'Unknown';
+            }
+
+            return $results;
+        }
+
+        $results['error'] = 'speedtest-cli or speedtest not installed. Install with: pip install speedtest-cli or download from speedtest.net';
+        return $results;
+    }
+
+    // Use speedtest-cli
+    $output = shell_exec('speedtest-cli --simple 2>/dev/null');
+
+    if (!empty($output)) {
+        $results['success'] = true;
+
+        if (preg_match('/Ping:\s+([\d\.]+)\s+ms/', $output, $matches)) {
+            $results['latency'] = round(floatval($matches[1]), 1);
+        }
+
+        if (preg_match('/Download:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
+            $results['download'] = round(floatval($matches[1]), 2);
+        }
+
+        if (preg_match('/Upload:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
+            $results['upload'] = round(floatval($matches[1]), 2);
+        }
+    }
+
+    return $results;
+}
+
 ?>

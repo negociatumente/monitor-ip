@@ -25,3 +25,33 @@
     .bg-yellow-400.progress-inner { background: linear-gradient(90deg, #facc15 0%, #eab308 50%, #ca8a04 100%) !important; box-shadow: 0 2px 4px rgba(250, 204, 21, 0.3); }
     .bg-red-400.progress-inner { background: linear-gradient(90deg, #f87171 0%, #ef4444 50%, #dc2626 100%) !important; box-shadow: 0 2px 4px rgba(248, 113, 113, 0.3); }
     .bg-gray-400.progress-inner { background: linear-gradient(90deg, #9ca3af 0%, #6b7280 50%, #4b5563 100%) !important; box-shadow: 0 2px 4px rgba(156, 163, 175, 0.3); }
+    
+    /* Network Type Tabs */
+    .network-tab {
+        color: #6b7280;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+    }
+    .network-tab:hover {
+        color: #3b82f6;
+        background: rgba(59, 130, 246, 0.1);
+    }
+    .network-tab.active {
+        color: #ffffff;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    @media (prefers-color-scheme: dark) {
+        .network-tab {
+            color: #9ca3af;
+        }
+        .network-tab:hover {
+            color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+        .network-tab.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+    }

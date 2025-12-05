@@ -11,10 +11,10 @@
     echo json_encode($services_config);
     ?>;
 </script>
-<div class="mb-8">
+<div class="mb-4">
     <!-- Monitoring Controls Panel -->
     <div
-        class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl shadow-sm border border-blue-100 dark:border-blue-800 p-4 mb-6">
+        class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl shadow-sm border border-blue-100 dark:border-blue-800 p-4 mb-2">
         <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
             <!-- Monitoring Status -->
             <div class="flex items-center space-x-6">
@@ -64,7 +64,7 @@
 
             <!-- Control Buttons -->
             <div
-                class="flex items-center bg-white dark:bg-gray-800 rounded-lg shadow-sm px-4 py-2 border border-gray-200 dark:border-gray-700">
+                class="flex items-center bg-white dark:bg-gray-800 rounded-lg shadow-sm px-4 py-1 border border-gray-200 dark:border-gray-700">
                 <div id="nextPingBlock" class="text-gray-600 dark:text-gray-300 mr-4 flex items-center">
                     <div class="bg-blue-100 dark:bg-blue-900/50 p-1.5 rounded-full mr-2">
                         <i class="fas fa-sync-alt text-blue-600 dark:text-blue-400 text-sm"></i>
@@ -106,15 +106,27 @@
     </div>
 
     <!-- Action Buttons -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2">
         <div class="flex flex-wrap gap-3 justify-center md:justify-start">
-            <button onclick="showAddIpForm();"
-                class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
-                <i class="fas fa-network-wired"></i> Add IP
-            </button> <button type="button" onclick="showManageServiceForm();"
-                class="btn bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md">
-                <i class="fas fa-tasks"></i> Manage Services
-            </button>
+            <?php if (isset($network_type) && $network_type === 'local'): ?>
+                <button type="button" onclick="showScanNetworkModal();"
+                    class="btn bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md">
+                    <i class="fas fa-radar"></i> Scan Local Network
+                </button>
+                <button type="button" onclick="showSpeedTestModal();"
+                    class="btn bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md">
+                    <i class="fas fa-tachometer-alt"></i> Speed Test (Linux)
+                </button>
+            <?php else: ?>
+                <button onclick="showAddIpForm();"
+                    class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
+                    <i class="fas fa-network-wired"></i> Add IP
+                </button>
+                <button type="button" onclick="showManageServiceForm();"
+                    class="btn bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md">
+                    <i class="fas fa-tasks"></i> Manage Services
+                </button>
+            <?php endif; ?>
             <button onclick="showChangeTimerForm();"
                 class="btn bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md">
                 <i class="fas fa-clock"></i> Change Timer Interval
@@ -157,6 +169,8 @@
             <form method="POST" enctype="multipart/form-data">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Importar archivo
                     config.ini</label>
+                <input type="hidden" name="network"
+                    value="<?php echo isset($network_type) ? $network_type : 'external'; ?>">
                 <input type="file" name="import_config" accept=".ini,text/plain" required
                     class="mb-4 block w-full text-sm text-gray-700 dark:text-gray-200">
                 <div class="flex gap-3">
@@ -169,7 +183,8 @@
         <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Exportar
                 configuración actual</label>
-            <a href="?export_config=1" class="btn bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+            <a href="?export_config=1<?php echo isset($network_type) ? '&network=' . $network_type : ''; ?>"
+                class="btn bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
                 <i class="fas fa-download mr-2"></i> Exportar
             </a>
         </div>
@@ -597,6 +612,8 @@
         </div>
 
         <form method="POST" action="">
+            <input type="hidden" name="network"
+                value="<?php echo isset($network_type) ? $network_type : 'external'; ?>">
             <div class="bg-amber-50 dark:bg-amber-900/30 p-4 rounded-lg mb-5">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
@@ -845,11 +862,155 @@
     </div>
 </div>
 
+<!-- Modal: Scan Local Network -->
+<div id="scanNetworkModal" class="modal">
+    <div class="modal-content max-w-4xl">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
+                <i class="fas fa-radar text-green-500 mr-2"></i> Scan Local Network
+            </h2>
+            <button type="button" onclick="hideScanNetworkModal();"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <div id="scanStatus" class="mb-4">
+            <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                <p class="text-sm text-blue-800 dark:text-blue-200">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Click "Start Scan" to discover devices on your local network. This may take a few seconds.
+                </p>
+            </div>
+        </div>
+
+        <div id="scanResults" style="display:none;">
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                    <i class="fas fa-list mr-2"></i> Discovered Devices
+                </h3>
+                <div id="devicesTable" class="overflow-x-auto">
+                    <!-- Results will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+            <button type="button" onclick="hideScanNetworkModal();"
+                class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                <i class="fas fa-times mr-2"></i> Close
+            </button>
+            <button type="button" id="startScanBtn" onclick="startNetworkScan();"
+                class="btn px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                <i class="fas fa-radar mr-2"></i> Start Scan
+            </button>
+            <button type="button" id="saveDevicesBtn" onclick="saveDiscoveredDevices();" style="display:none;"
+                class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                <i class="fas fa-save mr-2"></i> Save Selected Devices
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Speed Test -->
+<div id="speedTestModal" class="modal">
+    <div class="modal-content max-w-3xl">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
+                <i class="fas fa-tachometer-alt text-purple-500 mr-2"></i> Network Speed Test
+            </h2>
+            <button type="button" onclick="hideSpeedTestModal();"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <div id="speedTestStatus" class="mb-4">
+            <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                <p class="text-sm text-blue-800 dark:text-blue-200">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Click "Start Test" to measure your internet speed using Speedtest.
+                </p>
+                <p class="text-xs text-blue-600 dark:text-blue-300 mt-2">
+                    <i class="fab fa-linux mr-1"></i>
+                    <strong>Linux only:</strong> Requires <code
+                        class="bg-blue-100 dark:bg-blue-800 px-1 rounded">speedtest-cli</code>
+                    <span class="ml-2 text-gray-500">Install: <code
+                            class="bg-gray-100 dark:bg-gray-700 px-1 rounded">pip install speedtest-cli</code></span>
+                </p>
+                <p class="text-xs text-red-500 dark:text-red-400 mt-1">
+                    <i class="fab fa-windows mr-1"></i>
+                    <strong>Windows:</strong> Not supported via web interface.
+                </p>
+            </div>
+        </div>
+
+        <div id="speedTestResults" style="display:none;">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <!-- Download Speed -->
+                <div
+                    class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 p-4 rounded-lg border border-green-200 dark:border-green-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-green-700 dark:text-green-300">Download</span>
+                        <i class="fas fa-download text-green-500"></i>
+                    </div>
+                    <div class="text-3xl font-bold text-green-600 dark:text-green-400" id="downloadSpeed">--</div>
+                    <div class="text-xs text-green-600 dark:text-green-400">Mbps</div>
+                </div>
+
+                <!-- Upload Speed -->
+                <div
+                    class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-blue-700 dark:text-blue-300">Upload</span>
+                        <i class="fas fa-upload text-blue-500"></i>
+                    </div>
+                    <div class="text-3xl font-bold text-blue-600 dark:text-blue-400" id="uploadSpeed">--</div>
+                    <div class="text-xs text-blue-600 dark:text-blue-400">Mbps</div>
+                </div>
+
+                <!-- Ping/Latency -->
+                <div
+                    class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-purple-700 dark:text-purple-300">Latency</span>
+                        <i class="fas fa-clock text-purple-500"></i>
+                    </div>
+                    <div class="text-3xl font-bold text-purple-600 dark:text-purple-400" id="pingLatency">--</div>
+                    <div class="text-xs text-purple-600 dark:text-purple-400">ms</div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="speedTestProgress" class="mb-4" style="display:none;">
+                <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                    <div id="speedTestProgressBar"
+                        class="bg-gradient-to-r from-purple-500 to-blue-500 h-full transition-all duration-300"
+                        style="width: 0%"></div>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center" id="speedTestProgressText">
+                    Initializing...</p>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+            <button type="button" onclick="hideSpeedTestModal();"
+                class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                <i class="fas fa-times mr-2"></i> Close
+            </button>
+            <button type="button" id="startSpeedTestBtn" onclick="startSpeedTest();"
+                class="btn px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
+                <i class="fas fa-play mr-2"></i> Start Test
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- System Status Cards -->
 <?php
 $stats = calculateSystemStats($ips_to_monitor);
 ?>
-<div class='grid grid-cols-1 md:grid-cols-4 gap-4 mb-8'>
+<div class='grid grid-cols-1 md:grid-cols-4 gap-4 mb-6'>
     <!-- System Status Card -->
     <div class='card bg-white dark:bg-gray-800 p-4'>
         <div class='flex items-center justify-between mb-2'>
