@@ -284,11 +284,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_ping_attempts'
         echo "<script>alert('Please enter a valid number greater than 0.');</script>";
     }
 }
-//Manejar la eliminación de datos
+// Manejar la eliminación de datos
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_data'])) {
     // Limpiar los datos de ping
     if (file_exists($ping_file)) {
         file_put_contents($ping_file, json_encode([])); // Vaciar el archivo
+    }
+
+    // Verificar si se deben borrar también las IPs
+    if (isset($_POST['delete_ips'])) {
+        $config = parse_ini_file($config_path, true);
+        $config['ips-services'] = []; // Vaciar la sección de IPs
+
+        // Reconstruir el contenido del archivo ini
+        $new_content = '';
+        foreach ($config as $section => $values) {
+            $new_content .= "[$section]\n";
+            foreach ($values as $key => $value) {
+                $new_content .= "$key = \"$value\"\n";
+            }
+        }
+        file_put_contents($config_path, $new_content);
     }
 
     // Redirigir para evitar reenvío del formulario
@@ -342,15 +358,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {
     }
 }
 
-// Ejecutar pings en paralelo solo si no se está eliminando una IP o añadiendo una nueva
-if (!isset($_GET['action'])) {
-    // Obtener solo las IPs en un array
-    $ips_array = array_keys($ips_to_monitor);
-    update_ping_results_parallel($ips_array);
+// Ejecutar pings en paralelo (siempre, a menos que sea una acción AJAX que ya salió)
+// Obtener solo las IPs en un array
+$ips_array = array_keys($ips_to_monitor);
+update_ping_results_parallel($ips_array);
 
-    // Guardar resultados actualizados en JSON
-    file_put_contents($ping_file, json_encode($ping_data));
-}
+// Guardar resultados actualizados en JSON
+file_put_contents($ping_file, json_encode($ping_data));
 
 
 // Manejar notificaciones

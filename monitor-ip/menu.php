@@ -662,6 +662,22 @@
                 </ul>
             </div>
 
+            <div class="mb-5 px-1">
+                <label class="flex items-start space-x-3 cursor-pointer group">
+                    <div class="flex items-center h-5">
+                        <input type="checkbox" name="delete_ips"
+                            class="w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                    </div>
+                    <div class="flex flex-col">
+                        <span
+                            class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100">Also
+                            delete all IPs and Domains</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Warning: This will remove all monitored
+                            hosts from the configuration.</span>
+                    </div>
+                </label>
+            </div>
+
             <div class="flex justify-end gap-3 mt-6">
                 <button type="button" onclick="hideClearDataConfirmation();"
                     class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
