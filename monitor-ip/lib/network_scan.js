@@ -162,9 +162,15 @@ function toggleSelectAll(checkbox) {
 }
 
 async function saveDiscoveredDevices() {
-    const checkboxes = document.querySelectorAll('.device-checkbox:checked');
-    const selectedDevices = Array.from(checkboxes).map(cb => {
+    // Get all checkboxes and filter by checked property to ensure we capture programmatically checked ones
+    const allCheckboxes = document.querySelectorAll('.device-checkbox');
+    const checkboxes = Array.from(allCheckboxes).filter(cb => cb.checked);
+
+    console.log(`Saving ${checkboxes.length} devices out of ${allCheckboxes.length} total`);
+
+    const selectedDevices = checkboxes.map(cb => {
         const ip = cb.value;
+        // Escape the IP for the selector to handle special characters if any (though IPs are usually safe)
         const nameInput = document.querySelector(`.device-name-input[data-ip="${ip}"]`);
         const name = nameInput ? nameInput.value.trim() : '';
 

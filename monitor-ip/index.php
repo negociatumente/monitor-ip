@@ -358,10 +358,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {
     }
 }
 
-// Ejecutar pings en paralelo (siempre, a menos que sea una acción AJAX que ya salió)
+// Ejecutar pings en paralelo (siempre, a menos que sea una acción AJAX que ya salió, o si estamos paginando)
 // Obtener solo las IPs en un array
 $ips_array = array_keys($ips_to_monitor);
-update_ping_results_parallel($ips_array);
+if (!isset($_GET['page'])) {
+    update_ping_results_parallel($ips_array);
+}
 
 // Guardar resultados actualizados en JSON
 file_put_contents($ping_file, json_encode($ping_data));

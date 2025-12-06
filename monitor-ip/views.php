@@ -212,7 +212,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Local Network'
         </div>
 
         <!-- IP Monitoring Table -->
-        <div class='bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden'>
+        <div id="monitoringTable" class='bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden'>
             <div class='p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center'>
                 <h2 class='text-lg font-semibold text-gray-800 dark:text-gray-200'>
                     <i class='fas fa-table mr-2'></i> IP Monitoring Table
@@ -479,7 +479,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Local Network'
                         <!-- Page navigation -->
                         <div class="flex items-center gap-2">
                             <?php if ($current_page > 1): ?>
-                                <a href="?page=<?php echo $current_page - 1; ?>&per_page=<?php echo $items_per_page; ?>"
+                                <a href="?page=<?php echo $current_page - 1; ?>&per_page=<?php echo $items_per_page; ?>#monitoringTable"
                                     class="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
                                     <i class="fas fa-chevron-left"></i> Previous
                                 </a>
@@ -502,7 +502,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Local Network'
                                 }
 
                                 if ($start_page > 1): ?>
-                                    <a href="?page=1&per_page=<?php echo $items_per_page; ?>"
+                                    <a href="?page=1&per_page=<?php echo $items_per_page; ?>#monitoringTable"
                                         class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                         1
                                     </a>
@@ -515,7 +515,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Local Network'
                                     <?php if ($i == $current_page): ?>
                                         <span class="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg"><?php echo $i; ?></span>
                                     <?php else: ?>
-                                        <a href="?page=<?php echo $i; ?>&per_page=<?php echo $items_per_page; ?>"
+                                        <a href="?page=<?php echo $i; ?>&per_page=<?php echo $items_per_page; ?>#monitoringTable"
                                             class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                             <?php echo $i; ?>
                                         </a>
@@ -526,7 +526,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Local Network'
                                     <?php if ($end_page < $total_pages - 1): ?>
                                         <span class="px-2 text-gray-500">...</span>
                                     <?php endif; ?>
-                                    <a href="?page=<?php echo $total_pages; ?>&per_page=<?php echo $items_per_page; ?>"
+                                    <a href="?page=<?php echo $total_pages; ?>&per_page=<?php echo $items_per_page; ?>#monitoringTable"
                                         class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                         <?php echo $total_pages; ?>
                                     </a>
@@ -534,7 +534,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Local Network'
                             </div>
 
                             <?php if ($current_page < $total_pages): ?>
-                                <a href="?page=<?php echo $current_page + 1; ?>&per_page=<?php echo $items_per_page; ?>"
+                                <a href="?page=<?php echo $current_page + 1; ?>&per_page=<?php echo $items_per_page; ?>#monitoringTable"
                                     class="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
                                     Next <i class="fas fa-chevron-right"></i>
                                 </a>

@@ -17,25 +17,31 @@ https://negociatumente.com/guia-redes
 - Si no se refrescan los pings en la tabla, borrar los pings anteriores con el botón de **Clear Data**.
   
 ## 🚀 Características  
-✅ Monitoriza servidores desde tu red.  
-✅ Configurable desde el archivo `config.ini`.  
-✅ **Diseño moderno y visual**.  
-✅ Almacena el estado de los pings.  
-✅ Compatible con **Windows, Linux y macOS**.  
+✅ **Monitorización en tiempo real** de servidores y dispositivos.  
+✅ **Escaneo de Red Local**: Descubre dispositivos conectados a tu red.  
+✅ **Test de Velocidad**: Mide tu latencia, descarga y subida (requiere speedtest-cli).  
+✅ **Múltiples Métodos**: Soporte para Ping (ICMP), HTTP/HTTPS (Curl) y DNS.  
+✅ **Gestión de Servicios**: Agrupa y organiza tus dispositivos por servicios con colores personalizados.  
+✅ **Configurable**: Ajusta intervalos, historial y alertas desde la interfaz o `config.ini`.  
+✅ **Diseño moderno y visual**: Interfaz oscura/clara con animaciones y gráficos.  
+✅ **Compatible** con Windows, Linux y macOS.  
 
 ## 📁 Estructura del proyecto
 ```
 monitor-ip/
-├── index.php          # Página principal y lógica de backend
-├── menu.php           # Menú de navegación y acciones rápidas
-├── views.php          # Vista principal del dashboard
-├── conf/              # Archivos de configuración y resultados
-│   ├── config.ini     # Configuración de IPs y servicios
-│   └── ping_results.json # Resultados de los pings
-├── lib/               # Librerías y recursos
-│   ├── functions.php  # Funciones PHP reutilizables
-│   ├── script.js      # Scripts JavaScript para la interfaz
-│   └── styles.css     # Estilos CSS personalizados
+├── index.php                       # Página principal y lógica de backend
+├── menu.php                        # Menú de navegación y acciones rápidas
+├── views.php                       # Vista principal del dashboard
+├── conf/                           # Archivos de configuración y resultados
+│   ├── config.ini                  # Configuración de IPs y servicios remotos
+│   ├── config_local.ini            # Configuración de IPs locales
+│   └── ping_results.json           # Resultados de los pings
+│   └── ping_results_local.json     # Resultados de los pings locales
+├── lib/                            # Librerías y recursos
+│   ├── functions.php               # Funciones PHP reutilizables
+│   ├── script.js                   # Scripts JavaScript principales
+│   ├── network_scan.js             # Lógica de escaneo de red y speedtest
+│   └── styles.css                  # Estilos CSS personalizados
 ```
 
 ## 🛠️ Instalación en Linux y MacOS  
@@ -46,9 +52,9 @@ monitor-ip/
 ⚙️ **Un navegador web**    
 
 ### 2️⃣ Instalación  
-**🔹Instalar PHP, Apache y Git:**  
+**🔹Instalar PHP, Apache, Git y Speedtest-cli:**  
 ```bash
-sudo apt update && sudo apt install apache2 php git -y
+sudo apt update && sudo apt install apache2 php git speedtest-cli -y
 ```
 
 **🔹Clona el repositorio:**  
@@ -61,15 +67,16 @@ git clone https://github.com/negociatumente/monitor-ip.git
 sudo mv ~/monitor-ip/monitor-ip /var/www/html/monitor-ip
 ```
 
-**🔹Da permisos de lectura y escritura al archivo ping_results.json:**
+**🔹Da permisos de escritura a la carpeta de configuración:**
 ```bash
-sudo chmod 664 /var/www/html/monitor-ip/conf/ping_results.json
+sudo chown -R www-data:www-data /var/www/html/monitor-ip/conf
+sudo chmod -R 775 /var/www/html/monitor-ip/conf
 ```
 
 ### 3️⃣ Configuración
 **🔹Abre el archivo config.ini y modifica las IPs según los servidores que quieras monitorizar:**
 ```bash
-cd monitor-ip  
+cd /var/www/html/monitor-ip/conf
 nano config.ini
 ```
 

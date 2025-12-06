@@ -112,7 +112,10 @@ function updateCountdown() {
  * Reloads the current page.
  */
 function reloadPage() {
-    window.location.reload();
+    // Remove 'page' parameter to ensure ping is triggered on reload
+    const url = new URL(window.location.href);
+    url.searchParams.delete('page');
+    window.location.href = url.toString();
 }
 
 /**
@@ -796,7 +799,7 @@ function changePerPage(perPage) {
     const urlParams = new URLSearchParams(window.location.search);
     urlParams.set('per_page', perPage);
     urlParams.set('page', '1'); // Reset to first page when changing items per page
-    window.location.search = urlParams.toString();
+    window.location.href = '?' + urlParams.toString() + '#monitoringTable';
 }
 
 // Expose functions to global scope

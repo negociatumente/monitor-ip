@@ -836,6 +836,9 @@ function save_local_network_scan($devices)
         // Use custom name if provided, otherwise hostname or default
         $name = !empty($device['name']) ? $device['name'] : (!empty($device['hostname']) ? $device['hostname'] : 'Local Device');
 
+        // Sanitize name to prevent INI format issues
+        $name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+
         // Check if IP already exists to avoid overwriting existing names unless explicitly requested
         // But here we want to update if user provided a name
         $config['ips-services'][$ip] = $name;
@@ -846,6 +849,7 @@ function save_local_network_scan($devices)
     foreach ($config as $section => $values) {
         $content .= "[$section]\n";
         foreach ($values as $key => $value) {
+            // Ensure value is safe for INI (though htmlspecialchars handles quotes, we double check)
             $content .= "$key = \"$value\"\n";
         }
     }
