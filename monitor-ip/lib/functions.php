@@ -396,7 +396,34 @@ function delete_service_from_config($service_name)
     return file_put_contents($config_path, $new_content) !== false;
 }
 
-//STYLING FUNCTIONS
+// Función para actualizar el servicio de una IP específica
+function update_ip_service($ip, $new_service)
+{
+    global $config_path;
+    $config = parse_ini_file($config_path, true);
+
+    if (!$config || !isset($config['ips-services'][$ip])) {
+        return false;
+    }
+
+    $clean_ip = htmlspecialchars($ip, ENT_QUOTES, 'UTF-8');
+    $clean_service = htmlspecialchars($new_service, ENT_QUOTES, 'UTF-8');
+
+    $config['ips-services'][$clean_ip] = $clean_service;
+
+    // Guardar configuración
+    $new_content = '';
+    foreach ($config as $section => $values) {
+        $new_content .= "[$section]\n";
+        foreach ($values as $key => $value) {
+            $new_content .= "$key = \"$value\"\n";
+        }
+    }
+
+    return file_put_contents($config_path, $new_content) !== false;
+}
+
+// STYLING FUNCTIONS
 function getNotificationData($action, $msg = null)
 {
     $notifications = [
@@ -677,89 +704,118 @@ function update_service_config($old_name, $new_name, $new_color, $new_method)
  * Scan local network for active devices
  * Returns array of discovered IPs with their MAC addresses and hostnames
  */
+/**
+ * Scan local network for active devices
+ * Returns array of discovered IPs with their MAC addresses and hostnames
+ */
 function scan_local_network()
 {
     $isWindows = (PHP_OS_FAMILY === 'Windows');
     $discovered_devices = [];
+    $found_ips = [];
 
-    // Get local network range
+    // Get local network info
     if ($isWindows) {
-        // Windows: use ipconfig to get network info
+        // Windows implementation (unchanged logic, just structured better)
         $ipconfig = shell_exec('ipconfig');
         preg_match('/IPv4.*?:\s*(\d+\.\d+\.\d+\.\d+)/', $ipconfig, $matches);
         $local_ip = $matches[1] ?? '192.168.1.1';
-
-        // Extract network prefix (e.g., 192.168.1)
         $parts = explode('.', $local_ip);
         $network_prefix = implode('.', array_slice($parts, 0, 3));
 
-        // Use arp -a to scan
         $arp_output = shell_exec('arp -a');
         preg_match_all('/(\d+\.\d+\.\d+\.\d+)\s+([0-9a-f\-]+)/i', $arp_output, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $match) {
             $ip = $match[1];
             $mac = $match[2];
-
-            // Filter only local network IPs
             if (strpos($ip, $network_prefix) === 0 && $ip !== $local_ip) {
-                // Try to get hostname
                 $hostname = gethostbyaddr($ip);
-                if ($hostname === $ip) {
+                if ($hostname === $ip)
                     $hostname = 'Unknown';
-                }
 
                 $discovered_devices[] = [
                     'ip' => $ip,
                     'mac' => strtoupper(str_replace('-', ':', $mac)),
                     'hostname' => $hostname
                 ];
+                $found_ips[] = $ip;
             }
         }
     } else {
-        // Linux: try to use nmap or arp-scan
+        // Linux Implementation: Nmap + IP Neigh + Ping Sweep Fallback
+
         $local_ip = shell_exec("hostname -I | awk '{print $1}'");
         $local_ip = trim($local_ip);
-
-        if (empty($local_ip)) {
+        if (empty($local_ip))
             $local_ip = '192.168.1.1';
-        }
 
-        // Extract network prefix
         $parts = explode('.', $local_ip);
         $network_prefix = implode('.', array_slice($parts, 0, 3));
         $network_range = $network_prefix . '.0/24';
 
+        // 1. Run Nmap (Ping Scan) to populate ARP tables and find devices
+        // Using -sn (Ping Scan) + -PR (ARP Ping) if possible, but -sn is adequate.
+        // We capture output but getting data mainly from 'ip neigh' is more reliable for MACs
+        shell_exec("nmap -sn " . escapeshellarg($network_range) . " 2>/dev/null");
 
-        // Fallback: use arp command
-        $nmap_output = shell_exec("nmap -sn $network_range");
-        preg_match_all('/Nmap scan report for (.*?)\n/', $nmap_output, $matches, PREG_SET_ORDER);
+        // 2. Read ARP Native Table (ip neigh)
+        // This provides IP and MAC for everything the kernel knows about (triggered by nmap)
+        $neigh_output = shell_exec("ip neigh show");
+        // Format: 192.168.1.1 dev eth0 lladdr 00:11:22:33:44:55 REACHABLE
+        preg_match_all('/(\d+\.\d+\.\d+\.\d+)\s+dev\s+\w+\s+lladdr\s+([0-9a-f:]+)/i', $neigh_output, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $match) {
             $ip = $match[1];
+            $mac = $match[2];
 
-            if (strpos($ip, $network_prefix) === 0 && $ip !== $local_ip) {
-                // Try to get hostname
+            // Filter by subnet
+            if (strpos($ip, $network_prefix) === 0 && $ip !== $local_ip && !in_array($ip, $found_ips)) {
                 $hostname = gethostbyaddr($ip);
-                if ($hostname === $ip) {
+                if ($hostname === $ip)
                     $hostname = 'Unknown';
-                }
 
                 $discovered_devices[] = [
                     'ip' => $ip,
+                    'mac' => strtoupper($mac),
                     'hostname' => $hostname
                 ];
+                $found_ips[] = $ip;
+            }
+        }
+
+        // 3. Fallback/Supplement: Nmap parsing (if unprivileged nmap didn't show MACs in ip neigh)
+        // If we missed devices that Nmap found but ARP didn't cache (e.g. routed IPs, though unlikely for local scan)
+        $nmap_output = shell_exec("nmap -sn " . escapeshellarg($network_range));
+        preg_match_all('/Nmap scan report for (?:.*?\(([\d\.]+)\)|([\d\.]+))/', $nmap_output, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $ip = !empty($match[1]) ? $match[1] : $match[2];
+            if ($ip && $ip !== $local_ip && strpos($ip, $network_prefix) === 0 && !in_array($ip, $found_ips)) {
+                $hostname = gethostbyaddr($ip);
+                if ($hostname === $ip)
+                    $hostname = 'Unknown';
+
+                $discovered_devices[] = [
+                    'ip' => $ip,
+                    'mac' => 'UNKNOWN', // Nmap non-root doesn't give MAC easily
+                    'hostname' => $hostname
+                ];
+                $found_ips[] = $ip;
             }
         }
     }
 
     // Add local device itself
-    $hostname = gethostname();
-    $discovered_devices[] = [
-        'ip' => $local_ip,
-        'mac' => 'SELF',
-        'hostname' => $hostname ?: 'Local Device'
-    ];
+    if (!in_array($local_ip, $found_ips)) {
+        $hostname = gethostname();
+        $discovered_devices[] = [
+            'ip' => $local_ip,
+            'mac' => 'SELF',
+            'hostname' => $hostname ?: 'Local Device'
+        ];
+        $found_ips[] = $local_ip;
+    }
 
     // Add Gateway
     $gateway_ip = '';
@@ -781,12 +837,13 @@ function scan_local_network()
         foreach ($discovered_devices as &$device) {
             if ($device['ip'] === $gateway_ip) {
                 $device['hostname'] = 'Gateway'; // Update name if found
-                $device['mac'] = ($device['mac'] === 'SELF') ? 'SELF/GATEWAY' : $device['mac'];
+                if ($device['mac'] === 'SELF')
+                    $device['mac'] = 'SELF/GATEWAY';
                 $gateway_found = true;
                 break;
             }
         }
-        unset($device); // Break reference
+        unset($device);
 
         // If not found, add it
         if (!$gateway_found) {
@@ -798,8 +855,14 @@ function scan_local_network()
         }
     }
 
+    // Sort logic: Sort by IP
+    usort($discovered_devices, function ($a, $b) {
+        return ip2long($a['ip']) - ip2long($b['ip']);
+    });
+
     return $discovered_devices;
 }
+
 
 /**
  * Save discovered local network devices to config_local.ini
@@ -991,34 +1054,62 @@ function run_complete_speedtest()
                 $results['server'] = $data['server']['name'] ?? 'Unknown';
                 $results['isp'] = $data['isp'] ?? 'Unknown';
             }
-
-            return $results;
+        } else {
+            $results['error'] = 'speedtest-cli or speedtest not installed. Install with: pip install speedtest-cli or download from speedtest.net';
         }
+    } else {
+        // Use speedtest-cli
+        $output = shell_exec('speedtest-cli --simple 2>/dev/null');
 
-        $results['error'] = 'speedtest-cli or speedtest not installed. Install with: pip install speedtest-cli or download from speedtest.net';
-        return $results;
+        if (!empty($output)) {
+            $results['success'] = true;
+
+            if (preg_match('/Ping:\s+([\d\.]+)\s+ms/', $output, $matches)) {
+                $results['latency'] = round(floatval($matches[1]), 1);
+            }
+
+            if (preg_match('/Download:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
+                $results['download'] = round(floatval($matches[1]), 2);
+            }
+
+            if (preg_match('/Upload:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
+                $results['upload'] = round(floatval($matches[1]), 2);
+            }
+        }
     }
 
-    // Use speedtest-cli
-    $output = shell_exec('speedtest-cli --simple 2>/dev/null');
-
-    if (!empty($output)) {
-        $results['success'] = true;
-
-        if (preg_match('/Ping:\s+([\d\.]+)\s+ms/', $output, $matches)) {
-            $results['latency'] = round(floatval($matches[1]), 1);
-        }
-
-        if (preg_match('/Download:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
-            $results['download'] = round(floatval($matches[1]), 2);
-        }
-
-        if (preg_match('/Upload:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
-            $results['upload'] = round(floatval($matches[1]), 2);
-        }
+    if ($results['success']) {
+        save_speedtest_results($results);
     }
 
     return $results;
 }
 
-?>
+/**
+ * Save speedtest results to history file
+ */
+function save_speedtest_results($results)
+{
+    $history_file = __DIR__ . '/../conf/speedtest_results.json';
+    $history = [];
+
+    if (file_exists($history_file)) {
+        $history = json_decode(file_get_contents($history_file), true);
+        if (!is_array($history))
+            $history = [];
+    }
+
+    $new_entry = [
+        'timestamp' => date('Y-m-d H:i:s'),
+        'latency' => $results['latency'],
+        'download' => $results['download'],
+        'upload' => $results['upload']
+    ];
+
+    array_unshift($history, $new_entry);
+    $history = array_slice($history, 0, 5); // Keep only last 5
+
+    file_put_contents($history_file, json_encode($history, JSON_PRETTY_PRINT));
+}
+
+

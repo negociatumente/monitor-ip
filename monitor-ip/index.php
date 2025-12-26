@@ -116,15 +116,12 @@ if (isset($_GET['action'])) {
         exit;
     }
 
-    if ($_GET['action'] === 'speed_test_upload' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($_GET['action'] === 'speed_test_full' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json');
 
         try {
-            $speed = test_upload_speed();
-            echo json_encode([
-                'success' => true,
-                'speed' => $speed
-            ]);
+            $results = run_complete_speedtest();
+            echo json_encode($results);
         } catch (Exception $e) {
             echo json_encode([
                 'success' => false,
@@ -133,7 +130,37 @@ if (isset($_GET['action'])) {
         }
         exit;
     }
+
+    if ($_GET['action'] === 'speed_test_history' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        header('Content-Type: application/json');
+        $history_file = __DIR__ . '/conf/speedtest_results.json';
+        $history = file_exists($history_file) ? json_decode(file_get_contents($history_file), true) : [];
+        echo json_encode($history ?: []);
+        exit;
+    }
+
+
+    if (isset($_GET['action']) && $_GET['action'] === 'update_ip_service' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+        try {
+            $json = file_get_contents('php://input');
+            $data = json_decode($json, true);
+            $ip = $data['ip'] ?? '';
+            $service = $data['service'] ?? '';
+
+            if (empty($ip) || empty($service)) {
+                throw new Exception('Invalid IP or Service');
+            }
+
+            $result = update_ip_service($ip, $service);
+            echo json_encode(['success' => $result]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
 }
+
 
 
 // Manejar la adición de IP
@@ -339,6 +366,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_service'])) {
         exit;
     }
 }
+
+// Manejar la actualización de servicio para una IP específica
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_update_ip_service'])) {
+    $ip = $_POST['update_ip_service'];
+    $new_service = trim($_POST['new_service_name']);
+
+    if ($new_service === 'create_new') {
+        $new_service = trim($_POST['new_service_inline_name']);
+        $new_color = trim($_POST['new_service_inline_color']);
+
+        if (empty($new_service) || empty($new_color)) {
+            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=empty_service_name" . $network_param);
+            exit;
+        }
+
+        // Add service to config if it doesn't exist
+        $config = parse_ini_file($config_path, true);
+        if (!isset($config['services-colors'][$new_service])) {
+            $config['services-colors'][$new_service] = $new_color;
+            if (!isset($config['services-methods'][$new_service])) {
+                $config['services-methods'][$new_service] = 'icmp';
+            }
+
+            // Re-save config with new service
+            $new_content_tmp = '';
+            foreach ($config as $section => $values) {
+                $new_content_tmp .= "[$section]\n";
+                foreach ($values as $key => $value) {
+                    $new_content_tmp .= "$key = \"$value\"\n";
+                }
+            }
+            file_put_contents($config_path, $new_content_tmp);
+        }
+    }
+
+    if (update_ip_service($ip, $new_service)) {
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_updated" . $network_param);
+        exit;
+    } else {
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_update_failed" . $network_param);
+        exit;
+    }
+}
+
 
 // Manejar la eliminación de servicio
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {

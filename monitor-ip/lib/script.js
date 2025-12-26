@@ -847,3 +847,112 @@ window.hideManageServiceForm = hideManageServiceForm;
 window.showServicesList = showServicesList;
 window.editService = editService;
 window.deleteService = deleteService;
+/**
+ * Toggles the service edit dropdown in the modal
+ */
+function toggleServiceEdit(ip) {
+    const container = document.getElementById('serviceEditContainer');
+    const display = document.getElementById('modalServiceDisplay');
+    if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        display.classList.add('hidden');
+    } else {
+        container.classList.add('hidden');
+        display.classList.remove('hidden');
+    }
+}
+
+/**
+ * Saves the updated service for an IP
+ */
+async function saveIpService(ip) {
+    const newService = document.getElementById('newServiceSelect').value;
+    const saveBtn = document.querySelector('#serviceEditContainer button');
+
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        const response = await fetch('?action=update_ip_service', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ip: ip,
+                service: newService
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            modalFunctions.showAlert('Service updated successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            modalFunctions.showAlert('Error: ' + (data.message || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        modalFunctions.showAlert('Error: ' + error.message, 'error');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = 'Save';
+    }
+}
+
+window.toggleServiceEdit = toggleServiceEdit;
+window.saveIpService = saveIpService;
+/**
+ * Shows the modal to change the service assigned to an IP.
+ */
+window.showChangeIpServiceModal = function (ip, currentService) {
+    document.getElementById('change_service_ip').value = ip;
+    document.getElementById('change_service_ip_display').value = ip;
+    document.getElementById('new_service_for_ip').value = currentService;
+
+    // Reset inline form
+    document.getElementById('newServiceForIpForm').style.display = 'none';
+    document.getElementById('new_service_inline_name').value = '';
+
+    const modal = document.getElementById('changeIpServiceModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+};
+
+/**
+ * Closes the Change IP Service modal.
+ */
+window.closeChangeIpServiceModal = function () {
+    const modal = document.getElementById('changeIpServiceModal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+};
+
+/**
+ * Toggles the inline service creation form in the Change IP Service modal.
+ */
+window.toggleNewServiceFormInChangeModal = function () {
+    const select = document.getElementById('new_service_for_ip');
+    const form = document.getElementById('newServiceForIpForm');
+    const nameInput = document.getElementById('new_service_inline_name');
+
+    if (select.value === 'create_new') {
+        form.style.display = 'block';
+        nameInput.required = true;
+    } else {
+        form.style.display = 'none';
+        nameInput.required = false;
+    }
+};
+
+// Initialize inline color preview for the new modal
+document.addEventListener('DOMContentLoaded', function () {
+    const colorInput = document.getElementById('new_service_inline_color');
+    if (colorInput) {
+        colorInput.addEventListener('input', function () {
+            document.getElementById('new_service_inline_color_preview').style.backgroundColor = this.value;
+        });
+    }
+});

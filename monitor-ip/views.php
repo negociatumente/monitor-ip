@@ -168,8 +168,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Local Network'
                     </a>
                     <a href="https://negociatumente.com" target="_blank"
                         class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
-                        <i class="fas fa-user"></i>
-                        <span class="hidden sm:inline">Antonio Cañavate</span>
+                        <i class="fas fa-globe"></i>
+                        <span class="hidden sm:inline">Web</span>
                     </a>
                     <a href="https://github.com/negociatumente/monitor-ip" target="_blank"
                         class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
@@ -355,11 +355,19 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Local Network'
                                 ?>
                                 <tr class='hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-150 cursor-pointer'
                                     onclick="showIpDetailModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')">
-                                    <td class='p-3'>
-                                        <span class='inline-block px-3 py-1 rounded-full text-sm font-medium'
-                                            style='background-color: <?php echo $service_styling['color']; ?>; color: <?php echo $service_styling['text_color']; ?>'>
-                                            <?php echo $service; ?>
-                                        </span>
+                                    <td class='p-3 group'>
+                                        <div class='flex items-center gap-2'>
+                                            <span class='inline-block px-3 py-1 rounded-full text-sm font-medium'
+                                                style='background-color: <?php echo $service_styling['color']; ?>; color: <?php echo $service_styling['text_color']; ?>'>
+                                                <?php echo $service; ?>
+                                            </span>
+                                            <button type='button'
+                                                onclick="event.stopPropagation(); showChangeIpServiceModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>', '<?php echo htmlspecialchars($service, ENT_QUOTES, 'UTF-8'); ?>')"
+                                                class='opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-blue-500 transition-all focus:outline-none'
+                                                title='Change Service'>
+                                                <i class='fas fa-edit text-xs'></i>
+                                            </button>
+                                        </div>
                                     </td>
                                     <td class='p-3 font-mono text-sm'><?php echo $ip; ?></td>
                                     <td class='p-3'>
@@ -584,6 +592,90 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Local Network'
                         <i class="fas fa-trash-alt"></i> Delete IP
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Modal para cambiar servicio de una IP -->
+        <div id="changeIpServiceModal"
+            class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">
+                <button onclick="closeChangeIpServiceModal()"
+                    class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+                <div class="flex items-center mb-6">
+                    <i class="fas fa-edit text-blue-500 text-2xl mr-3"></i>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200">Change Service</h3>
+                </div>
+                <form method="POST" action="">
+                    <input type="hidden" id="change_service_ip" name="update_ip_service">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Host IP /
+                            Domain</label>
+                        <input type="text" id="change_service_ip_display" disabled
+                            class="w-full p-2.5 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 font-mono">
+                    </div>
+                    <div class="mb-5">
+                        <label for="new_service_for_ip"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Service</label>
+                        <div class="relative">
+                            <select id="new_service_for_ip" name="new_service_name"
+                                onchange="toggleNewServiceFormInChangeModal()"
+                                class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                                required>
+                                <?php foreach ($services as $service_name => $color): ?>
+                                    <?php if ($service_name !== "DEFAULT"): ?>
+                                        <option value="<?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>
+                                        </option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                                <option value="create_new">➕ Create New Service</option>
+                            </select>
+                            <div
+                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New Service Creation -->
+                    <div id="newServiceForIpForm" style="display: none;"
+                        class="mb-5 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
+                        <div class="mb-3">
+                            <label for="new_service_inline_name"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service
+                                Name</label>
+                            <input type="text" id="new_service_inline_name" name="new_service_inline_name"
+                                placeholder="e.g. Critical Server"
+                                class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+                        </div>
+                        <div class="mb-3">
+                            <label for="new_service_inline_color"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
+                            <div class="flex items-center space-x-3">
+                                <input type="color" id="new_service_inline_color" name="new_service_inline_color"
+                                    value="#3b82f6"
+                                    class="h-10 w-16 rounded border border-gray-300 cursor-pointer dark:bg-gray-700 dark:border-gray-600">
+                                <div class="flex-1">
+                                    <div class="w-full h-10 rounded shadow-sm border border-gray-200 dark:border-gray-700"
+                                        id="new_service_inline_color_preview" style="background-color: #3b82f6"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeChangeIpServiceModal()"
+                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" name="confirm_update_ip_service"
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 shadow-md transition-all active:scale-95">
+                            <i class="fas fa-save mr-2"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

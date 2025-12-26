@@ -1007,6 +1007,28 @@
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center" id="speedTestProgressText">
                     Initializing...</p>
             </div>
+
+            <!-- Historical Results -->
+            <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+                <h3 class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+                    <i class="fas fa-history mr-2 opacity-70"></i> Recent History (Last 5)
+                </h3>
+                <div id="speedTestHistory" class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                                <th class="pb-2 font-medium">Date & Time</th>
+                                <th class="pb-2 font-medium">Lat.</th>
+                                <th class="pb-2 font-medium">Down.</th>
+                                <th class="pb-2 font-medium">Up.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="speedTestHistoryBody" class="divide-y divide-gray-50 dark:divide-gray-800">
+                            <!-- History will be populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div class="flex justify-end gap-3 mt-6">

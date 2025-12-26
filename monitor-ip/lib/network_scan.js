@@ -105,7 +105,6 @@ function displayScanResults(devices) {
                         <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" class="rounded">
                     </th>
                     <th class="p-3 border-b border-gray-200 dark:border-gray-700">IP Address</th>
-                    <th class="p-3 border-b border-gray-200 dark:border-gray-700">MAC Address</th>
                     <th class="p-3 border-b border-gray-200 dark:border-gray-700">Name / Hostname</th>
                 </tr>
             </thead>
@@ -131,7 +130,6 @@ function displayScanResults(devices) {
                     ${isGateway && !isSelf ? '<span class="ml-2 text-xs bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">GATEWAY</span>' : ''}
                     ${isGateway && isSelf ? '<span class="ml-2 text-xs bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">GW</span>' : ''}
                 </td>
-                <td class="p-3 font-mono text-sm text-gray-600 dark:text-gray-400">${device.mac}</td>
                 <td class="p-3">
                     <input type="text" 
                         class="device-name-input w-full bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:outline-none text-sm py-1" 
@@ -268,7 +266,33 @@ document.addEventListener('DOMContentLoaded', function () {
 // Speed Test Functions
 function showSpeedTestModal() {
     modalFunctions.showModal('speedTestModal');
+    fetchSpeedTestHistory();
 }
+
+async function fetchSpeedTestHistory() {
+    try {
+        const response = await fetch('?action=speed_test_history');
+        const history = await response.json();
+        const body = document.getElementById('speedTestHistoryBody');
+
+        if (!history || history.length === 0) {
+            body.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500 opacity-50 italic">No history available</td></tr>';
+            return;
+        }
+
+        body.innerHTML = history.map(row => `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <td class="py-2 text-gray-600 dark:text-gray-400 font-mono text-xs">${row.timestamp}</td>
+                <td class="py-2 font-medium text-purple-600 dark:text-purple-400">${row.latency}<span class="text-[10px] ml-0.5 opacity-70">ms</span></td>
+                <td class="py-2 font-medium text-green-600 dark:text-green-400">${row.download}<span class="text-[10px] ml-0.5 opacity-70">Mb</span></td>
+                <td class="py-2 font-medium text-blue-600 dark:text-blue-400">${row.upload}<span class="text-[10px] ml-0.5 opacity-70">Mb</span></td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to fetch speedtest history:', error);
+    }
+}
+
 
 function hideSpeedTestModal() {
     modalFunctions.hideModal('speedTestModal');
@@ -316,65 +340,24 @@ async function startSpeedTest() {
     progressDiv.style.display = 'block';
 
     try {
-        // Execute all tests in parallel
         progressBar.style.width = '10%';
-        progressText.textContent = 'Starting parallel tests...';
+        progressText.textContent = 'Running complete speed test...';
 
-        // Helper function to update progress
-        let completedTests = 0;
-        const updateProgress = () => {
-            completedTests++;
-            const progress = 10 + (completedTests * 30); // 10% start + 30% per test
-            progressBar.style.width = `${progress}%`;
-        };
+        const response = await fetch('?action=speed_test_full', { method: 'POST' });
+        const data = await response.json();
 
-        // Define promises for each test
-        const pingPromise = fetch('?action=speed_test_ping', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('pingLatency').textContent = data.latency;
-                }
-                updateProgress();
-                return data;
-            });
+        if (data.success) {
+            document.getElementById('pingLatency').textContent = data.latency;
+            document.getElementById('downloadSpeed').textContent = data.download;
+            document.getElementById('uploadSpeed').textContent = data.upload;
 
-        const downloadPromise = fetch('?action=speed_test_download', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('downloadSpeed').textContent = data.speed;
-                }
-                updateProgress();
-                return data;
-            });
+            progressBar.style.width = '100%';
+            progressText.textContent = 'Test complete!';
 
-        const uploadPromise = fetch('?action=speed_test_upload', {
-            method: 'POST',
-            body: new Blob([new ArrayBuffer(1024 * 1024)]) // 1MB dummy data
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('uploadSpeed').textContent = data.speed;
-                }
-                updateProgress();
-                return data;
-            });
-
-        // Update text
-        progressText.textContent = 'Testing Latency, Download and Upload in parallel...';
-
-        // Wait for all to complete
-        const results = await Promise.all([pingPromise, downloadPromise, uploadPromise]);
-
-        progressBar.style.width = '100%';
-        progressText.textContent = 'Test complete!';
-
-        // Check for errors in results
-        const errors = results.filter(r => !r.success).map(r => r.message);
-        if (errors.length > 0) {
-            throw new Error(errors.join(', '));
+            // Refresh history
+            fetchSpeedTestHistory();
+        } else {
+            throw new Error(data.message || 'Speed test failed');
         }
 
         setTimeout(() => {
