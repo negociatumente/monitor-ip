@@ -954,6 +954,25 @@ async function showNetworkHealth() {
                         </div>
                     </div>
                 </div>
+                
+                <!-- Initiation Guide Promo -->
+                <div class="mt-8 p-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-3xl border-2 border-dashed border-amber-200 dark:border-amber-800/50 relative group">
+                    <div class="flex flex-col md:flex-row items-center gap-6">
+                        <div class="w-16 h-16 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-amber-500/30 group-hover:rotate-12 transition-transform shrink-0">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div class="flex-1 text-center md:text-left">
+                            <h5 class="text-lg font-black text-amber-800 dark:text-amber-400 mb-1">¿No entiendes el monitor?</h5>
+                            <p class="text-xs text-amber-700/80 dark:text-amber-500/70 font-medium leading-relaxed">
+                                Aprende los conceptos básicos y cómo funcionan las redes con la guía <b>Aprende a Monitorizar Servicios en Internet</b>.
+                            </p>
+                        </div>
+                        <a href="https://negociatumente.com/guia-redes" target="_blank" 
+                           class="px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition-all active:scale-95 shadow-lg shadow-amber-600/20 whitespace-nowrap flex items-center gap-2">
+                            Obtener Guía <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+                </div>
             `;
 
 
@@ -1150,9 +1169,15 @@ function generateNetworkHealthAIReport() {
         <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 shadow-inner">
             <pre class="whitespace-pre-wrap font-mono text-xs text-emerald-400/90 leading-relaxed" id="healthTextReport">${report}</pre>
         </div>
-        <button onclick="showNetworkHealth()" class="mt-4 text-xs text-blue-500 hover:text-blue-600 font-bold flex items-center gap-2">
-            <i class="fas fa-arrow-left"></i> Back to Visual Analysis
-        </button>
+        <div class="flex justify-between items-center mt-6">
+            <button onclick="showNetworkHealth()" class="text-xs text-blue-500 hover:text-blue-600 font-bold flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Back to Visual Analysis
+            </button>
+            <a href="https://negociatumente.com/guia-redes" target="_blank" class="text-xs text-amber-600 dark:text-amber-400 font-black flex items-center gap-2 hover:underline">
+                ¿Necesitas ayuda? Consigue la Guía <i class="fas fa-external-link-alt text-[10px]"></i>
+            </a>
+        </div>
+
     `;
 
     window.currentNetworkHealthAIReport = report;

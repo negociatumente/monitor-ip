@@ -162,11 +162,11 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Local Network'
                 <!-- Navigation links -->
                 <div
                     class="flex flex-wrap justify-center lg:justify-end gap-2 pt-4 border-t border-white border-opacity-20">
-                    <a href="https://nordvpn.com/es/pricing/" target="_blank"
+                    <!--<a href="https://nordvpn.com/es/pricing/" target="_blank"
                         class="bg-green-400 hover:bg-green-500 text-blue-900 font-bold px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm shadow-lg transform hover:scale-105">
                         <i class="fas fa-shield-alt"></i>
                         <span class="hidden sm:inline">Get Secure VPN</span>
-                    </a>
+                    </a>-->
                     <a href="https://negociatumente.com" target="_blank"
                         class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
                         <i class="fas fa-globe"></i>
@@ -998,9 +998,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Local Network'
             </div>
 
             <div
-                class="p-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                <p class="text-[10px] text-gray-400 font-mono tracking-tighter uppercase">Proprietary Diagnostic Engine
-                </p>
+                class="p-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex justify-end items-center">
                 <div class="flex gap-2">
                     <button onclick="generateNetworkHealthAIReport()"
                         class="px-6 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-emerald-500/20">
