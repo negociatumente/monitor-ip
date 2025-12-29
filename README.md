@@ -1,5 +1,5 @@
 # 🌐 Monitor de IPs  
-Este proyecto permite monitorear la conectividad a servidores desde tu red local. Es útil para **diagnosticar bloqueos de tu proveedor de Internet (ISP)** y verificar la disponibilidad de estos servicios.  
+Este proyecto permite monitorear la conectividad a servidores desde tu red local. Es útil para **diagnosticar bloqueos de tu proveedor de Internet (ISP)** y verificar la disponibilidad de estos servicios. Ademas, puedes realizar un escaneo de red local para descubrir dispositivos conectados a tu red y medir latencias y velocidades de tu red. Finalmente, puedes generar un reporte de la calidad de tu red.
 
 ## 📖 Ayuda  
 
@@ -21,6 +21,7 @@ https://negociatumente.com/guia-redes
 ✅ **Escaneo de Red Local**: Descubre dispositivos conectados a tu red.  
 ✅ **Test de Velocidad**: Mide tu latencia, descarga y subida (requiere speedtest-cli).  
 ✅ **Múltiples Métodos**: Soporte para Ping (ICMP), HTTP/HTTPS (Curl) y DNS.  
+✅ **Reporte de Red**: Genera un reporte de la calidad de tu red.  
 ✅ **Gestión de Servicios**: Agrupa y organiza tus dispositivos por servicios con colores personalizados.  
 ✅ **Configurable**: Ajusta intervalos, historial y alertas desde la interfaz o `config.ini`.  
 ✅ **Diseño moderno y visual**: Interfaz oscura/clara con animaciones y gráficos.  
@@ -35,8 +36,10 @@ monitor-ip/
 ├── conf/                           # Archivos de configuración y resultados
 │   ├── config.ini                  # Configuración de IPs y servicios remotos
 │   ├── config_local.ini            # Configuración de IPs locales
-│   └── ping_results.json           # Resultados de los pings
-│   └── ping_results_local.json     # Resultados de los pings locales
+├── results/                        # Resultados de los pings y speedtests
+│   ├── ping_results.json           # Resultados de los pings remotos
+│   ├── ping_results_local.json     # Resultados de los pings locales
+│   ├── speedtest_results.json      # Resultados de los speedtests
 ├── lib/                            # Librerías y recursos
 │   ├── functions.php               # Funciones PHP reutilizables
 │   ├── script.js                   # Scripts JavaScript principales
@@ -71,6 +74,7 @@ sudo mv ~/monitor-ip/monitor-ip /var/www/html/monitor-ip
 ```bash
 sudo chown -R www-data:www-data /var/www/html/monitor-ip/conf
 sudo chmod -R 775 /var/www/html/monitor-ip/conf
+sudo chmod -R 775 /var/www/html/monitor-ip/results
 ```
 
 ### 3️⃣ Configuración

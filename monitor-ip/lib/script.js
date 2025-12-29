@@ -112,9 +112,17 @@ function updateCountdown() {
  * Reloads the current page.
  */
 function reloadPage() {
-    // Remove 'page' parameter to ensure ping is triggered on reload
+    // Remove parameters that might interfere with a clean refresh
     const url = new URL(window.location.href);
-    url.searchParams.delete('page');
+    const paramsToClear = [
+        'page', 'action', 'msg', 'delete_ip', 'add_ip',
+        'update_ip_service', 'change_timer', 'change_ping_attempts',
+        'clear_data', 'delete_service', 'export_config', 'import_config'
+    ];
+
+    paramsToClear.forEach(param => url.searchParams.delete(param));
+
+    // Navigate to the clean URL (keeps network=local/external)
     window.location.href = url.toString();
 }
 
@@ -554,28 +562,28 @@ function showIpDetailModal(ip) {
     }
 
     document.getElementById('modalIpContent').innerHTML = `
-        <div class='mb-6'>
+        <div class='mb-2'>
             <div class='grid grid-cols-1 md:grid-cols-4 gap-4 mb-4'>
-                <div class='${uptimeColors} rounded-lg p-4 text-center'>
-                    <div class='text-2xl font-bold'>${Math.round(ipData.percentage)}%</div>
+                <div class='${uptimeColors} rounded-lg p-2 text-center'>
+                    <div class='text-xl font-bold'>${Math.round(ipData.percentage)}%</div>
                     <div class='text-sm ${uptimeTextColor}'>Uptime</div>
                 </div>
-                <div class='${pingColors} rounded-lg p-4 text-center'>
-                    <div class='text-2xl font-bold'>${typeof ipData.average_response_time === 'number' ? ipData.average_response_time.toFixed(2) : ipData.average_response_time} ms</div>
+                <div class='${pingColors} rounded-lg p-2 text-center'>
+                    <div class='text-xl font-bold'>${typeof ipData.average_response_time === 'number' ? ipData.average_response_time.toFixed(2) : ipData.average_response_time} ms</div>
                     <div class='text-sm ${pingTextColor}'>Avg. Latency</div>
                 </div>
-                <div class='rounded-lg p-4 text-center' style='background-color: ${ipData.service_color}; color: ${ipData.service_text_color};'>
+                <div class='rounded-lg p-2 text-center' style='background-color: ${ipData.service_color}; color: ${ipData.service_text_color};'>
                     <div class='text-xl font-bold'>${ipData.service}</div>
                     <div class='text-sm opacity-80 mt-1'>Service</div>
                 </div>
-                <div class='bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900 dark:to-purple-800 text-indigo-600 dark:text-indigo-300 rounded-lg p-4 text-center'>
+                <div class='bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900 dark:to-purple-800 text-indigo-600 dark:text-indigo-300 rounded-lg p-2 text-center'>
                     <div class='text-xl font-bold'>${ipData.method || 'ICMP'}</div>
                     <div class='text-sm text-indigo-700 dark:text-indigo-400 mt-1'>Method</div>
                 </div>
             </div>
         </div>
         
-        <div class='mb-4'>
+        <div class='mb-2'>
             <div class='flex justify-between items-center mb-3'>
                 <h4 class='text-md font-semibold text-gray-700 dark:text-gray-300 flex items-center'>
                     <i class='fas fa-history mr-2 text-blue-500'></i>
@@ -754,15 +762,16 @@ function filterTable() {
     const tableBody = document.getElementById('monitoringTableBody');
     const rows = tableBody.getElementsByTagName('tr');
 
+    const isLocal = new URLSearchParams(window.location.search).get('network') === 'local';
+
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         // Skip if it's the "No IPs" row (usually has colspan)
         if (row.cells.length < 2) continue;
 
         const serviceCell = row.cells[0];
-        const ipCell = row.cells[1];
-        const methodCell = row.cells[2]; // New Method column
-        const statusCell = row.cells[3]; // Status moved to column 3
+        const ipCell = isLocal ? row.cells[2] : row.cells[1];
+        const statusCell = isLocal ? row.cells[4] : row.cells[3];
 
         if (!serviceCell || !ipCell || !statusCell) continue;
 
@@ -902,17 +911,109 @@ async function saveIpService(ip) {
 
 window.toggleServiceEdit = toggleServiceEdit;
 window.saveIpService = saveIpService;
+
+/**
+ * Handles the logic when a special device checkbox (Gateway/Repeater) is toggled.
+ */
+window.handleSpecialDeviceCheck = function (type) {
+    const nameInput = document.getElementById('new_device_name');
+    const gatewayCheck = document.getElementById('check_is_gateway');
+    const repeaterCheck = document.getElementById('check_is_repeater');
+    const networkSelect = document.getElementById('new_network_type');
+
+    if (!nameInput || !gatewayCheck || !repeaterCheck) return;
+
+    if (type === 'gateway') {
+        if (gatewayCheck.checked) {
+            repeaterCheck.checked = false;
+            nameInput.value = 'Gateway';
+            nameInput.readOnly = true;
+            nameInput.classList.add('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
+        } else {
+            nameInput.readOnly = false;
+            nameInput.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
+        }
+    } else if (type === 'repeater') {
+        if (repeaterCheck.checked) {
+            gatewayCheck.checked = false;
+            nameInput.value = 'Repeater/Mesh';
+            nameInput.readOnly = true;
+            nameInput.classList.add('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
+            // Auto-select Repeater network type
+            if (networkSelect) networkSelect.value = 'Repeater/Mesh';
+        } else {
+            nameInput.readOnly = false;
+            nameInput.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
+        }
+    }
+};
+
+window.toggleServiceEdit = toggleServiceEdit;
+window.saveIpService = saveIpService;
 /**
  * Shows the modal to change the service assigned to an IP.
  */
-window.showChangeIpServiceModal = function (ip, currentService) {
+window.showChangeIpServiceModal = function (ip, currentService, isLocal = false, currentNetwork = '') {
     document.getElementById('change_service_ip').value = ip;
     document.getElementById('change_service_ip_display').value = ip;
-    document.getElementById('new_service_for_ip').value = currentService;
 
-    // Reset inline form
-    document.getElementById('newServiceForIpForm').style.display = 'none';
-    document.getElementById('new_service_inline_name').value = '';
+    if (isLocal) {
+        const nameInput = document.getElementById('new_device_name');
+        const gatewayCheck = document.getElementById('check_is_gateway');
+        const repeaterCheck = document.getElementById('check_is_repeater');
+        const networkSelect = document.getElementById('new_network_type');
+
+        nameInput.value = currentService;
+
+        // Reset check states
+        if (gatewayCheck) gatewayCheck.checked = (currentService === 'Gateway');
+        if (repeaterCheck) repeaterCheck.checked = (currentService === 'Repeater/Mesh' || currentService === 'Repeater');
+
+        // Dynamically populate Network Connection dropdown
+        if (networkSelect) {
+            let optionsHtml = `
+                <option value="WiFi-2.4GHz">WiFi-2.4GHz</option>
+                <option value="WiFi-5GHz">WiFi-5GHz</option>
+                <option value="WiFi-6GHz">WiFi-6GHz</option>
+                <option value="Ethernet">Ethernet</option>
+            `;
+
+            // Find all repeaters in the current data
+            Object.entries(window.ipDetails || {}).forEach(([rip, rdata]) => {
+                const sLower = (rdata.service || "").toLowerCase();
+                const isR = !rip.endsWith('.1') && rdata.service !== 'Gateway' && (
+                    sLower.includes('repeater') ||
+                    sLower.includes('repetidor') ||
+                    (sLower.includes('ap') && !sLower.includes('apple'))
+                );
+
+                if (isR && rip !== ip) {
+                    const suffix = rip.split('.').pop();
+                    const val = `Repeater (.${suffix})`;
+                    optionsHtml += `<option value="${val}">${rdata.service} (.${suffix})</option>`;
+                }
+            });
+            networkSelect.innerHTML = optionsHtml;
+            networkSelect.value = currentNetwork || 'Ethernet';
+        }
+
+        // Apply readOnly if needed
+        if (gatewayCheck && gatewayCheck.checked) {
+            nameInput.readOnly = true;
+            nameInput.classList.add('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
+        } else if (repeaterCheck && repeaterCheck.checked) {
+            nameInput.readOnly = true;
+            nameInput.classList.add('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
+        } else {
+            nameInput.readOnly = false;
+            nameInput.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
+        }
+    } else {
+        document.getElementById('new_service_for_ip').value = currentService;
+        // Reset inline form
+        document.getElementById('newServiceForIpForm').style.display = 'none';
+        document.getElementById('new_service_inline_name').value = '';
+    }
 
     const modal = document.getElementById('changeIpServiceModal');
     modal.classList.remove('hidden');

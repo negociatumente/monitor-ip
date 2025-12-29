@@ -9,19 +9,35 @@ $config_path = __DIR__ . '/conf/' . ($is_local_network ? 'config_local.ini' : 'c
 
 // Create config_local.ini if it doesn't exist
 if ($is_local_network && !file_exists($config_path)) {
-    $default_local_config = "[settings]\nversion = \"0.7.0\"\nping_attempts = \"5\"\nping_interval = \"300\"\n[services-colors]\nDEFAULT = \"#6B7280\"\n\"Local Network\" = \"#10B981\"\n[services-methods]\nDEFAULT = \"icmp\"\n\"Local Network\" = \"icmp\"\n[ips-services]\n";
+    $default_local_config = "[settings]\nversion = \"0.7.0\"\nping_attempts = \"5\"\nping_interval = \"300\"\n[services-colors]\nDEFAULT = \"#6B7280\"\n\"Local Network\" = \"#10B981\"\n[services-methods]\nDEFAULT = \"icmp\"\n\"Local Network\" = \"icmp\"\n[ips-host]\n";
     file_put_contents($config_path, $default_local_config);
 }
 
 $config = parse_ini_file($config_path, true);
-$ips_to_monitor = $config['ips-services'] ?? [];
-$services = $config['services-colors'];
+
+if ($is_local_network) {
+    $ips_to_monitor = $config['ips-host'] ?? [];
+    $ips_network = $config['ips-network'] ?? [];
+    $host_color = $config['settings']['host_color'] ?? '#6B7280';
+    $network_color = $config['settings']['network_color'] ?? '#f59e0b';
+
+    // For compatibility with functions that expect $services
+    $services = [];
+    foreach ($ips_to_monitor as $ip => $host_name) {
+        $services[$host_name] = ($host_name === 'Gateway' || $host_name === 'Repeater/Mesh') ? $network_color : $host_color;
+    }
+} else {
+    $ips_to_monitor = $config['ips-services'] ?? [];
+    $services = $config['services-colors'] ?? [];
+    $ips_network = [];
+}
+
 $services_methods = $config['services-methods'] ?? [];
-$ping_attempts = $config['settings']['ping_attempts'];
-$ping_interval = $config['settings']['ping_interval'];
+$ping_attempts = $config['settings']['ping_attempts'] ?? 5;
+$ping_interval = $config['settings']['ping_interval'] ?? 300;
 
 // Cargar archivos
-$ping_file = __DIR__ . '/conf/' . ($is_local_network ? 'ping_results_local.json' : 'ping_results.json');
+$ping_file = __DIR__ . '/results/' . ($is_local_network ? 'ping_results_local.json' : 'ping_results.json');
 require_once __DIR__ . '/lib/functions.php';
 
 // Cargar resultados previos si existen
@@ -133,12 +149,35 @@ if (isset($_GET['action'])) {
 
     if ($_GET['action'] === 'speed_test_history' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         header('Content-Type: application/json');
-        $history_file = __DIR__ . '/conf/speedtest_results.json';
+        $history_file = __DIR__ . '/results/speedtest_results.json';
         $history = file_exists($history_file) ? json_decode(file_get_contents($history_file), true) : [];
         echo json_encode($history ?: []);
         exit;
     }
 
+
+    if ($_GET['action'] === 'diagnose' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+        $ip = $_POST['ip'] ?? '';
+        $type = $_POST['type'] ?? 'all';
+
+        try {
+            $response = ['success' => true];
+
+            if ($type === 'traceroute') {
+                $response['result'] = run_traceroute($ip);
+            } elseif ($type === 'geoip') {
+                $response['result'] = get_geoip_info($ip);
+            } elseif ($type === 'network_health') {
+                $response['result'] = get_network_health();
+            }
+
+            echo json_encode($response);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
 
     if (isset($_GET['action']) && $_GET['action'] === 'update_ip_service' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json');
@@ -231,7 +270,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
 
     // Verificar si la IP ya existe
     $config = parse_ini_file($config_path, true);
-    if (isset($config['ips-services'][$validated_ip])) {
+    $check_ips_section = $is_local_network ? 'ips-host' : 'ips-services';
+    if (isset($config[$check_ips_section][$validated_ip])) {
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=ip_exists" . $network_param);
         exit;
     }
@@ -321,7 +361,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_data'])) {
     // Verificar si se deben borrar también las IPs
     if (isset($_POST['delete_ips'])) {
         $config = parse_ini_file($config_path, true);
-        $config['ips-services'] = []; // Vaciar la sección de IPs
+        $section_to_delete = $is_local_network ? 'ips-host' : 'ips-services';
+        $config[$section_to_delete] = []; // Vaciar la sección de IPs
+        if ($is_local_network) {
+            $config['ips-network'] = [];
+        }
 
         // Reconstruir el contenido del archivo ini
         $new_content = '';
@@ -401,13 +445,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_update_ip_ser
         }
     }
 
-    if (update_ip_service($ip, $new_service)) {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_updated" . $network_param);
-        exit;
+    if ($is_local_network) {
+        $new_name = trim($_POST['new_device_name'] ?? '');
+        $new_network = trim($_POST['new_network_type'] ?? '');
+
+        if (update_local_ip_config($ip, $new_name, $new_network)) {
+            header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_updated" . $network_param);
+            exit;
+        }
     } else {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_update_failed" . $network_param);
-        exit;
+        if (update_ip_service($ip, $new_service)) {
+            header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_updated" . $network_param);
+            exit;
+        }
     }
+
+    header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_update_failed" . $network_param);
+    exit;
 }
 
 
@@ -429,10 +483,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {
     }
 }
 
-// Ejecutar pings en paralelo (siempre, a menos que sea una acción AJAX que ya salió, o si estamos paginando)
+// Ejecutar pings en paralelo (siempre, a menos que sea una acción AJAX que ya salió, o si estamos paginando, o si acabamos de realizar una acción)
 // Obtener solo las IPs en un array
 $ips_array = array_keys($ips_to_monitor);
-if (!isset($_GET['page'])) {
+if (!isset($_GET['page']) && !isset($_GET['action'])) {
     update_ping_results_parallel($ips_array);
 }
 
@@ -477,10 +531,25 @@ if ($_GET['action'] === 'error' && isset($_GET['msg'])) {
 
 // Recargar configuración después de procesar POST requests
 $config = parse_ini_file($config_path, true);
-$ips_to_monitor = $config['ips-services'] ?? [];
-$services = $config['services-colors'] ?? [];
+
+if ($is_local_network) {
+    $ips_to_monitor = $config['ips-host'] ?? [];
+    $ips_network = $config['ips-network'] ?? [];
+    $host_color = $config['settings']['host_color'] ?? '#6B7280';
+    $network_color = $config['settings']['network_color'] ?? '#f59e0b';
+
+    $services = [];
+    foreach ($ips_to_monitor as $ip => $host_name) {
+        $services[$host_name] = ($host_name === 'Gateway' || $host_name === 'Repeater/Mesh') ? $network_color : $host_color;
+    }
+} else {
+    $ips_to_monitor = $config['ips-services'] ?? [];
+    $services = $config['services-colors'] ?? [];
+    $ips_network = [];
+}
+
 $ping_attempts = $config['settings']['ping_attempts'] ?? 5;
-$ping_interval = $config['settings']['ping_interval'] ?? 30;
+$ping_interval = $config['settings']['ping_interval'] ?? 300;
 
 // Cargar la vista al final, con los datos actualizados
 require_once __DIR__ . '/views.php';

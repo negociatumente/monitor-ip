@@ -57,7 +57,9 @@ function update_ping_results_parallel($ips)
     // Load configuration
     $config = parse_ini_file($config_path, true);
     $services_methods = $config['services-methods'] ?? [];
-    $ips_services = $config['ips-services'] ?? [];
+    global $is_local_network;
+    $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
+    $ips_services = $config[$ips_section] ?? [];
 
     $isWindows = (PHP_OS_FAMILY === 'Windows');
     $processes = [];
@@ -243,8 +245,14 @@ function delete_ip_from_config($ip)
     // Eliminar del archivo config.ini
     global $config_path;
     $config = parse_ini_file($config_path, true);
-    if (isset($config['ips-services'][$ip])) {
-        unset($config['ips-services'][$ip]);
+    global $is_local_network;
+    $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
+    if (isset($config[$ips_section][$ip])) {
+        unset($config[$ips_section][$ip]);
+        // Also remove from ips-network if exists
+        if (isset($config['ips-network'][$ip])) {
+            unset($config['ips-network'][$ip]);
+        }
         $new_content = '';
         foreach ($config as $section => $values) {
             $new_content .= "[$section]\n";
@@ -307,7 +315,9 @@ function add_ip_to_config($ip, $service, $method = 'icmp')
     $clean_service = htmlspecialchars($service, ENT_QUOTES, 'UTF-8');
     $clean_method = htmlspecialchars($method, ENT_QUOTES, 'UTF-8');
 
-    $config['ips-services'][$clean_ip] = $clean_service;
+    global $is_local_network;
+    $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
+    $config[$ips_section][$clean_ip] = $clean_service;
 
     // Store monitoring method for the service in services-methods
     if (!isset($config['services-methods'])) {
@@ -365,11 +375,17 @@ function delete_service_from_config($service_name)
         return false;
     }
 
+    global $is_local_network;
+    $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
+
     // Remove all IPs that use this service
-    if (isset($config['ips-services'])) {
-        foreach ($config['ips-services'] as $ip => $service) {
+    if (isset($config[$ips_section])) {
+        foreach ($config[$ips_section] as $ip => $service) {
             if ($service === $service_name) {
-                unset($config['ips-services'][$ip]);
+                unset($config[$ips_section][$ip]);
+                if (isset($config['ips-network'][$ip])) {
+                    unset($config['ips-network'][$ip]);
+                }
             }
         }
     }
@@ -402,14 +418,50 @@ function update_ip_service($ip, $new_service)
     global $config_path;
     $config = parse_ini_file($config_path, true);
 
-    if (!$config || !isset($config['ips-services'][$ip])) {
+    global $is_local_network;
+    $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
+    if (!$config || !isset($config[$ips_section][$ip])) {
         return false;
     }
 
     $clean_ip = htmlspecialchars($ip, ENT_QUOTES, 'UTF-8');
     $clean_service = htmlspecialchars($new_service, ENT_QUOTES, 'UTF-8');
 
-    $config['ips-services'][$clean_ip] = $clean_service;
+    $config[$ips_section][$clean_ip] = $clean_service;
+
+    // Guardar configuración
+    $new_content = '';
+    foreach ($config as $section => $values) {
+        $new_content .= "[$section]\n";
+        foreach ($values as $key => $value) {
+            $new_content .= "$key = \"$value\"\n";
+        }
+    }
+
+    return file_put_contents($config_path, $new_content) !== false;
+}
+
+// Función para actualizar el host y la red de una IP local
+function update_local_ip_config($ip, $new_name, $new_network)
+{
+    global $config_path;
+    $config = parse_ini_file($config_path, true);
+
+    if (!$config)
+        return false;
+
+    $clean_ip = htmlspecialchars($ip, ENT_QUOTES, 'UTF-8');
+    $clean_name = htmlspecialchars($new_name, ENT_QUOTES, 'UTF-8');
+    $clean_network = htmlspecialchars($new_network, ENT_QUOTES, 'UTF-8');
+
+    // Update or Create sections if they don't exist
+    if (!isset($config['ips-host']))
+        $config['ips-host'] = [];
+    if (!isset($config['ips-network']))
+        $config['ips-network'] = [];
+
+    $config['ips-host'][$clean_ip] = $clean_name;
+    $config['ips-network'][$clean_ip] = $clean_network;
 
     // Guardar configuración
     $new_content = '';
@@ -659,11 +711,13 @@ function update_service_config($old_name, $new_name, $new_color, $new_method)
 
     // Si el nombre cambió
     if ($old_name !== $new_name) {
-        // Actualizar referencias en ips-services
-        if (isset($config['ips-services'])) {
-            foreach ($config['ips-services'] as $ip => $service) {
+        global $is_local_network;
+        $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
+        // Actualizar referencias en la sección de IPs
+        if (isset($config[$ips_section])) {
+            foreach ($config[$ips_section] as $ip => $service) {
                 if ($service === $old_name) {
-                    $config['ips-services'][$ip] = $new_name;
+                    $config[$ips_section][$ip] = $new_name;
                 }
             }
         }
@@ -877,21 +931,18 @@ function save_local_network_scan($devices)
     } else {
         $config = [
             'settings' => [
-                'version' => '0.7.0',
+                'version' => '0.8.0',
                 'ping_attempts' => '5',
-                'ping_interval' => '300'
+                'ping_interval' => '300',
+                'host_color' => '#b4ecb9ff',
+                'gateway_color' => '#f59e0b'
             ],
-            'services-colors' => [
-                'DEFAULT' => '#6B7280',
-                'Local Network' => '#10B981'
-            ],
-            'services-methods' => [
-                'DEFAULT' => 'icmp',
-                'Local Network' => 'icmp'
-            ],
-            'ips-services' => []
+            'ips-host' => [],
+            'ips-network' => []
         ];
     }
+
+    $ips_section = 'ips-host';
 
     // Add discovered devices
     foreach ($devices as $device) {
@@ -904,7 +955,15 @@ function save_local_network_scan($devices)
 
         // Check if IP already exists to avoid overwriting existing names unless explicitly requested
         // But here we want to update if user provided a name
-        $config['ips-services'][$ip] = $name;
+        $config[$ips_section][$ip] = $name;
+
+        // Save network type if provided
+        if (isset($device['network'])) {
+            if (!isset($config['ips-network'])) {
+                $config['ips-network'] = [];
+            }
+            $config['ips-network'][$ip] = htmlspecialchars($device['network'], ENT_QUOTES, 'UTF-8');
+        }
     }
 
     // Save config
@@ -1090,7 +1149,7 @@ function run_complete_speedtest()
  */
 function save_speedtest_results($results)
 {
-    $history_file = __DIR__ . '/../conf/speedtest_results.json';
+    $history_file = __DIR__ . '/../results/speedtest_results.json';
     $history = [];
 
     if (file_exists($history_file)) {
@@ -1111,5 +1170,210 @@ function save_speedtest_results($results)
 
     file_put_contents($history_file, json_encode($history, JSON_PRETTY_PRINT));
 }
+
+/**
+ * Run traceroute to a host
+ */
+function run_traceroute($host)
+{
+    $isWindows = (PHP_OS_FAMILY === 'Windows');
+    $host_escaped = escapeshellarg($host);
+
+    if ($isWindows) {
+        $command = "tracert -d -h 15 $host_escaped";
+    } else {
+        $command = "traceroute -n -m 15 $host_escaped 2>&1";
+    }
+
+    $output = shell_exec($command);
+    return $output ?: "Error running traceroute";
+}
+
+
+
+/**
+ * Get GeoIP information for an external IP
+ */
+function get_geoip_info($ip)
+{
+    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+        return ['status' => 'fail', 'message' => 'Local or invalid IP'];
+    }
+
+    $ctx = stream_context_create(['http' => ['timeout' => 3]]);
+    $response = @file_get_contents("http://ip-api.com/json/$ip?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,query", false, $ctx);
+
+    if ($response) {
+        return json_decode($response, true);
+    }
+    return ['status' => 'fail', 'message' => 'API connection failed'];
+}
+
+/**
+ * Analyze the health of the local network
+ */
+/**
+ * Analyze the health of the local network
+ */
+function get_network_health()
+{
+    global $ping_file, $config_path;
+
+    // Load configuration for theoretical speed
+    $config = parse_ini_file($config_path, true);
+    $theoretical_speed = (float) ($config['settings']['speed_connection_mbps'] ?? 0);
+
+    $isWindows = (PHP_OS_FAMILY === 'Windows');
+    $gateway_ip = '';
+
+    // 1. Find Gateway
+    if ($isWindows) {
+        $route_output = @shell_exec('route print 0.0.0.0');
+        if (preg_match('/0\.0\.0\.0\s+0\.0\.0\.0\s+(\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
+            $gateway_ip = $matches[1];
+        }
+    } else {
+        $route_output = @shell_exec('ip route | grep default');
+        if (preg_match('/default via (\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
+            $gateway_ip = $matches[1];
+        }
+    }
+
+    $report = [
+        'timestamp' => date('Y-m-d H:i:s'),
+        'gateway' => [
+            'ip' => $gateway_ip ?: 'Unknown',
+            'status' => 'OFFLINE',
+            'latency' => 'N/A'
+        ],
+        'devices' => [
+            'total' => 0,
+            'up' => 0,
+            'avg_latency' => 0
+        ],
+        'speed' => null,
+        'theoretical_speed' => $theoretical_speed,
+        'summary' => 'Analysis incomplete'
+    ];
+
+    // 2. Ping Gateway if found
+    if (!empty($gateway_ip)) {
+        $escaped_gateway = escapeshellarg($gateway_ip);
+        $pingCommand = $isWindows ? "ping -n 1 -w 1000 $escaped_gateway" : "ping -c 1 -W 1 $escaped_gateway";
+        $ping = @shell_exec($pingCommand);
+
+        if (strpos($ping, 'TTL=') !== false || strpos($ping, 'bytes from') !== false) {
+            $report['gateway']['status'] = 'ONLINE';
+            if ($isWindows) {
+                preg_match('/tiempo[=<]\s*(\d+ms)/', $ping, $matches);
+            } else {
+                preg_match('/time[=<]\s*([\d\.]+\s*ms)/', $ping, $matches);
+            }
+            $report['gateway']['latency'] = $matches[1] ?? 'N/A';
+        }
+    }
+
+    // 3. Analyze active local devices
+    if (file_exists($ping_file)) {
+        $ping_data = json_decode(file_get_contents($ping_file), true);
+        $total_latency = 0;
+        $active_count = 0;
+
+        foreach ($ping_data as $ip => $history) {
+            // Robust local IP check (Private ranges + Loopback)
+            $is_local = false;
+            $ip_long = ip2long($ip);
+
+            if ($ip_long !== false) {
+                $is_local = (
+                    ($ip_long & 0xFF000000) === 0x0A000000 || // 10.0.0.0/8
+                    ($ip_long & 0xFFF00000) === 0xAC100000 || // 172.16.0.0/12
+                    ($ip_long & 0xFFFF0000) === 0xC0A80000 || // 192.168.0.0/16
+                    ($ip_long & 0xFF000000) === 0x7F000000    // 127.0.0.0/8
+                );
+            } elseif ($ip === '::1') {
+                $is_local = true;
+            }
+
+            if ($is_local) {
+                $report['devices']['total']++;
+                if (!empty($history) && isset($history[0]['status']) && $history[0]['status'] === 'UP') {
+                    $report['devices']['up']++;
+                    $active_count++;
+
+                    $latency_str = $history[0]['response_time'] ?? '0';
+                    $latency_val = floatval(str_replace(['ms', ' '], '', $latency_str));
+                    if ($latency_val > 0) {
+                        $total_latency += $latency_val;
+                    }
+                }
+            }
+        }
+
+        if ($active_count > 0) {
+            $report['devices']['avg_latency'] = round($total_latency / $active_count, 2) . ' ms';
+        }
+    }
+
+    // 4. Get Speed Test results
+    $history_file = __DIR__ . '/../results/speedtest_results.json';
+    if (file_exists($history_file)) {
+        $speed_history = json_decode(file_get_contents($history_file), true);
+        if (!empty($speed_history) && is_array($speed_history[0])) {
+            $report['speed'] = $speed_history[0]; // Latest test
+        }
+    }
+
+    // 5. Final Summary logic
+    $health_score = 0;
+
+    // Gateway connectivity (40 points)
+    if ($report['gateway']['status'] === 'ONLINE') {
+        $health_score += 40;
+    }
+
+    // Local device activity (20 points)
+    if ($report['devices']['up'] > 0) {
+        $health_score += 20;
+    }
+
+    // Speed performance (40 points)
+    if (is_array($report['speed']) && $theoretical_speed > 0) {
+        $speed_results = (array) $report['speed'];
+        $actual_download = (float) ($speed_results['download'] ?? 0);
+        $performance_ratio = $actual_download / $theoretical_speed;
+
+        if ($performance_ratio >= 0.9)
+            $health_score += 40;
+        elseif ($performance_ratio >= 0.7)
+            $health_score += 30;
+        elseif ($performance_ratio >= 0.5)
+            $health_score += 20;
+        elseif ($performance_ratio >= 0.3)
+            $health_score += 10;
+
+        $speed_results['performance_ratio'] = round($performance_ratio * 100, 1) . '%';
+        $report['speed'] = $speed_results;
+    } elseif (is_array($report['speed'])) {
+        // Fallback score if no theoretical speed is set but test exists
+        $health_score += 20;
+    }
+
+    if ($health_score >= 90)
+        $report['summary'] = 'Excellent';
+    elseif ($health_score >= 70)
+        $report['summary'] = 'Good';
+    elseif ($health_score >= 40)
+        $report['summary'] = 'Fair';
+    else
+        $report['summary'] = 'Poor';
+
+    $report['health_score'] = $health_score;
+
+    return $report;
+}
+
+
+
 
 
