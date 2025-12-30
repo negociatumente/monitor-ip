@@ -352,12 +352,12 @@ function switchNetworkType(type) {
         externalTab.classList.add('active');
         localTab.classList.remove('active');
         // Redirect to main config
-        window.location.href = '?network=external';
+        window.location.href = '?network=external&no_ping=1';
     } else {
         localTab.classList.add('active');
         externalTab.classList.remove('active');
         // Redirect to local config
-        window.location.href = '?network=local';
+        window.location.href = '?network=local&no_ping=1';
     }
 }
 
@@ -383,6 +383,8 @@ document.addEventListener('DOMContentLoaded', function () {
 // Speed Test Functions
 function showSpeedTestModal() {
     modalFunctions.showModal('speedTestModal');
+    // Ensure the results container (which holds the history) is visible
+    document.getElementById('speedTestResults').style.display = 'block';
     fetchSpeedTestHistory();
 }
 
@@ -512,291 +514,6 @@ async function startSpeedTest() {
     }
 }
 
-// Diagnostics Functions
-let currentDiagIp = '';
-
-function showDiagnosticsModal(ip) {
-    currentDiagIp = ip;
-    document.getElementById('diag_ip_title').textContent = ip;
-    document.getElementById('diagnosticsModal').classList.remove('hidden');
-
-    // Reset tabs and panels
-    switchDiagTab('general');
-
-    // Initial data fetch
-    runGeoIP(ip);
-}
-
-function closeDiagnosticsModal() {
-    document.getElementById('diagnosticsModal').classList.add('hidden');
-    currentDiagIp = '';
-}
-
-function switchDiagTab(tabId) {
-    // Update tabs UI
-    document.querySelectorAll('.diag-tab').forEach(tab => {
-        tab.classList.remove('bg-purple-100', 'text-purple-700', 'dark:bg-purple-900/40', 'dark:text-purple-300', 'active-diag-tab');
-        tab.classList.add('text-gray-600', 'dark:text-gray-400');
-    });
-
-    const activeTab = document.getElementById('tab-diag-' + tabId);
-    activeTab.classList.add('active-diag-tab', 'bg-purple-100', 'text-purple-700', 'dark:bg-purple-900/40', 'dark:text-purple-300');
-    activeTab.classList.remove('text-gray-600', 'dark:text-gray-400');
-
-    // Update panels
-    document.querySelectorAll('.diag-panel').forEach(panel => panel.classList.add('hidden'));
-    document.getElementById('diag-content-' + tabId).classList.remove('hidden');
-
-    // Trigger specific actions if needed
-    if (tabId === 'traceroute' && document.getElementById('traceroute_visual').innerHTML.includes('-- Traceroute ready --')) {
-        runTraceroute(currentDiagIp);
-    }
-
-    if (tabId === 'aireport') {
-        generateAIReport();
-    }
-}
-
-async function runGeoIP(ip) {
-    const container = document.getElementById('geoip_container');
-    container.innerHTML = `<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4"></i>Analysing location...</div>`;
-
-    try {
-        const formData = new FormData();
-        formData.append('ip', ip);
-        formData.append('type', 'geoip');
-
-        const response = await fetch('?action=diagnose', { method: 'POST', body: formData });
-        const data = await response.json();
-
-        if (data.success && data.result.status === 'success') {
-            const r = data.result;
-            container.innerHTML = `
-                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                    <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Status</p>
-                    <p class="text-sm font-semibold flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Localized</p>
-                </div>
-                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                    <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Country</p>
-                    <p class="text-sm font-semibold flex items-center gap-2">
-                        <img src="https://flagcdn.com/24x18/${r.countryCode.toLowerCase()}.png" class="rounded-sm"> ${r.country} (${r.countryCode})
-                    </p>
-                </div>
-                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                    <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">City / Region</p>
-                    <p class="text-sm font-semibold">${r.city}, ${r.regionName}</p>
-                </div>
-                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                    <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">ISP / Org</p>
-                    <p class="text-sm font-semibold truncate" title="${r.isp}">${r.isp}</p>
-                </div>
-                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 col-span-2">
-                    <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">ASN</p>
-                    <p class="text-sm font-semibold">${r.as}</p>
-                </div>
-            `;
-        } else {
-            const isLocal = data.result?.message?.includes('Local') || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.');
-
-            if (isLocal) {
-                container.innerHTML = `
-                    <div class="col-span-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-2xl p-8 flex flex-col items-center text-center">
-                        <div class="w-16 h-16 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4 shadow-inner">
-                            <i class="fas fa-home text-2xl"></i>
-                        </div>
-                        <h4 class="text-xl font-bold text-blue-900 dark:text-blue-100 mb-2">Local Network IP</h4>
-                        <p class="text-sm text-blue-700/70 dark:text-blue-300/60 max-w-md">
-                            This address belongs to a private network range. Geolocation is not available for internal assets.
-                        </p>
-                        <div class="mt-6 flex gap-4">
-                            <span class="px-3 py-1 bg-white dark:bg-gray-800 rounded-full text-[10px] font-bold text-blue-500 border border-blue-100 dark:border-blue-800 shadow-sm uppercase tracking-wider">Private Range</span>
-                            <span class="px-3 py-1 bg-white dark:bg-gray-800 rounded-full text-[10px] font-bold text-blue-500 border border-blue-100 dark:border-blue-800 shadow-sm uppercase tracking-wider">Intranet</span>
-                        </div>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = `<div class="col-span-2 py-10 text-center text-gray-400 italic">No geolocation data available for this host.</div>`;
-            }
-        }
-    } catch (e) {
-        container.innerHTML = `<div class="col-span-2 py-10 text-red-500">Error fetching GeoIP data</div>`;
-    }
-}
-
-function setTracerouteView(mode) {
-    const visual = document.getElementById('traceroute_visual');
-    const raw = document.getElementById('traceroute_raw');
-    const btnVisual = document.getElementById('btn-trace-visual');
-    const btnRaw = document.getElementById('btn-trace-raw');
-
-    if (mode === 'visual') {
-        visual.classList.remove('hidden');
-        raw.classList.add('hidden');
-        btnVisual.classList.add('bg-white', 'dark:bg-gray-700', 'shadow-sm', 'text-indigo-600', 'dark:text-indigo-400');
-        btnVisual.classList.remove('text-gray-500');
-        btnRaw.classList.remove('bg-white', 'dark:bg-gray-700', 'shadow-sm', 'text-indigo-600', 'dark:text-indigo-400');
-        btnRaw.classList.add('text-gray-500');
-    } else {
-        visual.classList.add('hidden');
-        raw.classList.remove('hidden');
-        btnRaw.classList.add('bg-white', 'dark:bg-gray-700', 'shadow-sm', 'text-indigo-600', 'dark:text-indigo-400');
-        btnRaw.classList.remove('text-gray-500');
-        btnVisual.classList.remove('bg-white', 'dark:bg-gray-700', 'shadow-sm', 'text-indigo-600', 'dark:text-indigo-400');
-        btnVisual.classList.add('text-gray-500');
-    }
-}
-
-async function runTraceroute(ip) {
-    const visual = document.getElementById('traceroute_visual');
-    const raw = document.getElementById('traceroute_raw');
-
-    visual.innerHTML = `
-        <div class="flex flex-col items-center justify-center py-20 animate-pulse">
-            <i class="fas fa-route text-3xl mb-4 text-indigo-400"></i>
-            <p class="text-gray-500 font-medium">Trace-routing path to ${ip}...</p>
-            <p class="text-[10px] text-gray-400 mt-2 uppercase tracking-widest">Searching via 15 maximum hops</p>
-        </div>
-    `;
-    raw.textContent = "Scanning network path...";
-
-    try {
-        const formData = new FormData();
-        formData.append('ip', ip);
-        formData.append('type', 'traceroute');
-
-        const response = await fetch('?action=diagnose', { method: 'POST', body: formData });
-        const data = await response.json();
-
-        if (data.success) {
-            const rawOutput = data.result;
-            raw.textContent = rawOutput;
-
-            const lines = rawOutput.split('\n');
-            let html = '<div class="space-y-4 relative">';
-
-            // CGNAT Detection: Check for 100.64.0.0/10 range (RFC 6598)
-            let cgnatDetected = false;
-            const cgnatIPs = [];
-
-            lines.forEach(line => {
-                const ipMatch = line.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/g);
-                if (ipMatch) {
-                    ipMatch.forEach(ip => {
-                        const parts = ip.split('.').map(Number);
-                        // Check if IP is in 100.64.0.0/10 range
-                        if (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) {
-                            cgnatDetected = true;
-                            if (!cgnatIPs.includes(ip)) cgnatIPs.push(ip);
-                        }
-                    });
-                }
-            });
-
-            // Display CGNAT warning banner if detected
-            if (cgnatDetected) {
-                html += `
-                    <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg">
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-exclamation-triangle text-white text-sm"></i>
-                            </div>
-                            <div class="flex-1">
-                                <h4 class="text-sm font-black text-amber-800 dark:text-amber-400 uppercase tracking-wider mb-1">
-                                    <i class="fas fa-network-wired mr-2"></i>CGNAT Detected
-                                </h4>
-                                <p class="text-xs text-amber-700 dark:text-amber-300 mb-2">
-                                    Your ISP is using Carrier-Grade NAT (CGNAT). Detected IP(s): <span class="font-mono font-bold">${cgnatIPs.join(', ')}</span>
-                                </p>
-                                <p class="text-[10px] text-amber-600 dark:text-amber-400">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    This may affect port forwarding, P2P connections, and some online services. Contact your ISP for a public IP if needed.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Add a vertical line for the path
-            html += '<div class="absolute left-[20px] top-6 bottom-6 w-0.5 bg-gray-200 dark:bg-gray-800 z-0"></div>';
-
-            let hopsFound = 0;
-            lines.forEach(line => {
-                // Better regex for hops: starts with space(s) and then a number
-                const match = line.trim().match(/^(\d+)\s+(.+)$/);
-                if (match) {
-                    hopsFound++;
-                    const hopNumber = match[1];
-                    const content = match[2];
-
-                    // Detect timeout (* * *)
-                    const isTimeout = content.includes('*') && !content.includes('.');
-
-                    // Parse times (usually something like "5.232 ms" or "<1 ms")
-                    const times = content.match(/(\d+\.?\d*\s*ms|<1\s*ms)/g) || [];
-
-                    // Get IP/Host: strip out times and asterisks
-                    let hostName = content
-                        .replace(/(\d+\.?\d*\s*ms|<1\s*ms)/g, '')
-                        .replace(/\*/g, '')
-                        .trim();
-
-                    // Format IP if found
-                    const ipMatch = hostName.match(/\((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\)/) || hostName.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
-                    const ipOnly = ipMatch ? ipMatch[1] : '';
-                    if (ipMatch) hostName = hostName.replace(`(${ipOnly})`, '').trim();
-
-                    // Check if this hop is a CGNAT IP
-                    const isCGNAT = cgnatIPs.includes(ipOnly);
-
-                    html += `
-                        <div class="relative z-10 flex items-start gap-4 p-2 transition-all">
-                            <div class="flex-shrink-0 w-10 h-10 rounded-full ${isTimeout ? 'bg-gray-100 dark:bg-gray-800' : (isCGNAT ? 'bg-amber-500' : 'bg-indigo-600')} border-4 border-white dark:border-gray-900 shadow-sm flex items-center justify-center text-xs font-bold ${isTimeout ? 'text-gray-400' : 'text-white'}">
-                                ${hopNumber}
-                            </div>
-                            <div class="flex-1 min-w-0 bg-white dark:bg-gray-800/50 p-4 rounded-2xl border ${isCGNAT ? 'border-amber-300 dark:border-amber-700' : 'border-gray-100 dark:border-gray-700/50'} shadow-sm group hover:border-indigo-200 dark:hover:border-indigo-900 transition-colors">
-                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                                    <div class="flex-1 truncate">
-                                        <h5 class="text-sm font-bold ${isTimeout ? 'text-gray-400' : 'text-gray-800 dark:text-gray-200'} truncate flex items-center gap-2">
-                                            ${isTimeout ? '<i class="fas fa-exclamation-triangle mr-2"></i> Request Timed Out' : (hostName || ipOnly || 'Unknown Host')}
-                                            ${isCGNAT ? '<span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[8px] font-black uppercase tracking-wider rounded-full">CGNAT</span>' : ''}
-                                        </h5>
-                                        ${ipOnly && hostName !== ipOnly ? `<p class="text-[10px] font-mono text-gray-500 mt-0.5">${ipOnly}</p>` : ''}
-                                    </div>
-                                    <div class="flex gap-1">
-                                        ${times.length > 0 ? times.map(t => `<span class="px-2 py-0.5 bg-gray-50 dark:bg-gray-900 rounded-md text-[9px] font-mono font-bold text-gray-500 border border-gray-100 dark:border-gray-800">${t.replace(' ms', '').trim()}ms</span>`).join('') : (isTimeout ? '' : '<span class="px-2 py-0.5 bg-red-50 dark:bg-red-900/20 rounded-md text-[9px] font-mono font-bold text-red-500 border border-red-100 dark:border-red-900/30">DROP</span>')}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-
-            if (hopsFound === 0) {
-                // Fallback to raw if no hops were parsed
-                html = `<div class="flex flex-col items-center justify-center py-20 text-gray-400">
-                    <i class="fas fa-terminal text-3xl mb-4 opacity-20"></i>
-                    <p class="text-sm">Structured view unavailable for this output format.</p>
-                    <button onclick="setTracerouteView('raw')" class="mt-4 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold">Switch to Raw Output</button>
-                </div>`;
-            } else {
-                html += '</div>';
-            }
-
-            visual.innerHTML = html;
-        } else {
-            visual.innerHTML = `<div class="p-8 text-red-500 flex items-center gap-3"><i class="fas fa-times-circle text-xl"></i> ${data.message}</div>`;
-        }
-    } catch (e) {
-        visual.innerHTML = `<div class="p-8 text-red-500">Fatal error running diagnostic tool.</div>`;
-    }
-}
-
-
-window.showDiagnosticsModal = showDiagnosticsModal;
-window.closeDiagnosticsModal = closeDiagnosticsModal;
-window.switchDiagTab = switchDiagTab;
 
 async function showNetworkHealth() {
     const modal = document.getElementById('networkHealthModal');
@@ -805,7 +522,7 @@ async function showNetworkHealth() {
 
     content.innerHTML = `
         <div class="flex flex-col items-center justify-center py-20 animate-pulse">
-            <i class="fas fa-circle-notch fa-spin text-4xl mb-4 text-indigo-500"></i>
+            <i class="fas fa-circle-notch fa-spin text-4xl mb-0 text-indigo-500"></i>
             <p class="text-gray-500 font-bold uppercase tracking-widest text-xs">Evaluating network performance...</p>
         </div>
     `;
@@ -824,139 +541,193 @@ async function showNetworkHealth() {
         if (data.success) {
             window.lastNetworkHealthData = data.result;
             const h = data.result;
-            let speedHtml = '';
-            const theoreticalMb = h.theoretical_speed || 0;
-            const theoreticalDisplay = theoreticalMb > 0 ? `${theoreticalMb} Mb` : 'Not Set';
+            // Colors and Gauge Calculation
+            const scoreColor = h.health_score >= 90 ? 'text-emerald-500' : (h.health_score >= 70 ? 'text-blue-500' : (h.health_score >= 40 ? 'text-amber-500' : 'text-red-500'));
+            const strokeColor = h.health_score >= 90 ? '#10B981' : (h.health_score >= 70 ? '#3B82F6' : (h.health_score >= 40 ? '#F59E0B' : '#EF4444'));
+            const circleCircumference = 2 * Math.PI * 45;
+            const circleOffset = circleCircumference - ((h.health_score / 100) * circleCircumference);
 
-            if (h.speed) {
-                const perfRatio = h.speed.performance_ratio || 'N/A';
+            // Speed Data Preparation
+            const download = h.speed ? h.speed.download.toFixed(0) : '--';
+            const upload = h.speed ? h.speed.upload.toFixed(0) : '--';
+            const latency = h.speed ? h.speed.latency.toFixed(2) : '--';
+            const activeDevs = h.devices ? h.devices.up : 0;
+            const totalDevs = h.devices ? h.devices.total : 0;
+            const avgDeviceLatency = h.devices ? h.devices.avg_latency : 0;
+            const theoretical_speed = h.speed ? h.theoretical_speed : '--';
 
-                speedHtml = `
-                    <div class="grid grid-cols-3 gap-4 mb-3">
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
-                            <div class="absolute top-0 right-0 p-1 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <i class="fas fa-download text-4xl transform translate-x-4"></i>
-                            </div>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Download</p>
-                            <p class="text-xl font-black text-green-500">${h.speed.download}<span class="text-[10px] ml-1">Mb</span></p>
-                        </div>
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
-                            <div class="absolute top-0 right-0 p-1 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <i class="fas fa-upload text-4xl transform translate-x-4"></i>
-                            </div>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Upload</p>
-                            <p class="text-xl font-black text-blue-500">${h.speed.upload}<span class="text-[10px] ml-1">Mb</span></p>
-                        </div>
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden group">
-                            <div class="absolute top-0 right-0 p-1 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <i class="fas fa-clock text-4xl transform translate-x-4"></i>
-                            </div>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Latency</p>
-                            <p class="text-xl font-black text-purple-500">${h.speed.latency}<span class="text-[10px] ml-1">ms</span></p>
-                        </div>
-                    </div>
-                    <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 mb-6 flex justify-between items-center group transition-all hover:border-indigo-300">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center text-lg shadow-lg shadow-indigo-500/20">
-                                <i class="fas fa-bolt"></i>
-                            </div>
-                            <div>
-                                <p class="text-[10px] font-bold text-indigo-400 uppercase leading-tight text-left">Connection efficiency</p>
-                                <p class="text-xs text-indigo-700 dark:text-indigo-300 font-medium tracking-tight text-left">Plan: ${theoreticalDisplay} | Actual: ${h.speed.download} Mb</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-2xl font-black text-indigo-600 dark:text-indigo-400">${perfRatio}</p>
-                        </div>
-                    </div>
-                `;
+            let capabilityMsg = '';
+            let capabilityColor = 'text-gray-500';
+
+            if (h.health_score >= 90) {
+                capabilityMsg = '⚡ Perfecta para streaming 4K y juegos';
+                capabilityColor = 'text-green-600 dark:text-green-400';
+            } else if (h.health_score >= 75) {
+                capabilityMsg = '📹 Buena para streaming HD y llamadas';
+                capabilityColor = 'text-blue-600 dark:text-blue-400';
+            } else if (h.health_score >= 50) {
+                capabilityMsg = '🌐 Buena para navegación y videos en baja calidad';
+                capabilityColor = 'text-yellow-600 dark:text-yellow-400';
             } else {
-                speedHtml = `
-                    <div class="bg-white dark:bg-gray-800 p-5 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm mb-6">
-                        <div class="flex items-center justify-between mb-4">
-                             <div class="flex items-center gap-3">
-                                <i class="fas fa-wifi text-indigo-400 text-xl"></i>
-                                <span class="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-tighter">Internet Plan</span>
-                             </div>
-                             <span class="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-bold font-mono border border-indigo-100 dark:border-indigo-800">${theoreticalDisplay}</span>
-                        </div>
-                        <div class="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-2xl border border-yellow-100 dark:border-yellow-900/30 flex items-center justify-between">
-                            <div class="flex items-center gap-3 text-left">
-                                <i class="fas fa-exclamation-circle text-yellow-500"></i>
-                                <p class="text-xs text-yellow-700 dark:text-yellow-300 font-medium">No speed test data found for comparison.</p>
-                            </div>
-                            <button onclick="closeNetworkHealthModal(); showSpeedTestModal();" class="text-[10px] font-bold bg-white dark:bg-gray-800 px-4 py-2 rounded-xl shadow-sm border border-yellow-200 dark:border-yellow-700 text-yellow-600 transition-all hover:scale-105 active:scale-95">RUN TEST</button>
-                        </div>
-                    </div>
-                `;
+                capabilityMsg = '⚠️ Problemas de conexión detectados';
+                capabilityColor = 'text-red-600 dark:text-red-400';
             }
 
-            const headerMap = {
-                'Excellent': { color: 'green', icon: 'fa-check-circle' },
-                'Good': { color: 'blue', icon: 'fa-info-circle' },
-                'Fair': { color: 'yellow', icon: 'fa-exclamation-triangle' },
-                'Poor': { color: 'red', icon: 'fa-times-circle' }
-            };
-            const status = headerMap[h.summary] || { color: 'gray', icon: 'fa-question-circle' };
-            const statusColorCode = status.color === 'green' ? '#10B981' : (status.color === 'blue' ? '#3B82F6' : (status.color === 'yellow' ? '#F59E0B' : '#EF4444'));
-
             content.innerHTML = `
-                <div class="flex items-center justify-between mb-8 bg-white dark:bg-gray-800 p-6 rounded-3xl border-b-4 shadow-xl relative overflow-hidden" style="border-color: ${statusColorCode}">
-                    <div class="absolute top-0 right-0 p-8 opacity-5">
-                       <i class="fas ${status.icon} text-6xl"></i>
+                <!-- Top Section: Score & Breakdown Side-by-Side -->
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-4">
+                    
+                    <!-- Left: Health Score Gauge (2 cols) -->
+                    <div class="md:col-span-2 bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center relative overflow-hidden">
+                        <div class="relative w-40 h-40 flex items-center justify-center">
+                            <svg class="w-full h-full transform -rotate-90">
+                                <circle cx="50%" cy="50%" r="45" stroke="currentColor" stroke-width="8" fill="transparent" class="text-gray-100 dark:text-gray-700" />
+                                <circle cx="50%" cy="50%" r="45" stroke="${strokeColor}" stroke-width="8" fill="transparent" 
+                                    stroke-dasharray="${circleCircumference}" 
+                                    stroke-dashoffset="${circleOffset}" 
+                                    stroke-linecap="round" 
+                                    class="transition-all duration-1000 ease-out" />
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                <span class="text-4xl font-black ${scoreColor}">${h.health_score}</span>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1">Score</span>
+                            </div>
+                        </div>
+                        <h4 class="text-xl font-bold text-gray-800 dark:text-white mt-4">${h.summary}</h4>
+                        <div class="mt-2 text-center px-4">
+                            <span class="text-xs font-bold ${capabilityColor} block">${capabilityMsg}</span>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 text-left">System status</p>
-                        <h4 class="text-4xl font-black text-gray-800 dark:text-white text-left">${h.summary}</h4>
-                    </div>
-                    <div class="text-right">
-                         <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Health score</p>
-                         <p class="text-4xl font-black" style="color: ${statusColorCode}">${h.health_score}<span class="text-sm ml-1 opacity-50">/100</span></p>
+
+                    <!-- Right: Performance Breakdown (3 cols) -->
+                    <div class="md:col-span-3 bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-center">
+                        <div class="flex justify-between items-center mb-6">
+                            <h5 class="text-sm font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                <i class="fas fa-chart-pie text-gray-400"></i> Score Analysis
+                                <button onclick="showScoreExplanation()" class="text-gray-400 hover:text-blue-500 transition-colors cursor-pointer" title="How is this calculated?">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            </h5>
+                            ${!h.speed ? `
+                                <button onclick="closeNetworkHealthModal(); showSpeedTestModal();" class="text-[10px] font-bold text-blue-500 hover:text-blue-600 flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">
+                                    TEST SPEED <i class="fas fa-arrow-right"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                        
+                        ${h.score_details ? `
+                            <div class="space-y-5">
+                                ${Object.values(h.score_details).map(detail => {
+                const percentage = (detail.score / detail.max) * 100;
+                let barColor = 'bg-red-500';
+                if (percentage >= 90) barColor = 'bg-emerald-500';
+                else if (percentage >= 60) barColor = 'bg-blue-500';
+                else if (percentage >= 40) barColor = 'bg-amber-500';
+
+                return `
+                                        <div>
+                                            <div class="flex justify-between items-end mb-2">
+                                                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">${detail.label}</span>
+                                                <div class="flex items-baseline gap-1">
+                                                    <span class="text-sm font-black text-gray-800 dark:text-white">${detail.score}</span>
+                                                    <span class="text-[10px] font-bold text-gray-400">/ ${detail.max}</span>
+                                                </div>
+                                            </div>
+                                            <div class="w-full bg-gray-100 dark:bg-gray-700 h-3 rounded-full overflow-hidden">
+                                                <div class="h-full ${barColor} rounded-full transition-all duration-1000 ease-out relative" style="width: ${percentage}%"></div>
+                                            </div>
+                                        </div>
+                                    `;
+            }).join('')}
+                            </div>
+                        ` : '<p class="text-gray-500 text-sm">No details available.</p>'}
                     </div>
                 </div>
 
-                ${speedHtml}
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-white dark:bg-gray-800 p-5 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between group transition-all hover:border-indigo-200">
-                        <div class="flex items-center gap-4 text-left">
-                            <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform">
-                                <i class="fas fa-network-wired text-xl"></i>
+                <!-- Middle: Key Metrics Grid -->
+                <!-- Middle: Key Metrics Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <!-- Download -->
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-5 flex flex-col justify-between group hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div class="p-2 bg-blue-100 dark:bg-blue-800/50 rounded-lg text-blue-600 dark:text-blue-300">
+                                    <i class="fas fa-arrow-down"></i>
+                                </div>
+                                <span class="text-[10px] font-bold text-blue-400 uppercase">Download</span>
                             </div>
-                            <div>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase leading-none mb-1">Gateway</p>
-                                <p class="text-sm font-black text-gray-700 dark:text-gray-200">${h.gateway.ip}</p>
-                                <p class="text-[10px] font-bold ${h.gateway.status === 'ONLINE' ? 'text-green-500' : 'text-red-500'} flex items-center gap-1 mt-0.5">
-                                    <i class="fas fa-circle text-[6px]"></i> ${h.gateway.status}
-                                </p>
+                            <div class="mt-3">
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-2xl font-black text-gray-800 dark:text-white">${download}</span>
+                                    <span class="text-xs font-bold text-blue-500">Mbps</span>
+                                </div>
+                                <div class="text-[10px] font-medium text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                                    <span>Plan:</span>
+                                    <span class="text-gray-600 dark:text-gray-300 font-bold">${theoretical_speed} Mbps</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase leading-none mb-1">Latency</p>
-                            <p class="text-sm font-mono font-black text-indigo-500">${h.gateway.latency}</p>
-                        </div>
                     </div>
 
-                    <div class="bg-white dark:bg-gray-800 p-5 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between group transition-all hover:border-purple-200">
-                        <div class="flex items-center gap-4 text-left">
-                            <div class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
-                                <i class="fas fa-desktop text-xl"></i>
+                    <!-- Upload -->
+                    <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-5 flex flex-col justify-between group hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div class="p-2 bg-indigo-100 dark:bg-indigo-800/50 rounded-lg text-indigo-600 dark:text-indigo-300">
+                                    <i class="fas fa-arrow-up"></i>
+                                </div>
+                                <span class="text-[10px] font-bold text-indigo-400 uppercase">Upload</span>
                             </div>
-                            <div>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase leading-none mb-1">Active hosts</p>
-                                <p class="text-sm font-black text-gray-700 dark:text-gray-200">${h.devices.up} <span class="text-gray-400 font-normal">of</span> ${h.devices.total}</p>
-                                <p class="text-[10px] font-bold text-purple-400 mt-0.5">Local Area Network</p>
+                            <div class="mt-3">
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-2xl font-black text-gray-800 dark:text-white">${upload}</span>
+                                    <span class="text-xs font-bold text-indigo-500">Mbps</span>
+                                </div>
+                                <div class="text-[10px] font-medium text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                                    <span>Plan:</span>
+                                    <span class="text-gray-600 dark:text-gray-300 font-bold">${theoretical_speed} Mbps</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase leading-none mb-1">Avg Latency</p>
-                            <p class="text-sm font-mono font-black text-purple-500">${h.devices.avg_latency}</p>
-                        </div>
+                    </div>
+
+                    <!-- Latency -->
+                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-5 flex flex-col justify-between group hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div class="p-2 bg-purple-100 dark:bg-purple-800/50 rounded-lg text-purple-600 dark:text-purple-300">
+                                    <i class="fas fa-stopwatch"></i>
+                                </div>
+                                <span class="text-[10px] font-bold text-purple-400 uppercase">Ping</span>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-2xl font-black text-gray-800 dark:text-white">${latency}</span>
+                                    <span class="text-xs font-bold text-purple-500">ms</span>
+                                </div>
+                                <div class="text-[10px] font-medium text-gray-400 dark:text-gray-500">
+                                    Response time
+                                </div>
+                            </div>
+                    </div>
+
+                    <!-- Devices Latency -->
+                    <div class="bg-teal-50 dark:bg-teal-900/20 rounded-2xl p-5 flex flex-col justify-between group hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div class="p-2 bg-teal-100 dark:bg-teal-800/50 rounded-lg text-teal-600 dark:text-teal-300">
+                                    <i class="fas fa-network-wired"></i>
+                                </div>
+                                <span class="text-[10px] font-bold text-teal-400 uppercase">Device Lag</span>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-2xl font-black text-gray-800 dark:text-white">${avgDeviceLatency}</span>
+                                    <span class="text-xs font-bold text-teal-500">ms</span>
+                                </div>
+                                <div class="text-[10px] font-medium text-gray-400 dark:text-gray-500">
+                                    Avg local latency
+                                </div>
+                            </div>
                     </div>
                 </div>
-                
+
                 <!-- Initiation Guide Promo -->
-                <div class="mt-8 p-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-3xl border-2 border-dashed border-amber-200 dark:border-amber-800/50 relative group">
+                <div class="mt-0 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-3xl border-2 border-dashed border-amber-200 dark:border-amber-800/50 relative group">
                     <div class="flex flex-col md:flex-row items-center gap-6">
                         <div class="w-16 h-16 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-amber-500/30 group-hover:rotate-12 transition-transform shrink-0">
                             <i class="fas fa-graduation-cap"></i>
@@ -1004,100 +775,6 @@ function closeTopologyModal() {
 window.showTopologyMapModal = showTopologyMapModal;
 window.closeTopologyModal = closeTopologyModal;
 
-/**
- * Generates a comprehensive text report for AI analysis
- */
-function generateAIReport() {
-    const content = document.getElementById('aireport_content');
-    const ip = currentDiagIp;
-    const ipData = window.ipDetails[ip];
-    const timestamp = new Date().toLocaleString();
-
-    let report = `NETWORK DIAGNOSTIC REPORT - ${timestamp}\n`;
-    report += `==========================================\n\n`;
-
-    // 1. Target host info
-    report += `TARGET HOST ANALYSIS:\n`;
-    report += `---------------------\n`;
-    report += `IP/Domain: ${ip}\n`;
-    if (ipData) {
-        report += `Service: ${ipData.service}\n`;
-        report += `Monitoring Method: ${ipData.method || 'ICMP'}\n`;
-        if (ipData.network_type) {
-            report += `Connection Type: ${ipData.network_type}\n`;
-        }
-        report += `Current Status: ${ipData.status}\n`;
-        report += `Overall Uptime: ${Math.round(ipData.percentage)}%\n`;
-        report += `Average Latency: ${typeof ipData.average_response_time === 'number' ? ipData.average_response_time.toFixed(2) : ipData.average_response_time} ms\n`;
-
-        report += `\nRecent Ping History (Last 10):\n`;
-        const history = ipData.ping_results.slice(0, 10);
-        history.forEach((p, i) => {
-            report += `  [${i + 1}] ${p.timestamp} | Status: ${p.status} | Time: ${p.response_time}\n`;
-        });
-    } else {
-        report += `No detailed data available for this specific host.\n`;
-    }
-
-    // 2. Traceroute info (if available)
-    const tracerouteRaw = document.getElementById('traceroute_raw').textContent;
-    if (tracerouteRaw && !tracerouteRaw.includes('-- Raw output --') && !tracerouteRaw.includes('Scanning')) {
-        report += `\nTRACEROUTE DATA:\n`;
-        report += `----------------\n`;
-        report += tracerouteRaw + `\n`;
-    }
-
-    // 3. Overall Network Context
-    report += `\nOVERALL NETWORK CONTEXT:\n`;
-    report += `------------------------\n`;
-    report += `Total Hosts Monitored: ${Object.keys(window.ipDetails).length}\n`;
-
-    const hosts = Object.entries(window.ipDetails);
-    const upCount = hosts.filter(([_, data]) => data.status === 'UP').length;
-    const downCount = hosts.length - upCount;
-
-    report += `Live Hosts: ${upCount}\n`;
-    report += `Down Hosts: ${downCount}\n\n`;
-
-    report += `Monitored Hosts Summary:\n`;
-    hosts.forEach(([hostIp, data]) => {
-        report += `- ${hostIp}: ${data.status} (${data.average_response_time} ms)\n`;
-    });
-
-    report += `\n==========================================\n`;
-    report += `PROMPT FOR AI: "I am a network administrator. The data above shows my current network monitoring status. Please analyze the latency and connectivity issues (if any) and suggest technical solutions or potential causes for the observed behavior."\n`;
-
-    // Render in modal
-    content.innerHTML = `<pre class="whitespace-pre-wrap">${report}</pre>`;
-
-    // Store in global for copy function
-    window.currentFullAIReport = report;
-}
-
-/**
- * Copies the generated report to clipboard
- */
-function copyAIReport() {
-    const reportText = window.currentFullAIReport;
-    if (!reportText) return;
-
-    navigator.clipboard.writeText(reportText).then(() => {
-        const copyBtn = document.querySelector('[onclick="copyAIReport()"]');
-        const originalHtml = copyBtn.innerHTML;
-        copyBtn.innerHTML = '<i class="fas fa-check"></i> COPIED!';
-        copyBtn.classList.replace('bg-emerald-500', 'bg-green-600');
-
-        setTimeout(() => {
-            copyBtn.innerHTML = originalHtml;
-            copyBtn.classList.replace('bg-green-600', 'bg-emerald-500');
-        }, 2000);
-    }).catch(err => {
-        console.error('Failed to copy: ', err);
-    });
-}
-
-window.generateAIReport = generateAIReport;
-window.copyAIReport = copyAIReport;
 
 /**
  * Generates a text report from the network health data for AI analysis
@@ -1510,3 +1187,446 @@ window.zoomTopology = zoomTopology;
 window.resetTopologyZoom = resetTopologyZoom;
 window.toggleTopologyOrientation = toggleTopologyOrientation;
 window.topologyOrientation = () => topologyOrientation;
+
+// Detailed Diagnostics Integrated in IP Detail Modal
+async function runGeoIPDetail(ip) {
+    const container = document.getElementById('detail_geoip_container');
+    if (!container) return;
+
+    container.innerHTML = `<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4 text-purple-500"></i><p class="text-sm text-gray-400">Analysing global location...</p></div>`;
+
+    try {
+        const formData = new FormData();
+        formData.append('ip', ip);
+        formData.append('type', 'geoip');
+
+        const response = await fetch('?action=diagnose', { method: 'POST', body: formData });
+        const data = await response.json();
+
+        if (data.success && data.result.status === 'success') {
+            const r = data.result;
+            container.innerHTML = `
+                <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-widest">Country</p>
+                    <p class="text-sm font-bold flex items-center gap-2">
+                        <img src="https://flagcdn.com/24x18/${r.countryCode.toLowerCase()}.png" class="rounded-sm shadow-sm" alt="${r.countryCode}"> 
+                        ${r.country} (${r.countryCode})
+                    </p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-widest">City / Region</p>
+                    <p class="text-sm font-bold text-gray-700 dark:text-gray-300 truncate">${r.city}, ${r.regionName}</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-widest">ISP Provider</p>
+                    <p class="text-xs font-bold text-indigo-600 dark:text-indigo-400 truncate" title="${r.isp}">${r.isp}</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-widest">ASN / Org</p>
+                    <p class="text-[10px] font-mono font-bold text-gray-500 truncate" title="${r.as}">${r.as}</p>
+                </div>
+            `;
+        } else {
+            const isLocalMessage = data.result?.message?.includes('Local') || data.result?.message?.includes('private');
+            if (isLocalMessage) {
+                container.innerHTML = `
+                    <div class="col-span-2 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/40 rounded-2xl p-6 flex flex-col items-center text-center">
+                        <div class="w-12 h-12 bg-blue-100 dark:bg-blue-800/40 rounded-full flex items-center justify-center text-blue-500 mb-3">
+                            <i class="fas fa-home text-xl"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-blue-800 dark:text-blue-300">Local Asset Context</h4>
+                        <p class="text-[10px] text-blue-700/60 dark:text-blue-400/50 mt-1 max-w-xs">Private range IP detected. Global geolocation services are not available for internal network addresses.</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `<div class="col-span-2 py-10 text-center text-gray-400 italic font-mono text-[10px]">Geolocation unavailable for this host</div>`;
+            }
+        }
+    } catch (e) {
+        container.innerHTML = `<div class="col-span-2 py-10 text-red-500/70 text-center text-[10px]"><i class="fas fa-exclamation-triangle mr-1"></i> Timeout fetching location</div>`;
+    }
+}
+
+function setDetailTracerouteView(mode) {
+    const visual = document.getElementById('detail_traceroute_visual');
+    const raw = document.getElementById('detail_traceroute_raw');
+    const btnVisual = document.getElementById('btn-detail-trace-visual');
+    const btnRaw = document.getElementById('btn-detail-trace-raw');
+
+    if (mode === 'visual') {
+        visual.classList.remove('hidden');
+        raw.classList.add('hidden');
+        btnVisual.classList.add('bg-white', 'dark:bg-gray-700', 'shadow-sm', 'text-indigo-600', 'dark:text-indigo-400');
+        btnVisual.classList.remove('text-gray-500');
+        btnRaw.classList.remove('bg-white', 'dark:bg-gray-700', 'shadow-sm', 'text-indigo-600', 'dark:text-indigo-400');
+        btnRaw.classList.add('text-gray-500');
+    } else {
+        visual.classList.add('hidden');
+        raw.classList.remove('hidden');
+        btnRaw.classList.add('bg-white', 'dark:bg-gray-700', 'shadow-sm', 'text-indigo-600', 'dark:text-indigo-400');
+        btnRaw.classList.remove('text-gray-500');
+        btnVisual.classList.remove('bg-white', 'dark:bg-gray-700', 'shadow-sm', 'text-indigo-600', 'dark:text-indigo-400');
+        btnVisual.classList.add('text-gray-500');
+    }
+}
+
+async function runDetailTraceroute() {
+    if (!window.currentIpData) return;
+    const ip = window.currentIpData.ip;
+    const visual = document.getElementById('detail_traceroute_visual');
+    const raw = document.getElementById('detail_traceroute_raw');
+    const btn = document.getElementById('btnRunDetailTraceroute');
+
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Mapping Network Hops...`;
+
+    visual.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-20 animate-pulse">
+            <i class="fas fa-route text-4xl mb-6 text-indigo-400/50"></i>
+            <p class="text-sm font-bold text-gray-500 uppercase tracking-widest">Searching path to ${ip}</p>
+            <p class="text-[10px] text-gray-400 mt-2 italic">This may take up to 30 seconds...</p>
+        </div>
+    `;
+    raw.textContent = "Tracing network path hops (max 15)...";
+
+    try {
+        const formData = new FormData();
+        formData.append('ip', ip);
+        formData.append('type', 'traceroute');
+
+        const response = await fetch('?action=diagnose', { method: 'POST', body: formData });
+        const data = await response.json();
+
+        if (data.success) {
+            const rawOutput = data.result;
+            raw.textContent = rawOutput;
+
+            // CGNAT Detection: Check for 100.64.0.0/10 range (RFC 6598)
+            let cgnatDetected = false;
+            const cgnatIPs = [];
+            const lines = rawOutput.split('\n');
+
+            lines.forEach(line => {
+                const ipMatch = line.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/g);
+                if (ipMatch) {
+                    ipMatch.forEach(ip => {
+                        const parts = ip.split('.').map(Number);
+                        if (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) {
+                            cgnatDetected = true;
+                            if (!cgnatIPs.includes(ip)) cgnatIPs.push(ip);
+                        }
+                    });
+                }
+            });
+
+            // Header for visual view
+            let html = '<div class="space-y-4 relative pb-8">';
+
+            // Display CGNAT warning banner if detected
+            if (cgnatDetected) {
+                html += `
+                    <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center">
+                                <i class="fas fa-exclamation-triangle text-white text-sm"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-xs font-black text-amber-800 dark:text-amber-400 uppercase tracking-widest mb-1">CGNAT Detected</h4>
+                                <p class="text-[10px] text-amber-700 dark:text-amber-300">
+                                    Your ISP is using Carrier-Grade NAT. Detected node(s): <span class="font-mono font-bold">${cgnatIPs.join(', ')}</span>. 
+                                    This may affect port forwarding and direct peer-to-peer connectivity.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += '<div class="absolute left-[20px] top-6 bottom-6 w-0.5 bg-gradient-to-b from-indigo-500/20 via-blue-500/20 to-transparent z-0"></div>';
+
+            let hopsFound = 0;
+            lines.forEach(line => {
+                const match = line.trim().match(/^(\d+)[:]?\s+(.+)$/);
+                if (match) {
+                    hopsFound++;
+                    const hopNumber = match[1];
+                    const content = match[2];
+                    const isTimeout = (content.includes('*') && !content.includes('.') && !content.includes(':')) || content.toLowerCase().includes('no reply');
+
+                    const times = content.match(/(\d+\.?\d*\s*ms|<1\s*ms)/g) || [];
+                    let hostName = content.replace(/(\d+\.?\d*\s*ms|<1\s*ms)/g, '').replace(/\*/g, '').trim();
+                    const ipMatch = hostName.match(/\((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\)/) || hostName.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+                    const ipOnly = ipMatch ? ipMatch[1] : '';
+                    const isCGNATHop = cgnatIPs.includes(ipOnly);
+
+                    html += `
+                        <div class="relative z-10 flex items-start gap-4 transition-all duration-300">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-full ${isTimeout ? 'bg-gray-100 dark:bg-gray-800 text-gray-400' : (isCGNATHop ? 'bg-amber-500 text-white' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30')} border-4 border-white dark:border-gray-900 flex items-center justify-center text-[10px] font-black">
+                                ${hopNumber}
+                            </div>
+                            <div class="flex-1 min-w-0 bg-white dark:bg-gray-800/40 p-4 rounded-2xl border ${isCGNATHop ? 'border-amber-200 dark:border-amber-900/50' : (isTimeout ? 'border-gray-50 dark:border-gray-800' : 'border-indigo-50/50 dark:border-indigo-900/20')} shadow-sm">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                                    <div class="flex-1 min-w-0">
+                                        <h5 class="text-xs font-black ${isTimeout ? 'text-gray-400' : 'text-gray-800 dark:text-gray-200'} truncate flex items-center gap-2">
+                                            ${isTimeout ? '<i class="fas fa-ghost mr-2 opacity-50"></i> No Response' : (hostName || ipOnly || 'Local Hop')}
+                                            ${isCGNATHop ? '<span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded uppercase tracking-tighter">CGNAT</span>' : ''}
+                                        </h5>
+                                        ${ipOnly && hostName !== ipOnly ? `<p class="text-[9px] font-mono text-indigo-500/70 mt-0.5">${ipOnly}</p>` : ''}
+                                    </div>
+                                    <div class="flex flex-wrap gap-1">
+                                        ${times.slice(0, 1).map(t => `<span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 rounded text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50">${t}</span>`).join('')}
+                                        ${isTimeout ? '<span class="px-2 py-0.5 bg-red-50 dark:bg-red-900/10 rounded text-[9px] font-mono font-bold text-red-500/60 uppercase">Dropped</span>' : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            if (hopsFound === 0) {
+                html = `<div class="p-16 text-center text-gray-400 text-xs italic"><i class="fas fa-terminal mb-4 text-2xl opacity-10"></i><br>Structured output unavailable for this node. Switch to RAW for details.</div>`;
+            } else {
+                html += '</div>';
+            }
+            visual.innerHTML = html;
+        } else {
+            visual.innerHTML = `<div class="p-12 text-red-500 text-xs text-center font-bold bg-red-50 dark:bg-red-900/10 rounded-2xl m-4 border border-red-100 dark:border-red-900/20"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><br>${data.message}</div>`;
+        }
+    } catch (e) {
+        visual.innerHTML = `<div class="p-12 text-red-500 text-xs text-center"><i class="fas fa-wifi-slash text-2xl mb-2"></i><br>Network Error executing Path Discovery</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fas fa-route mr-2"></i> Run Network Path Discovery`;
+    }
+}
+
+async function generateAIReportDetail(ip) {
+    const content = document.getElementById('detail_aireport_content');
+    if (!content) return;
+
+    content.innerText = "Generating AI Diagnostic Analysis Profile...";
+
+    try {
+        const ipData = window.ipDetails[ip];
+        if (!ipData) {
+            content.innerText = "Error: Detailed IP data not found for analysis.";
+            return;
+        }
+
+        // Fetch location data from the detail container if available
+        const geoContainer = document.getElementById('detail_geoip_container');
+        const geoData = geoContainer ? geoContainer.innerText.replace(/\s+/g, ' ').trim() : "Geo data analysis in progress...";
+
+        let report = `[AI DIAGNOSTIC PROFILE FOR ${ip}]\n`;
+        report += `TIMESTAMP: ${new Date().toLocaleString()}\n\n`;
+        report += `1. NETWORK IDENTITY:\n`;
+        report += `- Host/IP: ${ip}\n`;
+        report += `- Service: ${ipData.service}\n`;
+        report += `- Check Method: ${ipData.method || 'icmp'}\n\n`;
+
+        report += `2. PERFORMANCE METRICS:\n`;
+        report += `- Uptime: ${Math.round(ipData.percentage)}%\n`;
+        report += `- Avg Latency: ${typeof ipData.average_response_time === 'number' ? ipData.average_response_time.toFixed(2) : ipData.average_response_time} ms\n`;
+        report += `- Status: ${ipData.status}\n\n`;
+
+        report += `3. GEOLOCATION CONTEXT:\n`;
+        report += `${geoData}\n\n`;
+
+        report += `4. RECENT LATENCY SAMPLES (Last ${ipData.ping_results.length}):\n`;
+        ipData.ping_results.slice(0, 10).forEach((p, idx) => {
+            report += `  [${idx + 1}] ${p.timestamp}: ${p.status} (${p.response_time})\n`;
+        });
+
+        report += `\n[INSTRUCTIONS FOR AI ANALYST]:\n`;
+        report += `Analiza la latencia, la posible congestión de la red, y el contexto geográfico para explicar cualquier problema de rendimiento. Sugerir pasos de solución de problemas basados en los datos observados.`;
+
+        window.currentAIReportDetail = report;
+        content.innerText = report;
+    } catch (e) {
+        content.innerText = "Error compiling diagnostic data: " + e.message;
+    }
+}
+
+function copyAIReportDetail() {
+    if (!window.currentAIReportDetail) {
+        alert("Please wait for the report to be generated.");
+        return;
+    }
+
+    navigator.clipboard.writeText(window.currentAIReportDetail).then(() => {
+        const btn = document.querySelector('button[onclick="copyAIReportDetail()"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> COPIED!';
+        btn.classList.add('bg-green-600');
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('bg-green-600');
+        }, 2000);
+    });
+}
+
+window.runGeoIPDetail = runGeoIPDetail;
+window.setDetailTracerouteView = setDetailTracerouteView;
+window.runDetailTraceroute = runDetailTraceroute;
+window.generateAIReportDetail = generateAIReportDetail;
+window.copyAIReportDetail = copyAIReportDetail;
+
+/**
+ * Shows the network speed configuration modal.
+ */
+function showSetNetworkSpeedModal() {
+    const modal = document.getElementById('setNetworkSpeedModal');
+    const input = document.getElementById('network_speed_input');
+    if (input && currentNetworkSpeed > 0) {
+        input.value = currentNetworkSpeed;
+    }
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Hides the network speed configuration modal.
+ */
+function hideSetNetworkSpeedModal() {
+    const modal = document.getElementById('setNetworkSpeedModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+/**
+ * Saves the contracted network speed to the configuration.
+ */
+async function saveNetworkSpeed() {
+    const input = document.getElementById('network_speed_input');
+    const speed = input.value;
+
+    if (!speed || speed <= 0) {
+        modalFunctions.showAlert('Por favor, ingresa una velocidad válida.', 'error');
+        return;
+    }
+
+    const btn = document.querySelector('#setNetworkSpeedModal button');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> SAVING...';
+
+    try {
+        const response = await fetch(`?action=save_network_speed&network=${currentNetworkType}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ speed: speed })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            currentNetworkSpeed = parseInt(speed);
+            hideSetNetworkSpeedModal();
+            modalFunctions.showAlert('Network speed configured successfully!', 'success');
+        } else {
+            modalFunctions.showAlert('Error saving speed: ' + (data.message || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        modalFunctions.showAlert('Communication error: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// Show speed prompt if needed on load
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof showSpeedPrompt !== 'undefined' && showSpeedPrompt) {
+        setTimeout(() => {
+            showSetNetworkSpeedModal();
+        }, 500);
+    }
+});
+
+window.saveNetworkSpeed = saveNetworkSpeed;
+window.showSetNetworkSpeedModal = showSetNetworkSpeedModal;
+window.hideSetNetworkSpeedModal = hideSetNetworkSpeedModal;
+
+/**
+ * Shows the explanation of how health scores are calculated.
+ */
+function showScoreExplanation() {
+    Swal.fire({
+        title: '<strong>How is the Health Score calculated?</strong>',
+        icon: 'info',
+        width: '600px',
+        html: `
+            <div class="text-left text-sm space-y-4">
+                <p class="text-gray-600 dark:text-gray-300">The <strong>Health Score (0-100)</strong> is an aggregate metric calculated from 4 key pillars of your network performance:</p>
+                
+                <div class="space-y-3">
+                    <div class="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                        <h6 class="font-bold text-indigo-700 dark:text-indigo-300 mb-1 flex justify-between">
+                            <span>1. Download Speed</span>
+                            <span class="text-xs bg-indigo-200 dark:bg-indigo-700 px-2 py-0.5 rounded-full">Max 35 pts</span>
+                        </h6>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">
+                            Compares your actual <b>Download</b> speed against your internet plan.
+                            <br>&bull; 90%+ of plan: <b>35 pts</b>
+                            <br>&bull; 75%+ of plan: <b>25 pts</b>
+                            <br>&bull; 50%+ of plan: <b>15 pts</b>
+                            <br>&bull; 25%+ of plan: <b>10 pts</b>
+                            <br>&bull; 10%+ of plan: <b>5 pts</b>
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-xl border border-purple-100 dark:border-purple-800">
+                        <h6 class="font-bold text-purple-700 dark:text-purple-300 mb-1 flex justify-between">
+                            <span>2. Connection Latency</span>
+                            <span class="text-xs bg-purple-200 dark:bg-purple-700 px-2 py-0.5 rounded-full">Max 30 pts</span>
+                        </h6>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">
+                            Measures the responsiveness (Ping) of your connection.
+                            <br>&bull; &lt; 10ms: <b>30 pts</b> (Excellent for gaming)
+                            <br>&bull; &lt; 20ms: <b>25 pts</b>
+                            <br>&bull; &lt; 50ms: <b>15 pts</b>
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-100 dark:border-green-800">
+                        <h6 class="font-bold text-green-700 dark:text-green-300 mb-1 flex justify-between">
+                            <span>3. Gateway Connectivity</span>
+                            <span class="text-xs bg-green-200 dark:bg-green-700 px-2 py-0.5 rounded-full">Max 25 pts</span>
+                        </h6>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">
+                            Verifies if your Router/Gateway is reachable and responding correctly.
+                            <br>&bull; Online: <b>25 pts</b>
+                            <br>&bull; Offline: <b>0 pts</b>
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-teal-50 dark:bg-teal-900/30 rounded-xl border border-teal-100 dark:border-teal-800">
+                        <h6 class="font-bold text-teal-700 dark:text-teal-300 mb-1 flex justify-between">
+                            <span>4. Avg Device Latency</span>
+                            <span class="text-xs bg-teal-200 dark:bg-teal-700 px-2 py-0.5 rounded-full">Max 10 pts</span>
+                        </h6>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">
+                            Based on the average response time (Ping) of your local devices.
+                            <br>&bull; &lt; 5ms: <b>10 pts</b>
+                            <br>&bull; &lt; 15ms: <b>7 pts</b>
+                            <br>&bull; &lt; 50ms: <b>4 pts</b>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `,
+        showCloseButton: true,
+        focusConfirm: false,
+        confirmButtonText: 'Understood',
+        confirmButtonColor: '#3B82F6',
+        customClass: {
+            container: 'font-sans',
+            popup: 'rounded-3xl dark:bg-gray-800 dark:text-white',
+            header: 'border-b border-gray-100 dark:border-gray-700 pb-4',
+            content: 'pt-4'
+        }
+    });
+}
+window.showScoreExplanation = showScoreExplanation;

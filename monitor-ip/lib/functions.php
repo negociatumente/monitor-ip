@@ -412,6 +412,21 @@ function delete_service_from_config($service_name)
     return file_put_contents($config_path, $new_content) !== false;
 }
 
+/**
+ * Save configuration to an INI file
+ */
+function save_config_file($config, $file_path)
+{
+    $new_content = '';
+    foreach ($config as $section => $values) {
+        $new_content .= "[$section]\n";
+        foreach ($values as $key => $value) {
+            $new_content .= "$key = \"$value\"\n";
+        }
+    }
+    return file_put_contents($file_path, $new_content) !== false;
+}
+
 // Función para actualizar el servicio de una IP específica
 function update_ip_service($ip, $new_service)
 {
@@ -429,16 +444,7 @@ function update_ip_service($ip, $new_service)
 
     $config[$ips_section][$clean_ip] = $clean_service;
 
-    // Guardar configuración
-    $new_content = '';
-    foreach ($config as $section => $values) {
-        $new_content .= "[$section]\n";
-        foreach ($values as $key => $value) {
-            $new_content .= "$key = \"$value\"\n";
-        }
-    }
-
-    return file_put_contents($config_path, $new_content) !== false;
+    return save_config_file($config, $config_path);
 }
 
 // Función para actualizar el host y la red de una IP local
@@ -755,11 +761,11 @@ function update_service_config($old_name, $new_name, $new_color, $new_method)
 }
 
 /**
- * Scan local network for active devices
+ * Scan private network for active devices
  * Returns array of discovered IPs with their MAC addresses and hostnames
  */
 /**
- * Scan local network for active devices
+ * Scan private network for active devices
  * Returns array of discovered IPs with their MAC addresses and hostnames
  */
 function scan_local_network()
@@ -768,7 +774,7 @@ function scan_local_network()
     $discovered_devices = [];
     $found_ips = [];
 
-    // Get local network info
+    // Get private network info
     if ($isWindows) {
         // Windows implementation (unchanged logic, just structured better)
         $ipconfig = shell_exec('ipconfig');
@@ -967,16 +973,7 @@ function save_local_network_scan($devices)
     }
 
     // Save config
-    $content = '';
-    foreach ($config as $section => $values) {
-        $content .= "[$section]\n";
-        foreach ($values as $key => $value) {
-            // Ensure value is safe for INI (though htmlspecialchars handles quotes, we double check)
-            $content .= "$key = \"$value\"\n";
-        }
-    }
-
-    return file_put_contents($config_path, $content) !== false;
+    return save_config_file($config, $config_path);
 }
 
 
@@ -1153,9 +1150,13 @@ function save_speedtest_results($results)
     $history = [];
 
     if (file_exists($history_file)) {
-        $history = json_decode(file_get_contents($history_file), true);
-        if (!is_array($history))
-            $history = [];
+        $content = @file_get_contents($history_file);
+        if ($content !== false) {
+            $decoded = json_decode($content, true);
+            if (is_array($decoded)) {
+                $history = $decoded;
+            }
+        }
     }
 
     $new_entry = [
@@ -1168,7 +1169,8 @@ function save_speedtest_results($results)
     array_unshift($history, $new_entry);
     $history = array_slice($history, 0, 5); // Keep only last 5
 
-    file_put_contents($history_file, json_encode($history, JSON_PRETTY_PRINT));
+    // Use LOCK_EX to prevent race conditions and @ to suppress warnings that might break JSON response
+    @file_put_contents($history_file, json_encode($history, JSON_PRETTY_PRINT), LOCK_EX);
 }
 
 /**
@@ -1182,11 +1184,12 @@ function run_traceroute($host)
     if ($isWindows) {
         $command = "tracert -d -h 15 $host_escaped";
     } else {
-        $command = "traceroute -n -m 15 $host_escaped 2>&1";
+        // Fallback logic for Linux: try traceroute, then tracepath
+        $command = "traceroute -n -m 15 $host_escaped 2>&1 || tracepath -n -m 15 $host_escaped 2>&1";
     }
 
     $output = shell_exec($command);
-    return $output ?: "Error running traceroute";
+    return $output ?: "Error running traceroute (tool might not be installed)";
 }
 
 
@@ -1196,17 +1199,26 @@ function run_traceroute($host)
  */
 function get_geoip_info($ip)
 {
-    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-        return ['status' => 'fail', 'message' => 'Local or invalid IP'];
+    // Resolve if it's a hostname
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        $resolved_ip = gethostbyname($ip);
+        if ($resolved_ip === $ip) {
+            return ['status' => 'fail', 'message' => 'Could not resolve host'];
+        }
+        $ip = $resolved_ip;
     }
 
-    $ctx = stream_context_create(['http' => ['timeout' => 3]]);
+    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+        return ['status' => 'fail', 'message' => 'Local or private IP detected'];
+    }
+
+    $ctx = stream_context_create(['http' => ['timeout' => 5]]);
     $response = @file_get_contents("http://ip-api.com/json/$ip?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,query", false, $ctx);
 
     if ($response) {
         return json_decode($response, true);
     }
-    return ['status' => 'fail', 'message' => 'API connection failed'];
+    return ['status' => 'fail', 'message' => 'API connection failed or timed out'];
 }
 
 /**
@@ -1311,7 +1323,7 @@ function get_network_health()
         }
 
         if ($active_count > 0) {
-            $report['devices']['avg_latency'] = round($total_latency / $active_count, 2) . ' ms';
+            $report['devices']['avg_latency'] = round($total_latency / $active_count, 2);
         }
     }
 
@@ -1326,37 +1338,94 @@ function get_network_health()
 
     // 5. Final Summary logic
     $health_score = 0;
+    $score_details = [
+        'gateway' => ['score' => 0, 'max' => 25, 'label' => 'Gateway Connectivity'],
+        'devices' => ['score' => 0, 'max' => 10, 'label' => 'Avg Device Latency'],
+        'speed' => ['score' => 0, 'max' => 35, 'label' => 'Download Speed'],
+        'latency' => ['score' => 0, 'max' => 30, 'label' => 'Connection Latency']
+    ];
 
-    // Gateway connectivity (40 points)
+    // Gateway connectivity (25 points)
     if ($report['gateway']['status'] === 'ONLINE') {
-        $health_score += 40;
+        $points = 25;
+        $health_score += $points;
+        $score_details['gateway']['score'] = $points;
     }
 
-    // Local device activity (20 points)
-    if ($report['devices']['up'] > 0) {
-        $health_score += 20;
+    // Local device latency (10 points)
+    $avg_dev_latency = $report['devices']['avg_latency'];
+    if ($avg_dev_latency > 0) {
+        if ($avg_dev_latency < 5) {
+            $points = 10;
+        } elseif ($avg_dev_latency < 15) {
+            $points = 7;
+        } elseif ($avg_dev_latency < 50) {
+            $points = 4;
+        } else {
+            $points = 1;
+        }
+    } else {
+        // If no latency data (e.g. no devices UP), give 0 or neutral
+        $points = ($report['devices']['up'] > 0) ? 1 : 0;
     }
 
-    // Speed performance (40 points)
+    // Fallback/Bonus if 0 latency but devices are UP (local monitoring might be too fast or logic issue, but usually implies good connect)
+    if ($active_count > 0 && $avg_dev_latency == 0)
+        $points = 10;
+
+    $health_score += $points;
+    $score_details['devices']['score'] = $points;
+
+
+    // Speed performance (35 points)
     if (is_array($report['speed']) && $theoretical_speed > 0) {
         $speed_results = (array) $report['speed'];
         $actual_download = (float) ($speed_results['download'] ?? 0);
         $performance_ratio = $actual_download / $theoretical_speed;
 
+        $points = 0;
         if ($performance_ratio >= 0.9)
-            $health_score += 40;
-        elseif ($performance_ratio >= 0.7)
-            $health_score += 30;
+            $points = 35;
+        elseif ($performance_ratio >= 0.75)
+            $points = 25;
         elseif ($performance_ratio >= 0.5)
-            $health_score += 20;
-        elseif ($performance_ratio >= 0.3)
-            $health_score += 10;
+            $points = 15;
+        elseif ($performance_ratio >= 0.25)
+            $points = 10;
+        elseif ($performance_ratio >= 0.1)
+            $points = 5;
+
+        $health_score += $points;
+        $score_details['speed']['score'] = $points;
 
         $speed_results['performance_ratio'] = round($performance_ratio * 100, 1) . '%';
         $report['speed'] = $speed_results;
     } elseif (is_array($report['speed'])) {
         // Fallback score if no theoretical speed is set but test exists
-        $health_score += 20;
+        $points = 15;
+        $health_score += $points;
+        $score_details['speed']['score'] = $points;
+    }
+
+    // Latency performance (30 points)
+    if (!empty($report['speed']) && is_array($report['speed']) && isset($report['speed']['latency'])) {
+        $latency = (float) $report['speed']['latency'];
+
+        $points = 0;
+        // Bonus for very low latency
+        if ($latency > 0) {
+            if ($latency < 10)
+                $points = 30;
+            elseif ($latency < 20)
+                $points = 25;
+            elseif ($latency < 50)
+                $points = 15;
+            elseif ($latency < 100)
+                $points = 5;
+            // > 100ms gets 0 points for latency
+        }
+        $health_score += $points;
+        $score_details['latency']['score'] = $points;
     }
 
     if ($health_score >= 90)
@@ -1369,11 +1438,7 @@ function get_network_health()
         $report['summary'] = 'Poor';
 
     $report['health_score'] = $health_score;
+    $report['score_details'] = $score_details;
 
     return $report;
 }
-
-
-
-
-

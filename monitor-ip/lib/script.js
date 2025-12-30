@@ -117,7 +117,7 @@ function reloadPage() {
     const paramsToClear = [
         'page', 'action', 'msg', 'delete_ip', 'add_ip',
         'update_ip_service', 'change_timer', 'change_ping_attempts',
-        'clear_data', 'delete_service', 'export_config', 'import_config'
+        'clear_data', 'delete_service', 'export_config', 'import_config', 'no_ping'
     ];
 
     paramsToClear.forEach(param => url.searchParams.delete(param));
@@ -523,24 +523,60 @@ function createPingChart(ipData) {
 /**
  * Shows the IP detail modal and loads its information.
  */
-function showIpDetailModal(ip) {
+/**
+ * Shows the IP detail modal and loads its information.
+ */
+function showIpDetailModal(ip, startTab = 'general') {
     const ipData = window.ipDetails[ip];
     if (!ipData) return;
 
     currentPage = 1; // Reset to first page
-    document.getElementById('modalIpTitle').innerText = `IP info: ${ip}`;
+    document.getElementById('modalIpTitle').innerText = `${ip}`;
+
+    // Reset tabs
+    switchIpDetailTab(startTab);
+
+    // Clear previous diagnostic results
+    const visual = document.getElementById('detail_traceroute_visual');
+    const raw = document.getElementById('detail_traceroute_raw');
+    const geo = document.getElementById('detail_geoip_container');
+    const ai = document.getElementById('detail_aireport_content');
+
+    if (visual) visual.innerHTML = '<div class="flex flex-col items-center justify-center py-10 text-gray-400 italic">Click "Run Network Path Discovery" to analyze path...</div>';
+    if (raw) raw.textContent = '-- Raw output --';
+    if (geo) geo.innerHTML = '<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4 text-purple-500"></i><p class="text-sm text-gray-400">Initiating geolocation analysis...</p></div>';
+    if (ai) ai.innerText = 'Waiting for analysis trigger...';
+
+    // Check if it's an external network to show/hide diagnostics and AI tabs
+    const isLocal = new URLSearchParams(window.location.search).get('network') === 'local';
+    const diagTab = document.getElementById('ipTabDiagnostics');
+    const aiTab = document.getElementById('ipTabAIReport');
+    const tabsNav = document.getElementById('ipDetailTabsNav');
+
+    if (isLocal) {
+        diagTab.classList.add('hidden');
+        aiTab.classList.add('hidden');
+        tabsNav.classList.add('hidden');
+    } else {
+        diagTab.classList.remove('hidden');
+        aiTab.classList.remove('hidden');
+        tabsNav.classList.remove('hidden');
+
+        // Initial data fetch: Pre-load location for external IPs
+        runGeoIPDetail(ip);
+    }
 
     // Uptime color logic
     let uptimeColors = '';
     let uptimeTextColor = '';
     if (ipData.percentage >= 90) {
-        uptimeColors = 'bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 text-green-600 dark:text-green-300';
+        uptimeColors = 'bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-800/20 text-green-600 dark:text-green-300 border border-green-200 dark:border-green-800';
         uptimeTextColor = 'text-green-700 dark:text-green-400';
     } else if (ipData.percentage >= 75) {
-        uptimeColors = 'bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900 dark:to-yellow-800 text-yellow-600 dark:text-yellow-300';
+        uptimeColors = 'bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/40 dark:to-yellow-800/20 text-yellow-600 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800';
         uptimeTextColor = 'text-yellow-700 dark:text-yellow-400';
     } else {
-        uptimeColors = 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900 dark:to-red-800 text-red-600 dark:text-red-300';
+        uptimeColors = 'bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/40 dark:to-red-800/20 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-800';
         uptimeTextColor = 'text-red-700 dark:text-red-400';
     }
 
@@ -548,55 +584,53 @@ function showIpDetailModal(ip) {
     let pingColors = '';
     let pingTextColor = '';
     if (ipData.average_response_time === 'N/A') {
-        pingColors = 'bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 text-gray-600 dark:text-gray-300';
+        pingColors = 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/40 dark:to-gray-800/20 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800';
         pingTextColor = 'text-gray-700 dark:text-gray-400';
     } else if (ipData.average_response_time > 100) {
-        pingColors = 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900 dark:to-red-800 text-red-600 dark:text-red-300';
+        pingColors = 'bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/40 dark:to-red-800/20 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-800';
         pingTextColor = 'text-red-700 dark:text-red-400';
     } else if (ipData.average_response_time > 50) {
-        pingColors = 'bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900 dark:to-yellow-800 text-yellow-600 dark:text-yellow-300';
+        pingColors = 'bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/40 dark:to-yellow-800/20 text-yellow-600 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800';
         pingTextColor = 'text-yellow-700 dark:text-yellow-400';
     } else {
-        pingColors = 'bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 text-green-600 dark:text-green-300';
+        pingColors = 'bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-800/20 text-green-600 dark:text-green-300 border border-green-200 dark:border-green-800';
         pingTextColor = 'text-green-700 dark:text-green-400';
     }
 
     document.getElementById('modalIpContent').innerHTML = `
-        <div class='mb-2'>
-            <div class='grid grid-cols-1 md:grid-cols-4 gap-4 mb-4'>
-                <div class='${uptimeColors} rounded-lg p-2 text-center'>
-                    <div class='text-xl font-bold'>${Math.round(ipData.percentage)}%</div>
-                    <div class='text-sm ${uptimeTextColor}'>Uptime</div>
-                </div>
-                <div class='${pingColors} rounded-lg p-2 text-center'>
-                    <div class='text-xl font-bold'>${typeof ipData.average_response_time === 'number' ? ipData.average_response_time.toFixed(2) : ipData.average_response_time} ms</div>
-                    <div class='text-sm ${pingTextColor}'>Avg. Latency</div>
-                </div>
-                <div class='rounded-lg p-2 text-center' style='background-color: ${ipData.service_color}; color: ${ipData.service_text_color};'>
-                    <div class='text-xl font-bold'>${ipData.service}</div>
-                    <div class='text-sm opacity-80 mt-1'>Service</div>
-                </div>
-                <div class='bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900 dark:to-purple-800 text-indigo-600 dark:text-indigo-300 rounded-lg p-2 text-center'>
-                    <div class='text-xl font-bold'>${ipData.method || 'ICMP'}</div>
-                    <div class='text-sm text-indigo-700 dark:text-indigo-400 mt-1'>Method</div>
-                </div>
+        <div class='grid grid-cols-2 md:grid-cols-4 gap-4'>
+            <div class='${uptimeColors} rounded-2xl p-4 text-center shadow-sm'>
+                <div class='text-2xl font-black'>${Math.round(ipData.percentage)}%</div>
+                <div class='text-[10px] uppercase font-bold tracking-wider opacity-60'>Uptime</div>
+            </div>
+            <div class='${pingColors} rounded-2xl p-4 text-center shadow-sm'>
+                <div class='text-2xl font-black'>${typeof ipData.average_response_time === 'number' ? ipData.average_response_time.toFixed(1) : ipData.average_response_time} <span class='text-xs font-normal'>ms</span></div>
+                <div class='text-[10px] uppercase font-bold tracking-wider opacity-60'>Avg. Latency</div>
+            </div>
+            <div class='rounded-2xl p-4 text-center shadow-sm flex flex-col justify-center' style='background-color: ${ipData.service_color}; border: 1px solid rgba(0,0,0,0.1);'>
+                <div class='text-lg font-bold truncate leading-tight' style='color: ${ipData.service_text_color};'>${ipData.service}</div>
+                <div class='text-[10px] uppercase font-bold tracking-wider opacity-60 mt-1' style='color: ${ipData.service_text_color};'>Assigned Service</div>
+            </div>
+            <div class='bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/40 dark:to-purple-800/20 text-indigo-600 dark:text-indigo-300 rounded-2xl p-4 text-center border border-indigo-100 dark:border-indigo-800 shadow-sm'>
+                <div class='text-2xl font-black'>${ipData.method || 'ICMP'}</div>
+                <div class='text-[10px] uppercase font-bold tracking-wider opacity-60'>Checking Method</div>
             </div>
         </div>
-        
-        <div class='mb-2'>
-            <div class='flex justify-between items-center mb-3'>
+
+        <div class='mt-8'>
+            <div class='flex justify-between items-center mb-4'>
                 <h4 class='text-md font-semibold text-gray-700 dark:text-gray-300 flex items-center'>
                     <i class='fas fa-history mr-2 text-blue-500'></i>
-                    Pings History
+                    Recent Activity Logs
                 </h4>
-                <div class='text-sm text-gray-500 dark:text-gray-400'>
-                    Total: ${ipData.ping_results.length} pings
+                <div class='text-xs font-bold text-gray-400 uppercase tracking-widest'>
+                    Total: ${ipData.ping_results.length} samples
                 </div>
             </div>
-            <div id='pingsContainer' class='grid gap-1 mb-4'>
+            <div id='pingsContainer' class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4'>
                 <!-- Los pings se cargan aquí -->
             </div>
-            <div id='paginationContainer' class='flex justify-center'>
+            <div id='paginationContainer' class='flex justify-center mt-6'>
                 <!-- La paginación se carga aquí -->
             </div>
         </div>
@@ -615,6 +649,50 @@ function showIpDetailModal(ip) {
         createPingChart(ipData);
     }, 200);
 }
+
+/**
+ * Switching Tabs in IP Detail Modal
+ */
+function switchIpDetailTab(tabId) {
+    const tabs = {
+        'general': { tab: 'ipTabGeneral', content: 'ipDetailContentGeneral' },
+        'diagnostics': { tab: 'ipTabDiagnostics', content: 'ipDetailContentDiagnostics' },
+        'aireport': { tab: 'ipTabAIReport', content: 'ipDetailContentAIReport' }
+    };
+
+    // Reset all tabs
+    Object.values(tabs).forEach(t => {
+        const tabEl = document.getElementById(t.tab);
+        const contentEl = document.getElementById(t.content);
+        if (tabEl) {
+            tabEl.classList.remove('border-blue-600', 'text-blue-600', 'bg-white', 'dark:bg-gray-800', 'dark:text-blue-400');
+            tabEl.classList.add('border-transparent', 'text-gray-500');
+        }
+        if (contentEl) contentEl.classList.add('hidden');
+    });
+
+    // Activate selected tab
+    const selected = tabs[tabId];
+    if (selected) {
+        const tabEl = document.getElementById(selected.tab);
+        const contentEl = document.getElementById(selected.content);
+        if (tabEl) {
+            tabEl.classList.add('border-blue-600', 'text-blue-600', 'bg-white', 'dark:bg-gray-800', 'dark:text-blue-400');
+            tabEl.classList.remove('border-transparent', 'text-gray-500');
+        }
+        if (contentEl) contentEl.classList.remove('hidden');
+
+        // Load diagnostics data if needed
+        if (tabId === 'diagnostics' && window.currentIpData) {
+            runGeoIPDetail(window.currentIpData.ip);
+        } else if (tabId === 'aireport' && window.currentIpData) {
+            generateAIReportDetail(window.currentIpData.ip);
+        }
+    }
+}
+
+window.showIpDetailModal = showIpDetailModal;
+window.switchIpDetailTab = switchIpDetailTab;
 
 /**
  * Loads the ping page in the IP detail modal.
@@ -762,16 +840,14 @@ function filterTable() {
     const tableBody = document.getElementById('monitoringTableBody');
     const rows = tableBody.getElementsByTagName('tr');
 
-    const isLocal = new URLSearchParams(window.location.search).get('network') === 'local';
-
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         // Skip if it's the "No IPs" row (usually has colspan)
-        if (row.cells.length < 2) continue;
+        if (row.cells.length < 4) continue;
 
         const serviceCell = row.cells[0];
-        const ipCell = isLocal ? row.cells[2] : row.cells[1];
-        const statusCell = isLocal ? row.cells[4] : row.cells[3];
+        const ipCell = row.cells[1];
+        const statusCell = row.cells[3]; // Status column is at index 3 in both views
 
         if (!serviceCell || !ipCell || !statusCell) continue;
 
@@ -779,7 +855,7 @@ function filterTable() {
         const ipText = ipCell.textContent.trim().toLowerCase();
         const statusText = statusCell.textContent.trim().toLowerCase();
 
-        const matchesSearch = ipText.includes(searchInput);
+        const matchesSearch = ipText.includes(searchInput) || serviceText.includes(searchInput);
         const matchesService = serviceFilter === '' || serviceText.includes(serviceFilter);
         const matchesStatus = statusFilter === '' || statusText.includes(statusFilter);
 
@@ -808,7 +884,7 @@ function changePerPage(perPage) {
     const urlParams = new URLSearchParams(window.location.search);
     urlParams.set('per_page', perPage);
     urlParams.set('page', '1'); // Reset to first page when changing items per page
-    window.location.href = '?' + urlParams.toString() + '#monitoringTable';
+    window.location.href = '?' + urlParams.toString() + '';
 }
 
 // Expose functions to global scope

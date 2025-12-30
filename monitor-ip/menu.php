@@ -109,23 +109,23 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2">
         <div class="flex flex-wrap gap-3 justify-center md:justify-start">
             <?php if (isset($network_type) && $network_type === 'local'): ?>
-                <button type="button" onclick="showScanNetworkModal();"
-                    class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
-                    <i class="fas fa-radar"></i> Scan Local Network
-                </button>
-                <button type="button" onclick="showSpeedTestModal();"
-                    class="btn bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md">
-                    <i class="fas fa-tachometer-alt"></i> Speed Test (Linux)
-                </button>
+                    <button type="button" onclick="showScanNetworkModal();"
+                        class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
+                        <i class="fas fa-radar"></i> Scan Private Network
+                    </button>
+                    <button type="button" onclick="showSpeedTestModal();"
+                        class="btn bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md">
+                        <i class="fas fa-tachometer-alt"></i> Speed Test (Linux)
+                    </button>
             <?php else: ?>
-                <button onclick="showAddIpForm();"
-                    class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
-                    <i class="fas fa-network-wired"></i> Add IP
-                </button>
-                <button type="button" onclick="showManageServiceForm();"
-                    class="btn bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md">
-                    <i class="fas fa-tasks"></i> Manage Services
-                </button>
+                    <button onclick="showAddIpForm();"
+                        class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
+                        <i class="fas fa-network-wired"></i> Add IP
+                    </button>
+                    <button type="button" onclick="showManageServiceForm();"
+                        class="btn bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md">
+                        <i class="fas fa-tasks"></i> Manage Services
+                    </button>
             <?php endif; ?>
             <button onclick="showChangeTimerForm();"
                 class="btn bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md">
@@ -140,6 +140,7 @@
                 class="btn bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md">
                 <i class="fas fa-file-import"></i> Import/Export Config
             </button>
+
             <button type="button" onclick="showClearDataConfirmation();"
                 class="btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md">
                 <i class="fas fa-trash-alt"></i> Clear Data
@@ -161,9 +162,9 @@
             </button>
         </div>
         <?php if (!empty($import_export_message)): ?>
-            <div class="mb-4 p-3 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                <?php echo $import_export_message === true ? 'Configuración importada correctamente.' : htmlspecialchars($import_export_message); ?>
-            </div>
+                <div class="mb-4 p-3 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    <?php echo $import_export_message === true ? 'Configuración importada correctamente.' : htmlspecialchars($import_export_message); ?>
+                </div>
         <?php endif; ?>
         <div class="mb-6">
             <form method="POST" enctype="multipart/form-data">
@@ -214,12 +215,12 @@
                         required>
                         <option value="" disabled selected>Select a service</option>
                         <?php foreach ($services as $service_name => $color): ?>
-                            <?php if ($service_name !== "DEFAULT"): ?>
-                                <option value="<?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>"
-                                    style="background-color: <?php echo htmlspecialchars($color, ENT_QUOTES, 'UTF-8'); ?>; color: #fff;">
-                                    <?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>
-                                </option>
-                            <?php endif; ?>
+                                <?php if ($service_name !== "DEFAULT"): ?>
+                                        <option value="<?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>"
+                                            style="background-color: <?php echo htmlspecialchars($color, ENT_QUOTES, 'UTF-8'); ?>; color: #fff;">
+                                            <?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>
+                                        </option>
+                                <?php endif; ?>
                         <?php endforeach; ?>
                         <option value="create_new" class="bg-blue-500 text-white">
                             <i class="fas fa-plus mr-2"></i> ➕ New Service
@@ -709,53 +710,53 @@
         <div id="servicesList">
             <div class="space-y-2 max-h-96 overflow-y-auto pr-2">
                 <?php foreach ($services as $service_name => $color): ?>
-                    <?php if ($service_name !== "DEFAULT"):
-                        $method = $services_methods[$service_name] ?? ($services_methods['DEFAULT'] ?? 'icmp');
-                        $method_label = strtoupper($method);
-                        $method_class = $method === 'icmp' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                            ($method === 'curl' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300');
-                        ?>
-                        <div
-                            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <div class="flex items-center gap-3">
-                                <div class="w-4 h-4 rounded-full shadow-sm"
-                                    style="background-color: <?php echo htmlspecialchars($color); ?>;"></div>
-                                <div>
-                                    <div class="font-medium text-gray-800 dark:text-gray-200">
-                                        <?php echo htmlspecialchars($service_name); ?>
+                        <?php if ($service_name !== "DEFAULT"):
+                            $method = $services_methods[$service_name] ?? ($services_methods['DEFAULT'] ?? 'icmp');
+                            $method_label = strtoupper($method);
+                            $method_class = $method === 'icmp' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                ($method === 'curl' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                    'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300');
+                            ?>
+                                <div
+                                    class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-4 h-4 rounded-full shadow-sm"
+                                            style="background-color: <?php echo htmlspecialchars($color); ?>;"></div>
+                                        <div>
+                                            <div class="font-medium text-gray-800 dark:text-gray-200">
+                                                <?php echo htmlspecialchars($service_name); ?>
+                                            </div>
+                                            <div class="text-xs mt-0.5">
+                                                <span
+                                                    class="px-1.5 py-0.5 rounded text-[10px] font-medium <?php echo $method_class; ?>">
+                                                    <?php echo $method_label; ?>
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="text-xs mt-0.5">
-                                        <span
-                                            class="px-1.5 py-0.5 rounded text-[10px] font-medium <?php echo $method_class; ?>">
-                                            <?php echo $method_label; ?>
-                                        </span>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button"
+                                            onclick="editService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
+                                            class="p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                            title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button"
+                                            onclick="deleteService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
+                                            class="p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                            title="Delete">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button type="button"
-                                    onclick="editService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
-                                    class="p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                                    title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button"
-                                    onclick="deleteService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
-                                    class="p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                    title="Delete">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                        </div>
-                    <?php endif; ?>
+                        <?php endif; ?>
                 <?php endforeach; ?>
 
                 <?php if (count($services) <= 1): // Only DEFAULT exists ?>
-                    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                        <i class="fas fa-info-circle text-2xl mb-2"></i>
-                        <p>No custom services created yet.</p>
-                    </div>
+                        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-info-circle text-2xl mb-2"></i>
+                            <p>No custom services created yet.</p>
+                        </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -878,12 +879,12 @@
     </div>
 </div>
 
-<!-- Modal: Scan Local Network -->
+<!-- Modal: Scan Private Network -->
 <div id="scanNetworkModal" class="modal">
     <div class="modal-content max-w-4xl">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-radar text-green-500 mr-2"></i> Scan Local Network
+                <i class="fas fa-radar text-green-500 mr-2"></i> Scan Private Network
             </h2>
             <button type="button" onclick="hideScanNetworkModal();"
                 class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
@@ -895,7 +896,7 @@
             <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
                 <p class="text-sm text-blue-800 dark:text-blue-200">
                     <i class="fas fa-info-circle mr-2"></i>
-                    Click "Start Scan" to discover devices on your local network. This may take a few seconds.
+                    Click "Start Scan" to discover devices on your private network. This may take a few seconds.
                 </p>
             </div>
         </div>
@@ -1136,6 +1137,48 @@ $stats = calculateSystemStats($ips_to_monitor);
                 </p>
                 <p class='text-sm text-gray-500 dark:text-gray-400'>Average Response</p>
             </div>
+        </div>
+    </div>
+</div>
+<!-- Modal: Configure Network Speed -->
+<div id="setNetworkSpeedModal" class="modal" style="display: none; z-index: 1000;">
+    <div class="modal-content max-w-md">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
+                <i class="fas fa-tachometer-alt text-indigo-500 mr-2"></i> Configure Network Speed
+            </h2>
+            <button type="button" onclick="hideSetNetworkSpeedModal();"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 font-medium">
+            Please enter your contracted network speed (in Mbps). This value is required for the Network Health Analysis
+            to calculate performance efficiency.
+        </p>
+
+        <div class="mb-6">
+            <label for="network_speed_input"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contracted Speed (Mbps)</label>
+            <div class="flex items-center gap-3">
+                <div class="relative flex-1">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-bolt text-indigo-400"></i>
+                    </div>
+                    <input type="number" id="network_speed_input" placeholder="300, 600, 1000"
+                        class="w-full pl-10 p-4 bg-gray-50 border border-gray-300 text-gray-900 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white font-black text-2xl transition-all">
+                </div>
+                <span class="text-gray-400 font-black text-sm uppercase tracking-widest">Mbps</span>
+            </div>
+        </div>
+
+        <div class="flex justify-end pt-2">
+            <button onclick="saveNetworkSpeed()"
+                class="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+                <span>SAVE CONFIGURATION</span>
+                <i class="fas fa-arrow-right text-xs"></i>
+            </button>
         </div>
     </div>
 </div>

@@ -9,7 +9,7 @@ $config_path = __DIR__ . '/conf/' . ($is_local_network ? 'config_local.ini' : 'c
 
 // Create config_local.ini if it doesn't exist
 if ($is_local_network && !file_exists($config_path)) {
-    $default_local_config = "[settings]\nversion = \"0.7.0\"\nping_attempts = \"5\"\nping_interval = \"300\"\n[services-colors]\nDEFAULT = \"#6B7280\"\n\"Local Network\" = \"#10B981\"\n[services-methods]\nDEFAULT = \"icmp\"\n\"Local Network\" = \"icmp\"\n[ips-host]\n";
+    $default_local_config = "[settings]\nversion = \"0.7.0\"\nping_attempts = \"5\"\nping_interval = \"300\"\n[services-colors]\nDEFAULT = \"#6B7280\"\n\"Private Network\" = \"#10B981\"\n[services-methods]\nDEFAULT = \"icmp\"\n\"Private Network\" = \"icmp\"\n[ips-host]\n";
     file_put_contents($config_path, $default_local_config);
 }
 
@@ -197,6 +197,37 @@ if (isset($_GET['action'])) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
         exit;
+    }
+
+    if ($_GET['action'] === 'save_network_speed' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+        try {
+            $json = file_get_contents('php://input');
+            $data = json_decode($json, true);
+            $speed = intval($data['speed'] ?? 0);
+
+            if ($speed <= 0) {
+                throw new Exception('Invalid speed value');
+            }
+
+            $config = parse_ini_file($config_path, true);
+            $config['settings']['speed_connection_mbps'] = $speed;
+
+            save_config_file($config, $config_path);
+
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+}
+
+// Check if speed_connection_mbps is set for local network
+$show_speed_prompt = false;
+if ($is_local_network) {
+    if (!isset($config['settings']['speed_connection_mbps']) || empty($config['settings']['speed_connection_mbps'])) {
+        $show_speed_prompt = true;
     }
 }
 
@@ -486,7 +517,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {
 // Ejecutar pings en paralelo (siempre, a menos que sea una acción AJAX que ya salió, o si estamos paginando, o si acabamos de realizar una acción)
 // Obtener solo las IPs en un array
 $ips_array = array_keys($ips_to_monitor);
-if (!isset($_GET['page']) && !isset($_GET['action'])) {
+if (!isset($_GET['page']) && !isset($_GET['action']) && !isset($_GET['no_ping'])) {
     update_ping_results_parallel($ips_array);
 }
 
