@@ -539,7 +539,7 @@ $notifications = [
 ];
 
 // Handle specific error messages
-if ($_GET['action'] === 'error' && isset($_GET['msg'])) {
+if (isset($_GET['action']) && $_GET['action'] === 'error' && isset($_GET['msg'])) {
     $error_messages = [
         'invalid_ip' => 'Error: La dirección IP o Dominio ingresado no es válido.',
         'empty_service_name' => 'Error: El nombre del servicio no puede estar vacío.',
