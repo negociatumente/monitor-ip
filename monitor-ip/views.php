@@ -209,9 +209,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                 </button>
                 <!-- Desktop Sidebar Toggle Button -->
                 <button id="desktopSidebarToggle" onclick="toggleDesktopSidebar()"
-                    class="hidden lg:flex p-2 rounded-lg bg-black bg-opacity-5 hover:bg-opacity-20 transition-all items-center justify-center ml-2 mb-4">
-                    <i class="fas fa-chevron-left text-xl text-white"></i> <span class="ml-2 sidebar-label">Hide
-                        Menu</span>
+                    class="hidden lg:flex px-2 py-3 w-full  gap-2  rounded-lg hover:bg-opacity-20 transition-all items-center mb-4">
+                    <i class="fas fa-chevron-left text-lg "></i> <span class="ml-2 sidebar-label">Hide Menu</span>
                 </button>
                 <!-- Network Selector -->
                 <div class="mb-6 network-selector">
@@ -243,18 +242,18 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                     <div class="mb-6">
                         <h3
                             class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3 sidebar-label">
-                            Network Analysis
+                            Network Tools
                         </h3>
                         <div class="space-y-2">
-                            <button onclick="showTopologyMapModal(); toggleSidebar();" class="btn-sidebar btn-primary"
-                                title="Topology Map">
-                                <i class="fas fa-sitemap"></i>
-                                <span class="sidebar-label">Topology Map</span>
-                            </button>
                             <button onclick="showNetworkHealth(); toggleSidebar();" class="btn-sidebar btn-primary"
                                 title="Network Health">
                                 <i class="fas fa-heartbeat"></i>
                                 <span class="sidebar-label">Network Health</span>
+                            </button>
+                             <button onclick="showTopologyMapModal(); toggleSidebar();" class="btn-sidebar bg-purple-600 text-white"
+                                title="Topology Map">
+                                <i class="fas fa-sitemap"></i>
+                                <span class="sidebar-label">Topology Map</span>
                             </button>
                         </div>
                     </div>
@@ -598,7 +597,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             <?php if ($is_local_network): ?>
                                                 <td class='p-3'>
                                                     <span
-                                                        class='px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded text-[10px] font-bold border border-blue-100 dark:border-blue-800 uppercase tracking-tighter'>
+                                                        class='inline-block px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300'>
                                                         <?php echo $ips_network[$ip] ?? 'Unknown'; ?>
                                                     </span>
                                                 </td>
@@ -683,22 +682,17 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             ?>
                                             <td class='p-3 text-center'>
                                                 <div class="flex items-center justify-center gap-2">
-                                                    <button type='button'
-                                                        onclick="event.stopPropagation(); showIpDetailModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')"
-                                                        class='btn bg-teal-100 text-teal-700 hover:bg-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:hover:bg-teal-800/50 p-2 rounded-md transition-all'
-                                                        title='View Details'>
-                                                        <i class='fas fa-eye text-sm'></i>
-                                                    </button>
+                                                   
                                                     <button type='button'
                                                         onclick="event.stopPropagation(); showChangeIpServiceModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>', '<?php echo htmlspecialchars($service, ENT_QUOTES, 'UTF-8'); ?>', <?php echo $is_local_network ? 'true' : 'false'; ?>, '<?php echo $is_local_network ? htmlspecialchars($ips_network[$ip] ?? '', ENT_QUOTES, 'UTF-8') : ''; ?>')"
-                                                        class='btn bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-800/50 p-2 rounded-md transition-all'
-                                                        title='<?php echo isset($is_local_network) && $is_local_network ? 'Rename' : 'Change Service'; ?>'>
+                                                        class='btn text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-800/50 p-2 rounded-md transition-all'
+                                                        title="<?php echo isset($is_local_network) && $is_local_network ? 'Change Host' : 'Change Service'; ?>">
                                                         <i class='fas fa-edit text-sm'></i>
                                                     </button>
 
                                                     <button type='button'
                                                         onclick="event.stopPropagation();confirmDelete('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')"
-                                                        class='btn bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-800/50 p-2 rounded-md transition-all'
+                                                        class='btn  text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-800/50 p-2 rounded-md transition-all'
                                                         title='Delete IP'>
                                                         <i class='fas fa-trash-alt text-sm'></i>
                                                     </button>
@@ -860,7 +854,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                             <div id="ipDetailContentGeneral" class="space-y-4 sm:space-y-6">
                                 <div id="modalIpContent"></div>
 
-                                <div class="mt-4 sm:mt-6">
+                                <div class="mt-4 sm:mt-2">
                                     <h4
                                         class="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 flex items-center">
                                         <i class="fas fa-chart-area mr-2 text-blue-500"></i>
@@ -888,7 +882,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                     </div>
 
                                     <!-- Traceroute Section -->
-                                    <div class="border-t border-gray-100 dark:border-gray-800 pt-4 sm:pt-6">
+                                    <div class="border-t border-gray-100 dark:border-gray-800 pt-4 sm:pt-2">
                                         <div
                                             class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
                                             <h4
@@ -905,20 +899,19 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         </div>
 
                                         <div id="detail_traceroute_visual"
-                                            class="min-h-[200px] p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner overflow-y-auto max-h-[300px] sm:max-h-[400px]">
+                                            class="min-h-[200px] max-h-[350px] bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner overflow-y-auto">
                                             <div
                                                 class="flex flex-col items-center justify-center py-8 sm:py-10 text-gray-400 italic text-sm">
                                                 Click "Run Traceroute" to analyze path...
                                             </div>
                                         </div>
                                         <pre id="detail_traceroute_raw"
-                                            class="hidden min-h-[200px] m-0 p-3 sm:p-6 bg-black text-green-400 font-mono text-[10px] sm:text-xs overflow-auto rounded-2xl whitespace-pre-wrap leading-relaxed opacity-90">-- Raw output --</pre>
+                                            class="hidden min-h-[200px] max-h-[350px] m-0 p-3 sm:p-6 bg-black text-green-400 font-mono text-[10px] sm:text-xs overflow-auto rounded-2xl whitespace-pre-wrap leading-relaxed opacity-90">-- Raw output --</pre>
 
                                         <div class="mt-3 sm:mt-4">
                                             <button id="btnRunDetailTraceroute" onclick="runDetailTraceroute()"
                                                 class="w-full py-2 sm:py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm sm:text-base rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
-                                                <i class="fas fa-route"></i> <span class="hidden sm:inline">Run Network
-                                                    Path Discovery</span><span class="sm:hidden">Traceroute</span>
+                                                <i class="fas fa-route"></i> <span class="hidden sm:inline">Run Traceroute</span><span class="sm:hidden">Traceroute</span>
                                             </button>
                                         </div>
                                     </div>
@@ -973,7 +966,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         </button>
                         <div class="flex items-center mb-6">
                             <i class="fas fa-edit text-blue-500 text-2xl mr-3"></i>
-                            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200">Change Service</h3>
+                            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200"><?php echo isset($is_local_network) && $is_local_network ? 'Change Host' : 'Change Service'; ?></h3>
                         </div>
                         <form method="POST" action="">
                             <input type="hidden" id="change_service_ip" name="update_ip_service">
@@ -1023,7 +1016,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             <option value="WiFi-2.4GHz">WiFi-2.4GHz</option>
                                             <option value="WiFi-5GHz">WiFi-5GHz</option>
                                             <option value="WiFi-6GHz">WiFi-6GHz</option>
-                                            <option value="Repeater/Mesh">Repeater/Mesh</option>
+                                            <option value="AP/Mesh">AP/Mesh</option>
                                             <option value="Ethernet">Ethernet</option>
                                         </select>
                                         <div
@@ -1174,7 +1167,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
         <div
             class="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden">
 
-            <div class="p-8 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white relative">
+            <div class="p-4 bg-indigo-500 text-white relative">
                 <div class="flex justify-between items-start relative z-10">
                     <div class="flex items-center gap-4">
                         <div class="p-4 bg-white/20 rounded-2xl backdrop-blur-xl shadow-inner">
@@ -1184,7 +1177,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                             <h3 class="text-3xl font-extrabold tracking-tight">Network Health</h3>
                             <p class="text-blue-100/80 text-sm mt-1 flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                                Live System Analysis
+                                Network Performance Analysis
                             </p>
                         </div>
                     </div>
@@ -1196,7 +1189,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
             </div>
 
             <div id="network_health_content"
-                class="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar bg-gray-50/50 dark:bg-gray-950/50">
+                class="p-4 max-h-[70vh] overflow-y-auto custom-scrollbar bg-gray-50/50 dark:bg-gray-950/50">
                 <!-- Data will be injected here -->
                 <div class="flex flex-col items-center justify-center py-20 animate-pulse">
                     <i class="fas fa-circle-notch fa-spin text-4xl mb-4 text-indigo-500"></i>
@@ -1212,6 +1205,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         class="px-6 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-emerald-500/20">
                         <i class="fas fa-robot"></i> AI Report
                     </button>
+                   
                     <button onclick="closeNetworkHealthModal()"
                         class="px-8 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-95">
                         Close Analysis
@@ -1227,14 +1221,14 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
         <div
             class="bg-white dark:bg-gray-900 w-[95%] max-w-[1400px] h-[85vh] rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col">
 
-            <div class="p-6 bg-emerald-600 text-white flex justify-between items-center shadow-lg">
+            <div class="p-6 bg-purple-600 text-white flex justify-between items-center shadow-lg">
                 <div class="flex items-center gap-4">
                     <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md">
                         <i class="fas fa-sitemap text-2xl"></i>
                     </div>
                     <div>
                         <h3 class="text-xl font-extrabold tracking-tight">Interactive Network Topology</h3>
-                        <p class="text-emerald-100/70 text-[10px] uppercase font-bold tracking-widest mt-0.5">
+                        <p class="text-indigo-100/70 text-[10px] uppercase font-bold tracking-widest mt-0.5">
                             Automated
                             Infrastructure Logic</p>
                     </div>

@@ -110,7 +110,7 @@ function displayScanResults(newDevices) {
                     </th>
                     <th class="p-3 border-b border-gray-200 dark:border-gray-700">IP Address</th>
                     <th class="p-3 border-b border-gray-200 dark:border-gray-700">Name</th>
-                    <th class="p-3 border-b border-gray-200 dark:border-gray-700">Is Repeater/Mesh</th>
+                    <th class="p-3 border-b border-gray-200 dark:border-gray-700">Is AP/Mesh</th>
                     <th class="p-3 border-b border-gray-200 dark:border-gray-700">Network Connection</th>
                 </tr>
             </thead>
@@ -198,7 +198,7 @@ function handleScanRepeaterCheck(index) {
 
     if (check && nameInput) {
         if (check.checked) {
-            nameInput.value = 'Repeater/Mesh';
+            nameInput.value = 'AP/Mesh';
             nameInput.readOnly = true;
             nameInput.classList.add('bg-gray-100', 'dark:bg-gray-800', 'opacity-60', 'cursor-not-allowed');
         } else {
@@ -236,7 +236,7 @@ function updateAllScanNetworkSelects() {
             const ip = check.getAttribute('data-ip');
             // Avoid duplicates if already registered
             if (!activeRepeaters.some(r => r.ip === ip)) {
-                activeRepeaters.push({ ip: ip, service: 'Repeater/Mesh' });
+                activeRepeaters.push({ ip: ip, service: 'AP/Mesh' });
             }
         }
     });
@@ -668,17 +668,17 @@ async function showNetworkHealth() {
                     </div>
 
                     <!-- Upload -->
-                    <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-5 flex flex-col justify-between group hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-5 flex flex-col justify-between group hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
                             <div class="flex justify-between items-start">
-                                <div class="p-2 bg-indigo-100 dark:bg-indigo-800/50 rounded-lg text-indigo-600 dark:text-indigo-300">
+                                <div class="p-2 bg-blue-100 dark:bg-blue-800/50 rounded-lg text-blue-600 dark:text-blue-300">
                                     <i class="fas fa-arrow-up"></i>
                                 </div>
-                                <span class="text-[10px] font-bold text-indigo-400 uppercase">Upload</span>
+                                <span class="text-[10px] font-bold text-blue-400 uppercase">Upload</span>
                             </div>
                             <div class="mt-3">
                                 <div class="flex items-baseline gap-1">
                                     <span class="text-2xl font-black text-gray-800 dark:text-white">${upload}</span>
-                                    <span class="text-xs font-bold text-indigo-500">Mbps</span>
+                                    <span class="text-xs font-bold text-blue-500">Mbps</span>
                                 </div>
                                 <div class="text-[10px] font-medium text-gray-400 dark:text-gray-500 flex items-center gap-1">
                                     <span>Plan:</span>
@@ -688,17 +688,17 @@ async function showNetworkHealth() {
                     </div>
 
                     <!-- Latency -->
-                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-5 flex flex-col justify-between group hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-5 flex flex-col justify-between group hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
                             <div class="flex justify-between items-start">
-                                <div class="p-2 bg-purple-100 dark:bg-purple-800/50 rounded-lg text-purple-600 dark:text-purple-300">
+                                <div class="p-2 bg-blue-100 dark:bg-blue-800/50 rounded-lg text-blue-600 dark:text-blue-300">
                                     <i class="fas fa-stopwatch"></i>
                                 </div>
-                                <span class="text-[10px] font-bold text-purple-400 uppercase">Ping</span>
+                                <span class="text-[10px] font-bold text-blue-400 uppercase">Ping</span>
                             </div>
                             <div class="mt-3">
                                 <div class="flex items-baseline gap-1">
                                     <span class="text-2xl font-black text-gray-800 dark:text-white">${latency}</span>
-                                    <span class="text-xs font-bold text-purple-500">ms</span>
+                                    <span class="text-xs font-bold text-blue-500">ms</span>
                                 </div>
                                 <div class="text-[10px] font-medium text-gray-400 dark:text-gray-500">
                                     Response time
@@ -707,17 +707,17 @@ async function showNetworkHealth() {
                     </div>
 
                     <!-- Devices Latency -->
-                    <div class="bg-teal-50 dark:bg-teal-900/20 rounded-2xl p-5 flex flex-col justify-between group hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-5 flex flex-col justify-between group hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
                             <div class="flex justify-between items-start">
-                                <div class="p-2 bg-teal-100 dark:bg-teal-800/50 rounded-lg text-teal-600 dark:text-teal-300">
+                                <div class="p-2 bg-blue-100 dark:bg-blue-800/50 rounded-lg text-blue-600 dark:text-blue-300">
                                     <i class="fas fa-network-wired"></i>
                                 </div>
-                                <span class="text-[10px] font-bold text-teal-400 uppercase">Latency</span>
+                                <span class="text-[10px] font-bold text-blue-400 uppercase">Latency</span>
                             </div>
                             <div class="mt-3">
                                 <div class="flex items-baseline gap-1">
                                     <span class="text-2xl font-black text-gray-800 dark:text-white">${avgDeviceLatency}</span>
-                                    <span class="text-xs font-bold text-teal-500">ms</span>
+                                    <span class="text-xs font-bold text-blue-500">ms</span>
                                 </div>
                                 <div class="text-[10px] font-medium text-gray-400 dark:text-gray-500">
                                     Avg local latency
@@ -1098,7 +1098,7 @@ function renderRepeaterNode(repeater, allOthers) {
 
         // Backward compatibility / Generic fallback:
         // If it's a bridge or the only repeater, or manually set to generic
-        if (nt === 'Repeater/Mesh' || nt === 'repetidor/ap') {
+        if (nt === 'AP/Mesh' || nt === 'repetidor/ap') {
             // For now, if generic, we show it on the first repeater found or bridge
             // To be more precise, we only show 'Generic' on the 'Repeater Bridge' if it exists
             return isBridge;
@@ -1320,7 +1320,7 @@ async function runDetailTraceroute() {
             });
 
             // Header for visual view
-            let html = '<div class="space-y-4 relative pb-8">';
+            let html = '<div class="space-y-4 relative pb-0">';
 
             // Display CGNAT warning banner if detected
             if (cgnatDetected) {
@@ -1397,7 +1397,7 @@ async function runDetailTraceroute() {
         visual.innerHTML = `<div class="p-12 text-red-500 text-xs text-center"><i class="fas fa-wifi-slash text-2xl mb-2"></i><br>Network Error executing Path Discovery</div>`;
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fas fa-route mr-2"></i> Run Network Path Discovery`;
+        btn.innerHTML = `<i class="fas fa-route mr-2"></i> Run Traceroute`;
     }
 }
 

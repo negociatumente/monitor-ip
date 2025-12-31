@@ -108,7 +108,7 @@
                 </div>
 
                 <div class="ml-1 sm:ml-4 mr-1 sm:mr-2">
-                    <p class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Av. latency</p>
+                    <p class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Latency</p>
                     <div class="flex items-baseline gap-2">
                         <span class="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
                             <?php echo ($stats['average_ping'] !== 'N/A' ? $stats['average_ping'] : '-'); ?>
@@ -203,62 +203,81 @@
 
 <!-- Modal: Import/Export Config -->
 <div id="configModal" class="modal">
-    <div class="modal-content">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-cogs text-indigo-500 mr-2"></i> Importar / Exportar Configuración
-            </h2>
-            <button type="button" onclick="hideConfigModal();"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <i class="fas fa-times text-xl"></i>
+    <div class="modal-content p-0 max-w-3xl shadow-2xl border-0">
+        <div class="bg-gray-500 p-6 rounded-t-xl flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
+                    <i class="fas fa-cogs text-3xl text-white drop-shadow"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Config Import / Export</h2>
+                    <p class="text-indigo-100 text-xs font-medium">*If you are using Local Network monitoring, make sure to select the correct network type when importing/exporting configurations.</p>
+                </div>
+            </div>
+            <button type="button" onclick="hideConfigModal();" class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
+                <i class="fas fa-times"></i>
             </button>
         </div>
-        <?php if (!empty($import_export_message)): ?>
-            <div class="mb-4 p-3 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                <?php echo $import_export_message === true ? 'Configuración importada correctamente.' : htmlspecialchars($import_export_message); ?>
-            </div>
-        <?php endif; ?>
-        <div class="mb-6">
-            <form method="POST" enctype="multipart/form-data">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Importar archivo
-                    config.ini</label>
-                <input type="hidden" name="network"
-                    value="<?php echo isset($network_type) ? $network_type : 'external'; ?>">
-                <input type="file" name="import_config" accept=".ini,text/plain" required
-                    class="mb-4 block w-full text-sm text-gray-700 dark:text-gray-200">
-                <div class="flex gap-3">
-                    <button type="submit" class="btn bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600">
-                        <i class="fas fa-upload mr-2"></i> Importar
-                    </button>
+        <div class="p-6 bg-gray-50 dark:bg-gray-900 rounded-b-2xl">
+            <?php if (!empty($import_export_message)): ?>
+                <div class="mb-4 p-3 rounded-xl bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-700 flex items-center gap-2">
+                    <i class="fas fa-info-circle"></i>
+                    <span><?php echo $import_export_message === true ? 'Configuración importada correctamente.' : htmlspecialchars($import_export_message); ?></span>
                 </div>
-            </form>
-        </div>
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Exportar
-                configuración actual</label>
-            <a href="?export_config=1<?php echo isset($network_type) ? '&network=' . $network_type : ''; ?>"
-                class="btn bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
-                <i class="fas fa-download mr-2"></i> Exportar
-            </a>
+            <?php endif; ?>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Importar -->
+                <form method="POST" enctype="multipart/form-data" class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-file-import text-indigo-500 text-2xl"></i>
+                        <span class="font-bold text-gray-700 dark:text-gray-200">Import Configuration</span>
+                    </div>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">*Imports will overwrite existing settings</p>
+
+                    <input type="hidden" name="network" value="<?php echo isset($network_type) ? $network_type : 'external'; ?>">
+                    <input type="file" name="import_config" accept=".ini,text/plain" required class="block w-full text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2">
+                    <button type="submit" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
+                        <i class="fas fa-upload"></i> Import
+                    </button>
+                </form>
+                <!-- Exportar -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-file-export text-green-500 text-2xl"></i>
+                        <span class="font-bold text-gray-700 dark:text-gray-200">Export Configuration</span>
+                    </div>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">Export your current configuration settings</p>
+                    <a href="?export_config=1<?php echo isset($network_type) ? '&network=' . $network_type : ''; ?>" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
+                        <i class="fas fa-download"></i> Export
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Modal: Add IP Form -->
 <div id="addIpForm" class="modal">
-    <div class="modal-content">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-plus-circle text-blue-500 mr-2"></i> Add New IP / Domain
-            </h2>
+        <div class="modal-content p-0 max-w-xl shadow-2xl border-0">
+        <div class="bg-indigo-500 p-6 rounded-t-xl flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
+                    <i class="fas fa-plus-circle text-3xl text-white drop-shadow"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Add New IP / Domain</h2>
+                    <p class="text-indigo-100 text-xs font-medium">Add a new IP or domain to monitor</p>
+                </div>
+            </div>
             <button type="button" onclick="hideAddIpForm();"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <i class="fas fa-times text-xl"></i>
+                class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
+                <i class="fas fa-times"></i>
             </button>
         </div>
 
+
         <form method="POST" action="" onsubmit="return validateAddIpForm()">
-            <div class="mb-5">
+            <div class="p-4">
                 <label for="new_service"
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service</label>
                 <div class="relative">
@@ -287,7 +306,7 @@
 
             <!-- New Service Creation Form (Hidden by default) -->
             <div id="newServiceForm" style="display: none;"
-                class="mb-5 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
+                class="m-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
                 <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-3 flex items-center">
                     <i class="fas fa-plus-circle mr-2"></i> Create New Service
                 </h4>
@@ -336,7 +355,7 @@
 
             </div>
 
-            <div class="mb-5">
+            <div class="p-4">
                 <label for="new_ip" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IP Address /
                     Domain</label>
                 <div class="relative">
@@ -353,7 +372,7 @@
 
 
 
-            <div class="flex justify-end gap-3 mt-6">
+            <div class="flex justify-end gap-3 p-4">
                 <button type="button" onclick="hideAddIpForm();"
                     class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
                     <i class="fas fa-times mr-2"></i> Cancel
@@ -653,21 +672,27 @@
 
 <!-- Modal: Clear Data Confirmation -->
 <div id="clearDataConfirmation" class="modal">
-    <div class="modal-content">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i> Clear Monitoring Data
-            </h2>
+    <div class="modal-content p-0 max-w-3xl shadow-2xl border-0">
+                <div class="bg-amber-500 p-6 rounded-t-xl flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
+                    <i class="fas fa-exclamation-triangle text-3xl text-white drop-shadow"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Clear Monitoring Data</h2>
+                    <p class="text-indigo-100 text-xs font-medium">Measure your internet connection speed</p>
+                </div>
+            </div>
             <button type="button" onclick="hideClearDataConfirmation();"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <i class="fas fa-times text-xl"></i>
+                class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
+                <i class="fas fa-times"></i>
             </button>
         </div>
 
         <form method="POST" action="">
             <input type="hidden" name="network"
                 value="<?php echo isset($network_type) ? $network_type : 'external'; ?>">
-            <div class="bg-amber-50 dark:bg-amber-900/30 p-4 rounded-lg mb-5">
+            <div class="bg-amber-50 dark:bg-amber-900/30 p-4 m-4 rounded-lg mb-5">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <i class="fas fa-eraser text-amber-500 text-2xl"></i>
@@ -681,7 +706,7 @@
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-5">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 m-4">
                 <h4 class="font-medium mb-2 text-gray-800 dark:text-gray-200">What will be deleted:</h4>
                 <ul class="space-y-1 text-gray-600 dark:text-gray-400">
                     <li class="flex items-center">
@@ -698,7 +723,7 @@
                     </li>
                 </ul>
 
-                <h4 class="font-medium mt-4 mb-2 text-gray-800 dark:text-gray-200">What will be preserved:</h4>
+                <h4 class="font-medium m-4 text-gray-800 dark:text-gray-200">What will be preserved:</h4>
                 <ul class="space-y-1 text-gray-600 dark:text-gray-400">
                     <li class="flex items-center">
                         <i class="fas fa-shield-alt text-blue-500 mr-2"></i>
@@ -715,7 +740,7 @@
                 </ul>
             </div>
 
-            <div class="mb-5 px-1">
+            <div class="p-4 m-4 px-1">
                 <label class="flex items-start space-x-3 cursor-pointer group">
                     <div class="flex items-center h-5">
                         <input type="checkbox" name="delete_ips"
@@ -731,7 +756,7 @@
                 </label>
             </div>
 
-            <div class="flex justify-end gap-3 mt-6">
+            <div class="flex justify-end gap-3 m-4">
                 <button type="button" onclick="hideClearDataConfirmation();"
                     class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
                     <i class="fas fa-times mr-2"></i> Cancel
@@ -747,131 +772,120 @@
 
 <!-- Modal: Manage Services -->
 <div id="manageServiceForm" class="modal">
-    <div class="modal-content">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-tasks text-blue-500 mr-2"></i> Manage Services
-            </h2>
-            <button type="button" onclick="hideManageServiceForm();"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <i class="fas fa-times text-xl"></i>
+    <div class="modal-content p-0 max-w-lg shadow-2xl border-0">
+        <div class="bg-purple-500 p-6 rounded-t-xl flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
+                    <i class="fas fa-tasks text-3xl text-white drop-shadow"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Manage Services</h2>
+                    <p class="text-indigo-100 text-xs font-medium">Personaliza y gestiona los servicios monitorizados</p>
+                </div>
+            </div>
+            <button type="button" onclick="hideManageServiceForm();" class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
+                <i class="fas fa-times"></i>
             </button>
         </div>
-
-        <!-- Services List -->
-        <div id="servicesList">
-            <div class="space-y-2 max-h-96 overflow-y-auto pr-2">
-                <?php foreach ($services as $service_name => $color): ?>
-                    <?php if ($service_name !== "DEFAULT"):
-                        $method = $services_methods[$service_name] ?? ($services_methods['DEFAULT'] ?? 'icmp');
-                        $method_label = strtoupper($method);
-                        $method_class = $method === 'icmp' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                            ($method === 'curl' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300');
-                        ?>
-                        <div
-                            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <div class="flex items-center gap-3">
-                                <div class="w-4 h-4 rounded-full shadow-sm"
-                                    style="background-color: <?php echo htmlspecialchars($color); ?>;"></div>
-                                <div>
-                                    <div class="font-medium text-gray-800 dark:text-gray-200">
-                                        <?php echo htmlspecialchars($service_name); ?>
+        <div class="p-6 bg-gray-50 dark:bg-gray-900 rounded-b-2xl">
+            <!-- Services List -->
+            <div id="servicesList">
+                <div class="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto pr-2">
+                    <?php foreach ($services as $service_name => $color): ?>
+                        <?php if ($service_name !== "DEFAULT"):
+                            $method = $services_methods[$service_name] ?? ($services_methods['DEFAULT'] ?? 'icmp');
+                            $method_label = strtoupper($method);
+                            $method_class = $method === 'icmp' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                ($method === 'curl' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                    'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300');
+                            ?>
+                            <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-2xl shadow border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-7 h-7 rounded-full shadow-sm flex items-center justify-center" style="background-color: <?php echo htmlspecialchars($color); ?>;">
+                                        <i class="fas fa-server text-white text-xs"></i>
                                     </div>
-                                    <div class="text-xs mt-0.5">
-                                        <span
-                                            class="px-1.5 py-0.5 rounded text-[10px] font-medium <?php echo $method_class; ?>">
-                                            <?php echo $method_label; ?>
-                                        </span>
+                                    <div>
+                                        <div class="font-bold text-gray-800 dark:text-gray-200 text-base">
+                                            <?php echo htmlspecialchars($service_name); ?>
+                                        </div>
+                                        <div class="text-xs mt-0.5">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold <?php echo $method_class; ?>">
+                                                <?php echo $method_label; ?>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
+                                <div class="flex items-center gap-2">
+                                    <button type="button"
+                                        onclick="editService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
+                                        class="p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                        title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button"
+                                        onclick="deleteService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
+                                        class="p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                        title="Delete">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <button type="button"
-                                    onclick="editService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
-                                    class="p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                                    title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button"
-                                    onclick="deleteService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
-                                    class="p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                    title="Delete">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+
+                    <?php if (count($services) <= 1): // Only DEFAULT exists ?>
+                        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-info-circle text-2xl mb-2"></i>
+                            <p>No custom services created yet.</p>
                         </div>
                     <?php endif; ?>
-                <?php endforeach; ?>
-
-                <?php if (count($services) <= 1): // Only DEFAULT exists ?>
-                    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                        <i class="fas fa-info-circle text-2xl mb-2"></i>
-                        <p>No custom services created yet.</p>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Edit Form (Hidden by default) -->
-        <div id="serviceDetailsForm" style="display:none;" class="pt-2">
-            <div class="flex items-center mb-4">
-                <button type="button" onclick="showServicesList()"
-                    class="mr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                    <i class="fas fa-arrow-left"></i> Back
-                </button>
-                <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Edit Service</h3>
-            </div>
-
-            <form method="POST" action="">
-                <input type="hidden" id="old_service_name" name="old_service_name">
-
-                <div class="mb-4">
-                    <label for="edit_service_name"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service Name</label>
-                    <input type="text" id="edit_service_name" name="service_name" required
-                        class="w-full p-2.5 bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                 </div>
+            </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="edit_service_color"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
-                        <div class="flex items-center space-x-2">
-                            <input type="color" id="edit_service_color" name="service_color" required
-                                class="h-10 w-full p-1 bg-white border border-gray-300 rounded-lg cursor-pointer dark:bg-gray-700 dark:border-gray-600">
+            <!-- Edit Form (Hidden by default) -->
+            <div id="serviceDetailsForm" style="display:none;" class="pt-2">
+               
+                <form method="POST" action="" class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 border border-gray-200 dark:border-gray-700 flex flex-col gap-4">
+                    <input type="hidden" id="old_service_name" name="old_service_name">
+                    <div class="">
+                        <label for="edit_service_name" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Service Name</label>
+                        <input type="text" id="edit_service_name" name="service_name" required class="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 mb-4">
+                        <div>
+                            <label for="edit_service_color"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="color" id="edit_service_color" name="service_color" required
+                                    class="h-10 w-full p-1 bg-white border border-gray-300 rounded-lg cursor-pointer dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="edit_service_method"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Method</label>
+                            <select id="edit_service_method" name="service_method"
+                                class="w-full p-2.5 bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="icmp">Ping (ICMP)</option>
+                                <option value="curl">HTTP/HTTPS (Curl)</option>
+                                <option value="dns">DNS Lookup</option>
+                            </select>
                         </div>
                     </div>
-                    <div>
-                        <label for="edit_service_method"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Method</label>
-                        <select id="edit_service_method" name="service_method"
-                            class="w-full p-2.5 bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            <option value="icmp">Ping (ICMP)</option>
-                            <option value="curl">HTTP/HTTPS (Curl)</option>
-                            <option value="dns">DNS Lookup</option>
-                        </select>
+
+                    <div class="flex justify-end gap-3">
+                        <button type="button" onclick="showServicesList();"
+                            class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                            Cancel
+                        </button>
+                        <button type="submit" name="update_service"
+                            class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                            <i class="fas fa-save mr-2"></i> Save Changes
+                        </button>
                     </div>
-                </div>
-
-                <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" onclick="showServicesList();"
-                        class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                        Cancel
-                    </button>
-                    <button type="submit" name="update_service"
-                        class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                        <i class="fas fa-save mr-2"></i> Save Changes
-                    </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
-
-        <!-- Hidden form for deletion -->
-        <form id="deleteServiceForm" method="POST" action="" style="display:none;">
-            <input type="hidden" id="delete_service_name_input" name="service_name">
-            <input type="hidden" name="clear_service" value="1">
-        </form>
     </div>
 </div>
 
@@ -902,49 +916,46 @@
 </div>
 
 <!-- Custom Confirm Modal -->
-<div id="customConfirm" class="modal">
+<div id="customConfirm" class="modal" style="display:none;z-index:9999;">
     <div class="modal-content max-w-md">
         <div class="flex items-center mb-4">
             <div class="flex-shrink-0">
-                <i class="fas fa-question-circle text-amber-500 text-2xl"></i>
+                <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
             </div>
             <div class="ml-4">
-                <h3 id="confirmTitle" class="text-lg font-medium text-amber-800 dark:text-amber-300">Confirmar
-                    acción</h3>
+                <h3 class="custom-confirm-header text-lg font-bold text-red-800 dark:text-red-300">Confirmar acción</h3>
             </div>
         </div>
-
-        <div class="mb-6">
-            <p id="confirmMessage" class="text-gray-700 dark:text-gray-200"></p>
-        </div>
-
-        <div class="flex justify-end gap-3">
-            <button type="button" onclick="modalFunctions.hideModal('customConfirm');"
-                class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                <i class="fas fa-times mr-2"></i> Cancelar
-            </button>
-            <button type="button" id="confirmBtn"
-                class="btn px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600">
-                <i class="fas fa-check mr-2"></i> Confirmar
-            </button>
+        <div class="custom-confirm-body mb-6 text-gray-700 dark:text-gray-200"></div>
+        <div class="flex justify-end gap-2">
+            <button type="button" class="custom-confirm-cancel btn px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancelar</button>
+            <button type="button" class="custom-confirm-ok btn px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Eliminar</button>
         </div>
     </div>
 </div>
 
 <!-- Modal: Scan Private Network -->
 <div id="scanNetworkModal" class="modal">
-    <div class="modal-content max-w-4xl">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-radar text-green-500 mr-2"></i> Scan Private Network
-            </h2>
+
+        <div class="modal-content p-0 max-w-4xl shadow-2xl border-0">
+     
+        <div class="bg-indigo-500 p-6 rounded-t-xl flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
+                    <i class="fas fa-network-wired text-3xl text-white drop-shadow"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Scan Private Network</h2>
+                    <p class="text-indigo-100 text-xs font-medium">Scan your local network for connected devices</p>
+                </div>
+            </div>
             <button type="button" onclick="hideScanNetworkModal();"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <i class="fas fa-times text-xl"></i>
+                class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
+                <i class="fas fa-times"></i>
             </button>
         </div>
 
-        <div id="scanStatus" class="mb-4">
+        <div id="scanStatus" class="p-4">
             <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
                 <p class="text-sm text-blue-800 dark:text-blue-200">
                     <i class="fas fa-info-circle mr-2"></i>
@@ -953,7 +964,7 @@
             </div>
         </div>
 
-        <div id="scanResults" style="display:none;">
+        <div id="scanResults" class="p-4" style="display:none;">
             <div class="mb-4">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
                     <i class="fas fa-list mr-2"></i> Discovered Devices
@@ -964,7 +975,7 @@
             </div>
         </div>
 
-        <div class="flex justify-end gap-3 mt-6">
+        <div class="flex justify-end gap-3 p-4">
             <button type="button" onclick="hideScanNetworkModal();"
                 class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
                 <i class="fas fa-times mr-2"></i> Close
@@ -983,18 +994,25 @@
 
 <!-- Modal: Speed Test -->
 <div id="speedTestModal" class="modal">
-    <div class="modal-content max-w-3xl">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-tachometer-alt text-purple-500 mr-2"></i> Network Speed Test
-            </h2>
+    <div class="modal-content p-0 max-w-4xl shadow-2xl border-0">
+     
+        <div class="bg-purple-500 p-6 rounded-t-xl flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
+                    <i class="fas fa-tachometer-alt text-3xl text-white drop-shadow"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Network Speed Test</h2>
+                    <p class="text-indigo-100 text-xs font-medium">Measure your internet connection speed</p>
+                </div>
+            </div>
             <button type="button" onclick="hideSpeedTestModal();"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <i class="fas fa-times text-xl"></i>
+                class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
+                <i class="fas fa-times"></i>
             </button>
         </div>
 
-        <div id="speedTestStatus" class="mb-4">
+        <div id="speedTestStatus" class="p-4">
             <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
                 <p class="text-sm text-blue-800 dark:text-blue-200">
                     <i class="fas fa-info-circle mr-2"></i>
@@ -1009,12 +1027,12 @@
                 </p>
                 <p class="text-xs text-red-500 dark:text-red-400 mt-1">
                     <i class="fab fa-windows mr-1"></i>
-                    <strong>Windows:</strong> Not supported via web interface.
+                    <strong>Windows:</strong> Not supported.
                 </p>
             </div>
         </div>
 
-        <div id="speedTestResults" style="display:none;">
+        <div id="speedTestResults" class="p-4" style="display:none;">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <!-- Download Speed -->
                 <div
@@ -1084,7 +1102,7 @@
             </div>
         </div>
 
-        <div class="flex justify-end gap-3 mt-6">
+        <div class="flex justify-end gap-3 mt-6 p-4">
             <button type="button" onclick="hideSpeedTestModal();"
                 class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
                 <i class="fas fa-times mr-2"></i> Close

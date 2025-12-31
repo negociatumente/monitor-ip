@@ -542,7 +542,7 @@ function showIpDetailModal(ip, startTab = 'general') {
     const geo = document.getElementById('detail_geoip_container');
     const ai = document.getElementById('detail_aireport_content');
 
-    if (visual) visual.innerHTML = '<div class="flex flex-col items-center justify-center py-10 text-gray-400 italic">Click "Run Network Path Discovery" to analyze path...</div>';
+    if (visual) visual.innerHTML = '<div class="flex flex-col items-center justify-center py-10 text-gray-400 italic">Click "Run Traceroute" to analyze path...</div>';
     if (raw) raw.textContent = '-- Raw output --';
     if (geo) geo.innerHTML = '<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4 text-purple-500"></i><p class="text-sm text-gray-400">Initiating geolocation analysis...</p></div>';
     if (ai) ai.innerText = 'Waiting for analysis trigger...';
@@ -630,7 +630,7 @@ function showIpDetailModal(ip, startTab = 'general') {
             <div id='pingsContainer' class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4'>
                 <!-- Los pings se cargan aquí -->
             </div>
-            <div id='paginationContainer' class='flex justify-center mt-6'>
+            <div id='paginationContainer' class='flex justify-center mt-2'>
                 <!-- La paginación se carga aquí -->
             </div>
         </div>
@@ -921,17 +921,39 @@ function editService(serviceName) {
 }
 
 function deleteService(serviceName) {
-    if (confirm('Are you sure you want to delete the service "' + serviceName + '"? This will delete ALL IPs associated with this service. This action cannot be undone.')) {
-        document.getElementById('delete_service_name_input').value = serviceName;
-        document.getElementById('deleteServiceForm').submit();
-    }
+    // Mostrar modal de confirmación personalizado
+    window.showCustomConfirm(
+        '¿Eliminar servicio?',
+        '¿Estás seguro de que deseas eliminar el servicio <b>"' + serviceName + '"</b>? Esto eliminará <b>TODAS</b> las IPs asociadas. Esta acción no se puede deshacer.',
+        function() {
+            document.getElementById('delete_service_name_input').value = serviceName;
+            document.getElementById('deleteServiceForm').submit();
+        }
+    );
 }
 
-window.showManageServiceForm = showManageServiceForm;
-window.hideManageServiceForm = hideManageServiceForm;
-window.showServicesList = showServicesList;
-window.editService = editService;
-window.deleteService = deleteService;
+// Modal de confirmación reutilizable
+window.showCustomConfirm = function(title, message, onConfirm) {
+    var modal = document.getElementById('customConfirm');
+    var header = modal.querySelector('.custom-confirm-header');
+    var body = modal.querySelector('.custom-confirm-body');
+    var btnOk = modal.querySelector('.custom-confirm-ok');
+    var btnCancel = modal.querySelector('.custom-confirm-cancel');
+    header.innerHTML = title;
+    body.innerHTML = message;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    btnOk.onclick = function() {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        if (typeof onConfirm === 'function') onConfirm();
+    };
+    btnCancel.onclick = function() {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    };
+};
+
 /**
  * Toggles the service edit dropdown in the modal
  */
@@ -1012,11 +1034,11 @@ window.handleSpecialDeviceCheck = function (type) {
     } else if (type === 'repeater') {
         if (repeaterCheck.checked) {
             gatewayCheck.checked = false;
-            nameInput.value = 'Repeater/Mesh';
+            nameInput.value = 'AP/Mesh';
             nameInput.readOnly = true;
             nameInput.classList.add('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
             // Auto-select Repeater network type
-            if (networkSelect) networkSelect.value = 'Repeater/Mesh';
+            if (networkSelect) networkSelect.value = 'AP/Mesh';
         } else {
             nameInput.readOnly = false;
             nameInput.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
@@ -1043,7 +1065,7 @@ window.showChangeIpServiceModal = function (ip, currentService, isLocal = false,
 
         // Reset check states
         if (gatewayCheck) gatewayCheck.checked = (currentService === 'Gateway');
-        if (repeaterCheck) repeaterCheck.checked = (currentService === 'Repeater/Mesh' || currentService === 'Repeater');
+        if (repeaterCheck) repeaterCheck.checked = (currentService === 'AP/Mesh' || currentService === 'Repeater');
 
         // Dynamically populate Network Connection dropdown
         if (networkSelect) {

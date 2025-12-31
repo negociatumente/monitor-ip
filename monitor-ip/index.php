@@ -24,7 +24,7 @@ if ($is_local_network) {
     // For compatibility with functions that expect $services
     $services = [];
     foreach ($ips_to_monitor as $ip => $host_name) {
-        $services[$host_name] = ($host_name === 'Gateway' || $host_name === 'Repeater/Mesh') ? $network_color : $host_color;
+        $services[$host_name] = ($host_name === 'Gateway' || $host_name === 'AP/Mesh') ? $network_color : $host_color;
     }
 } else {
     $ips_to_monitor = $config['ips-services'] ?? [];
@@ -571,7 +571,7 @@ if ($is_local_network) {
 
     $services = [];
     foreach ($ips_to_monitor as $ip => $host_name) {
-        $services[$host_name] = ($host_name === 'Gateway' || $host_name === 'Repeater/Mesh') ? $network_color : $host_color;
+        $services[$host_name] = ($host_name === 'Gateway' || $host_name === 'AP/Mesh') ? $network_color : $host_color;
     }
 } else {
     $ips_to_monitor = $config['ips-services'] ?? [];
