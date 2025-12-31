@@ -12,141 +12,193 @@
     ?>;
 </script>
 <div class="mb-4">
-    <!-- Monitoring Controls Panel -->
+    <!-- Monitoring Controls Panel - Single Row Layout (Responsive) -->
     <div
-        class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl shadow-sm border border-blue-100 dark:border-blue-800 p-4 mb-2">
-        <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
-            <!-- Monitoring Status -->
-            <div class="flex items-center space-x-6">
-                <!-- System Uptime -->
-                <div class="flex items-center">
-                    <div class="bg-blue-500 bg-opacity-20 p-2 rounded-lg mr-3">
-                        <i class="fas fa-signal text-blue-600 dark:text-blue-400"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">System Uptime</p>
-                        <p class="font-semibold text-gray-800 dark:text-gray-200">
-                            <?php
-                            $total_ips = count($ips_to_monitor);
-                            $online_count = 0;
-                            foreach ($ips_to_monitor as $ip => $service) {
-                                $result = analyze_ip($ip);
-                                if ($result['status'] === 'UP')
-                                    $online_count++;
-                            }
-                            echo $total_ips > 0 ? round(($online_count / $total_ips) * 100, 1) . '%' : 'N/A';
-                            ?>
-                        </p>
-                    </div>
-                </div>
+        class="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/15 dark:to-purple-900/20 rounded-2xl shadow-lg border border-blue-200/40 dark:border-blue-800/30 p-3 sm:p-4 mb-2 overflow-x-auto">
 
-                <div class="flex items-center">
-                    <div class="bg-blue-500 bg-opacity-20 p-2 rounded-lg mr-3">
-                        <i class="fas fa-clock text-blue-600 dark:text-blue-400"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Timer Interval</p>
-                        <p class="font-semibold text-gray-800 dark:text-gray-200"><?php echo $ping_interval; ?>s</p>
-                    </div>
-                </div>
+        <?php
+        // Pre-calculate stats
+        $total_ips = count($ips_to_monitor);
+        $online_count = 0;
+        foreach ($ips_to_monitor as $ip => $service) {
+            $result = analyze_ip($ip);
+            if ($result['status'] === 'UP')
+                $online_count++;
+        }
+        $uptime_percentage = $total_ips > 0 ? round(($online_count / $total_ips) * 100, 1) : 0;
+        $stats = calculateSystemStats($ips_to_monitor);
+        $health_color = $uptime_percentage >= 90 ? 'emerald' : ($uptime_percentage >= 50 ? 'amber' : 'red');
+        // Calculate circle with radius 32 (matching SVG viewBox)
+        $circle_radius = 32;
+        $circle_circumference = 2 * pi() * $circle_radius;
+        // When 100%, offset should be 0 (complete circle)
+        // Ensure 100% shows as complete circle
+        if ($uptime_percentage >= 100) {
+            $circle_offset = 0;
+        } else {
+            $circle_offset = $circle_circumference - (($uptime_percentage / 100) * $circle_circumference);
+        }
 
-                <div class="flex items-center">
-                    <div class="bg-blue-500 bg-opacity-20 p-2 rounded-lg mr-3">
-                        <i class="fas fa-history text-blue-600 dark:text-blue-400"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">Ping History</p>
-                        <p class="font-semibold text-gray-800 dark:text-gray-200"><?php echo $ping_attempts; ?> pings
-                        </p>
-                    </div>
-                </div>
-            </div>
+        // Ping badge color
+        $ping_badge = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        if ($stats['average_ping'] !== 'N/A') {
+            if ($stats['average_ping'] > 100) {
+                $ping_badge = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+            } elseif ($stats['average_ping'] > 50) {
+                $ping_badge = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+            }
+        }
+        ?>
 
-            <!-- Control Buttons -->
+        <!-- Single Row Layout - Responsive -->
+        <div class="flex items-center gap-2 sm:gap-4 flex-nowrap min-w-max">
+            <!-- Health Circle - Enhanced -->
             <div
-                class="flex items-center bg-white dark:bg-gray-800 rounded-lg shadow-sm px-4 py-1 border border-gray-200 dark:border-gray-700">
-                <div id="nextPingBlock" class="text-gray-600 dark:text-gray-300 mr-4 flex items-center">
-                    <div class="bg-blue-100 dark:bg-blue-900/50 p-1.5 rounded-full mr-2">
-                        <i class="fas fa-sync-alt text-blue-600 dark:text-blue-400 text-sm"></i>
+                class="flex items-center gap-2 sm:gap-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-2 sm:p-3 shadow-2xl border-2 border-gray-300/50 dark:border-gray-600/50 hover:shadow-3xl transition-all flex-shrink-0">
+                <div class="relative w-16 sm:w-20 h-16 sm:h-20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 80 80">
+                        <defs>
+                            <linearGradient id="healthGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%"
+                                    style="stop-color:rgb(<?php echo $health_color === 'emerald' ? '16,185,129' : ($health_color === 'amber' ? '245,158,11' : '239,68,68'); ?>);stop-opacity:1" />
+                                <stop offset="100%"
+                                    style="stop-color:rgb(<?php echo $health_color === 'emerald' ? '5,150,105' : ($health_color === 'amber' ? '217,119,6' : '220,38,38'); ?>);stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="40" cy="40" r="32" stroke="currentColor" stroke-width="5" fill="transparent"
+                            class="text-gray-200 dark:text-gray-700" />
+                        <circle cx="40" cy="40" r="32" stroke="url(#healthGradient)" stroke-width="5" fill="transparent"
+                            class="transition-all duration-1000 ease-out drop-shadow-lg"
+                            stroke-dasharray="<?php echo $circle_circumference; ?>"
+                            stroke-dashoffset="<?php echo $circle_offset; ?>" stroke-linecap="round" />
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <i class="fas fa-heartbeat text-<?php echo $health_color; ?>-500 text-lg sm:text-2xl drop-shadow-md"></i>
                     </div>
-                    <span class="text-sm">Next ping in</span>
-                    <span id="countdown"
-                        class="font-mono font-bold text-blue-600 dark:text-blue-400 ml-2 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded">
-                        <?php echo $ping_interval; ?>
-                    </span>
-                    <span class="text-sm text-gray-500 ml-1">s</span>
+                </div>
+                <div class="flex-shrink-0">
+                    <p class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Uptime</p>
+                    <div class="flex items-baseline gap-2">
+                        <span
+                            class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100"><?php echo $uptime_percentage; ?>%</span>
+                    </div>
                 </div>
 
-                <div id="stoppedMsg" style="display:none;" class="flex items-center mr-4">
-                    <div class="bg-orange-100 dark:bg-orange-900/50 p-1.5 rounded-full mr-2">
-                        <i class="fas fa-pause-circle text-orange-500"></i>
+
+                <div class="flex items-center gap-2 sm:gap-5 ml-1 sm:ml-4 mr-1 sm:mr-4">
+                    <div class="text-center">
+                        <p class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100">
+                            <?php echo $stats['total_ips']; ?>
+                        </p>
+                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">Total</p>
                     </div>
-                    <span class="text-orange-600 dark:text-orange-400 font-semibold text-sm">Monitoring Paused</span>
+                    <div class="w-px h-8 sm:h-12 bg-gray-300 dark:bg-gray-600"></div>
+                    <div class="text-center">
+                        <p class="text-2xl sm:text-3xl font-black text-green-600 dark:text-green-400">
+                            <?php echo $stats['ips_up']; ?>
+                        </p>
+                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">Online</p>
+                    </div>
+                    <div class="w-px h-8 sm:h-12 bg-gray-300 dark:bg-gray-600"></div>
+                    <div class="text-center">
+                        <p class="text-2xl sm:text-3xl font-black text-red-600 dark:text-red-400"><?php echo $stats['ips_down']; ?>
+                        </p>
+                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">Offline</p>
+                    </div>
                 </div>
 
-                <div class="flex items-center gap-2">
-                    <button id="checkNowBtn" onclick="reloadPage();"
-                        class="btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-1">
-                        <i class="fas fa-redo-alt text-xs"></i>
-                        <span class="hidden sm:inline">Check Now</span>
-                    </button>
-                    <button id="stopPingBtn" onclick="stopPing();"
-                        class="btn bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-1">
-                        <i class="fas fa-stop text-xs"></i>
-                        <span class="hidden sm:inline">Pause</span>
-                    </button>
-                    <button id="resumePingBtn" onclick="startPing();" style="display:none;"
-                        class="btn bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-1">
-                        <i class="fas fa-play text-xs"></i>
-                        <span class="hidden sm:inline">Resume</span>
-                    </button>
+                <div class="ml-1 sm:ml-4 mr-1 sm:mr-2">
+                    <p class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Av. latency</p>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
+                            <?php echo ($stats['average_ping'] !== 'N/A' ? $stats['average_ping'] : '-'); ?>
+                        </span>
+                        <span
+                            class="text-xs sm:text-base text-gray-500 dark:text-gray-400 font-semibold"><?php echo ($stats['average_ping'] !== 'N/A' ? 'ms' : 'N/A'); ?></span>
+                    </div>
                 </div>
+
+            </div>
+
+            <!-- Compact Timer Interval -->
+            <div class="flex items-center gap-2 bg-blue-50/80 dark:bg-blue-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-blue-200/50 dark:border-blue-700/40 hover:bg-blue-100/80 dark:hover:bg-blue-900/30 transition-all group cursor-pointer flex-shrink-0"
+                onclick="showChangeTimerForm();">
+                <i class="fas fa-clock text-blue-500 text-xs sm:text-sm"></i>
+                <div class="hidden sm:block">
+                    <p class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Interval</p>
+                    <span
+                        class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_interval; ?>s</span>
+                </div>
+                <button onclick="showChangeTimerForm(); event.stopPropagation();"
+                    class="ml-1 p-1 rounded hover:bg-blue-200/50 dark:hover:bg-blue-800/40 transition-all opacity-0 group-hover:opacity-100"
+                    title="Change Timer">
+                    <i class="fas fa-edit text-blue-600 dark:text-blue-400 text-[10px] sm:text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Compact Ping History -->
+            <div class="flex items-center gap-2 bg-purple-50/80 dark:bg-purple-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-purple-200/50 dark:border-purple-700/40 hover:bg-purple-100/80 dark:hover:bg-purple-900/30 transition-all group cursor-pointer flex-shrink-0"
+                onclick="showChangePingAttemptsForm();">
+                <i class="fas fa-history text-purple-500 text-xs sm:text-sm"></i>
+                <div class="hidden sm:block">
+                    <p class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">History</p>
+                    <span class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_attempts; ?>
+                        pings</span>
+                </div>
+                <button onclick="showChangePingAttemptsForm(); event.stopPropagation();"
+                    class="ml-1 p-1 rounded hover:bg-purple-200/50 dark:hover:bg-purple-800/40 transition-all opacity-0 group-hover:opacity-100"
+                    title="Change History">
+                    <i class="fas fa-edit text-purple-600 dark:text-purple-400 text-[10px] sm:text-xs"></i>
+                </button>
+            </div>
+
+           
+
+            <!-- El temporizador a la derecha -->
+            <div class="flex-1 flex justify-end min-w-0">
+                <div
+                    class="flex items-center gap-2 sm:gap-4 bg-white dark:bg-gray-800 rounded-2xl p-2 sm:p-4 shadow-xl border-2 border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-all relative overflow-hidden group min-w-0">
+                    <!-- Subtle animated background -->
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-gray-50/0 via-gray-100/30 to-gray-50/0 dark:from-gray-700/0 dark:via-gray-600/30 dark:to-gray-700/0 group-hover:via-gray-100/50 dark:group-hover:via-gray-600/50 transition-all duration-1000">
+                    </div>
+
+                    <div class="relative z-10 flex-1 min-w-0">
+                        <p class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">Next Ping</p>
+                        <div id="nextPingBlock" class="flex items-baseline gap-2">
+                            <span class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100 font-mono tracking-tight"
+                                id="countdown"><?php echo $ping_interval; ?></span>
+                            <span class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300">sec</span>
+                        </div>
+                        <div id="stoppedMsg" style="display:none;"
+                            class="relative z-10 flex items-center gap-2 rounded-xl  ">
+                            <i class="fas fa-pause-circle text-orange-600 dark:text-orange-400"></i>
+                            <span class="text-sm font-bold text-orange-700 dark:text-orange-300">Paused</span>
+                        </div>
+                    </div>
+
+                    <div
+                        class="relative z-10 flex items-center gap-1 sm:gap-2 ml-2 sm:ml-3 pl-2 sm:pl-3 border-l border-gray-200 dark:border-gray-700 flex-shrink-0">
+                        <button id="checkNowBtn" onclick="reloadPage();"
+                            class="btn bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs transition-all shadow-md hover:shadow-lg font-semibold">
+                            <i class="fas fa-redo-alt mr-1 hidden sm:inline"></i>Check
+                        </button>
+                        <button id="stopPingBtn" onclick="stopPing();"
+                            class="btn bg-gray-500 hover:bg-gray-600 text-white px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-lg text-xs transition-all shadow-md hover:shadow-lg">
+                            <i class="fas fa-pause"></i>
+                        </button>
+                        <button id="resumePingBtn" onclick="startPing();" style="display:none;"
+                            class="btn bg-green-500 hover:bg-green-600 text-white px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-lg text-xs transition-all shadow-md hover:shadow-lg">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                </div>
+            
             </div>
         </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2">
-        <div class="flex flex-wrap gap-3 justify-center md:justify-start">
-            <?php if (isset($network_type) && $network_type === 'local'): ?>
-                    <button type="button" onclick="showScanNetworkModal();"
-                        class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
-                        <i class="fas fa-radar"></i> Scan Private Network
-                    </button>
-                    <button type="button" onclick="showSpeedTestModal();"
-                        class="btn bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md">
-                        <i class="fas fa-tachometer-alt"></i> Speed Test (Linux)
-                    </button>
-            <?php else: ?>
-                    <button onclick="showAddIpForm();"
-                        class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
-                        <i class="fas fa-network-wired"></i> Add IP
-                    </button>
-                    <button type="button" onclick="showManageServiceForm();"
-                        class="btn bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md">
-                        <i class="fas fa-tasks"></i> Manage Services
-                    </button>
-            <?php endif; ?>
-            <button onclick="showChangeTimerForm();"
-                class="btn bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md">
-                <i class="fas fa-clock"></i> Change Timer Interval
-            </button>
-            <button onclick="showChangePingAttemptsForm();"
-                class="btn bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md">
-                <i class="fas fa-history"></i> Change Ping History
-            </button>
-
-            <button onclick="showConfigModal();"
-                class="btn bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md">
-                <i class="fas fa-file-import"></i> Import/Export Config
-            </button>
-
-            <button type="button" onclick="showClearDataConfirmation();"
-                class="btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md">
-                <i class="fas fa-trash-alt"></i> Clear Data
-            </button>
-        </div>
-    </div>
+   
 </div>
 
 <!-- Modal: Import/Export Config -->
@@ -162,9 +214,9 @@
             </button>
         </div>
         <?php if (!empty($import_export_message)): ?>
-                <div class="mb-4 p-3 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                    <?php echo $import_export_message === true ? 'Configuración importada correctamente.' : htmlspecialchars($import_export_message); ?>
-                </div>
+            <div class="mb-4 p-3 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                <?php echo $import_export_message === true ? 'Configuración importada correctamente.' : htmlspecialchars($import_export_message); ?>
+            </div>
         <?php endif; ?>
         <div class="mb-6">
             <form method="POST" enctype="multipart/form-data">
@@ -215,12 +267,12 @@
                         required>
                         <option value="" disabled selected>Select a service</option>
                         <?php foreach ($services as $service_name => $color): ?>
-                                <?php if ($service_name !== "DEFAULT"): ?>
-                                        <option value="<?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>"
-                                            style="background-color: <?php echo htmlspecialchars($color, ENT_QUOTES, 'UTF-8'); ?>; color: #fff;">
-                                            <?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>
-                                        </option>
-                                <?php endif; ?>
+                            <?php if ($service_name !== "DEFAULT"): ?>
+                                <option value="<?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>"
+                                    style="background-color: <?php echo htmlspecialchars($color, ENT_QUOTES, 'UTF-8'); ?>; color: #fff;">
+                                    <?php echo htmlspecialchars($service_name, ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                            <?php endif; ?>
                         <?php endforeach; ?>
                         <option value="create_new" class="bg-blue-500 text-white">
                             <i class="fas fa-plus mr-2"></i> ➕ New Service
@@ -710,53 +762,53 @@
         <div id="servicesList">
             <div class="space-y-2 max-h-96 overflow-y-auto pr-2">
                 <?php foreach ($services as $service_name => $color): ?>
-                        <?php if ($service_name !== "DEFAULT"):
-                            $method = $services_methods[$service_name] ?? ($services_methods['DEFAULT'] ?? 'icmp');
-                            $method_label = strtoupper($method);
-                            $method_class = $method === 'icmp' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                                ($method === 'curl' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                    'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300');
-                            ?>
-                                <div
-                                    class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-4 h-4 rounded-full shadow-sm"
-                                            style="background-color: <?php echo htmlspecialchars($color); ?>;"></div>
-                                        <div>
-                                            <div class="font-medium text-gray-800 dark:text-gray-200">
-                                                <?php echo htmlspecialchars($service_name); ?>
-                                            </div>
-                                            <div class="text-xs mt-0.5">
-                                                <span
-                                                    class="px-1.5 py-0.5 rounded text-[10px] font-medium <?php echo $method_class; ?>">
-                                                    <?php echo $method_label; ?>
-                                                </span>
-                                            </div>
-                                        </div>
+                    <?php if ($service_name !== "DEFAULT"):
+                        $method = $services_methods[$service_name] ?? ($services_methods['DEFAULT'] ?? 'icmp');
+                        $method_label = strtoupper($method);
+                        $method_class = $method === 'icmp' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                            ($method === 'curl' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300');
+                        ?>
+                        <div
+                            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full shadow-sm"
+                                    style="background-color: <?php echo htmlspecialchars($color); ?>;"></div>
+                                <div>
+                                    <div class="font-medium text-gray-800 dark:text-gray-200">
+                                        <?php echo htmlspecialchars($service_name); ?>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <button type="button"
-                                            onclick="editService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
-                                            class="p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                                            title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button"
-                                            onclick="deleteService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
-                                            class="p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                            title="Delete">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
+                                    <div class="text-xs mt-0.5">
+                                        <span
+                                            class="px-1.5 py-0.5 rounded text-[10px] font-medium <?php echo $method_class; ?>">
+                                            <?php echo $method_label; ?>
+                                        </span>
                                     </div>
                                 </div>
-                        <?php endif; ?>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button"
+                                    onclick="editService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
+                                    class="p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                    title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button"
+                                    onclick="deleteService('<?php echo htmlspecialchars($service_name, ENT_QUOTES); ?>')"
+                                    class="p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                    title="Delete">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 <?php endforeach; ?>
 
                 <?php if (count($services) <= 1): // Only DEFAULT exists ?>
-                        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                            <i class="fas fa-info-circle text-2xl mb-2"></i>
-                            <p>No custom services created yet.</p>
-                        </div>
+                    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-info-circle text-2xl mb-2"></i>
+                        <p>No custom services created yet.</p>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -1045,101 +1097,6 @@
     </div>
 </div>
 
-<!-- System Status Cards -->
-<?php
-$stats = calculateSystemStats($ips_to_monitor);
-?>
-<div class='grid grid-cols-1 md:grid-cols-4 gap-4 mb-6'>
-    <!-- System Status Card -->
-    <div class='card bg-white dark:bg-gray-800 p-4'>
-        <div class='flex items-center justify-between mb-2'>
-            <h3 class='text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase'>System Status</h3>
-            <span class='<?php echo $stats['system_status_color']; ?> text-white text-xs px-2 py-1 rounded-full'>
-                <i class='fas fa-<?php echo $stats['system_status_icon']; ?> mr-1'></i>
-                <?php echo $stats['system_status']; ?>
-            </span>
-        </div>
-        <div class='flex items-center'>
-            <div class='<?php echo $stats['system_status_color']; ?> bg-opacity-20 p-3 rounded-full mr-4'>
-                <i
-                    class='fas fa-server text-2xl <?php echo str_replace('bg-', 'text-', $stats['system_status_color']); ?>'></i>
-            </div>
-            <div>
-                <p class='text-3xl font-bold'><?php echo $stats['total_ips']; ?></p>
-                <p class='text-sm text-gray-500 dark:text-gray-400'>Total IPs Monitored</p>
-            </div>
-        </div>
-    </div>
-    <!-- UP IPs Card -->
-    <div class='card bg-white dark:bg-gray-800 p-4'>
-        <div class='flex items-center justify-between mb-2'>
-            <h3 class='text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase'>Online</h3>
-            <span
-                class='bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-900 dark:text-green-200'>
-                <?php echo round(($stats['ips_up'] / max(1, $stats['total_ips'])) * 100); ?>%
-            </span>
-        </div>
-        <div class='flex items-center'>
-            <div class='bg-green-500 bg-opacity-20 p-3 rounded-full mr-4'>
-                <i class='fas fa-check-circle text-2xl text-green-500'></i>
-            </div>
-            <div>
-                <p class='text-3xl font-bold text-green-500'><?php echo $stats['ips_up']; ?></p>
-                <p class='text-sm text-gray-500 dark:text-gray-400'>IPs Online</p>
-            </div>
-        </div>
-    </div>
-    <!-- DOWN IPs Card -->
-    <div class='card bg-white dark:bg-gray-800 p-4'>
-        <div class='flex items-center justify-between mb-2'>
-            <h3 class='text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase'>Offline</h3>
-            <span class='bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full dark:bg-red-900 dark:text-red-200'>
-                <?php echo round(($stats['ips_down'] / max(1, $stats['total_ips'])) * 100); ?>%
-            </span>
-        </div>
-        <div class='flex items-center'>
-            <div class='bg-red-500 bg-opacity-20 p-3 rounded-full mr-4'>
-                <i class='fas fa-times-circle text-2xl text-red-500'></i>
-            </div>
-            <div>
-                <p class='text-3xl font-bold text-red-500'><?php echo $stats['ips_down']; ?></p>
-                <p class='text-sm text-gray-500 dark:text-gray-400'>IPs Offline</p>
-            </div>
-        </div>
-    </div>
-    <!-- Average Ping Card -->
-    <div class='card bg-white dark:bg-gray-800 p-4'>
-        <div class='flex items-center justify-between mb-2'>
-            <h3 class='text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase'>Response Time</h3>
-            <?php
-            if ($stats['average_ping'] === 'N/A') {
-                echo '';
-            } else {
-                $ping_color = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-                if ($stats['average_ping'] > 100) {
-                    $ping_color = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-                } elseif ($stats['average_ping'] > 50) {
-                    $ping_color = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-                }
-                echo "<span class='{$ping_color} text-xs px-2 py-1 rounded-full'>{$stats['average_ping']} ms</span>";
-            }
-            ?>
-        </div>
-        <div class='flex itemscenter'>
-            <div class='bg-blue-500 bg-opacity-20 p-3 rounded-full mr-4'>
-                <i class='fas fa-tachometer-alt text-2xl text-blue-500'></i>
-            </div>
-            <div>
-                <p class='text-3xl font-bold text-blue-500'>
-                    <?php echo ($stats['average_ping'] !== 'N/A' ? $stats['average_ping'] : '-'); ?>
-                    <span
-                        class='text-sm font-normal'><?php echo ($stats['average_ping'] !== 'N/A' ? 'ms' : 'N/A'); ?></span>
-                </p>
-                <p class='text-sm text-gray-500 dark:text-gray-400'>Average Response</p>
-            </div>
-        </div>
-    </div>
-</div>
 <!-- Modal: Configure Network Speed -->
 <div id="setNetworkSpeedModal" class="modal" style="display: none; z-index: 1000;">
     <div class="modal-content max-w-md">

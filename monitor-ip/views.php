@@ -142,51 +142,51 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
             </div>
         </div>
 
-        <div class="container mx-auto py-4 px-6 relative z-10">
+        <div class="container mx-auto py-3 px-4 sm:px-6 relative z-10">
             <!-- Top row with logo and actions -->
-            <div class="flex flex-col lg:flex-row justify-between items-center mb- lg:mb-0">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                 <!-- Logo and title -->
-                <div class="flex items-center mb-4 lg:mb-0 group">
+                <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                     <div
-                        class="bg-white bg-opacity-20 p-3 rounded-full mr-4 group-hover:bg-opacity-30 transition-all duration-300">
-                        <i class="fas <?php echo $header_icon; ?> text-2xl text-white"></i>
+                        class="bg-white bg-opacity-20 p-2 sm:p-3 rounded-full group-hover:bg-opacity-30 transition-all duration-300">
+                        <i class="fas <?php echo $header_icon; ?> text-lg sm:text-2xl text-white"></i>
                     </div>
                     <div>
-                        <h1 class="text-2xl lg:text-3xl font-bold tracking-tight">
+                        <h1 class="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight">
                             IP Monitor <span
-                                class="text-lg font-normal opacity-90 border-l border-white/30 pl-3 ml-2"><?php echo $network_label; ?></span>
+                                class="hidden sm:inline text-sm sm:text-base lg:text-lg font-normal opacity-90 border-l border-white/30 pl-2 sm:pl-3 ml-2"><?php echo $network_label; ?></span>
                             <?php if (isset($config['settings']['version'])): ?>
-                                <span class="text-sm font-normal bg-white bg-opacity-20 px-2 py-1 rounded-full ml-2">
+                                <span
+                                    class="hidden sm:inline text-xs sm:text-sm font-normal bg-white bg-opacity-20 px-2 py-1 rounded-full ml-1 sm:ml-2">
                                     v<?php echo htmlspecialchars($config['settings']['version'], ENT_QUOTES, 'UTF-8'); ?>
                                 </span>
                             <?php endif; ?>
                         </h1>
-                        <p class="text-blue-100 text-sm mt-1">Real-time network monitoring & analytics</p>
+                        <p class="text-blue-100 text-xs sm:text-sm mt-0.5">Real-time monitoring & analytics</p>
                     </div>
                 </div>
 
-                <!-- Navigation links -->
-                <div
-                    class="flex flex-wrap justify-center lg:justify-end gap-2 pt-4 border-t border-white border-opacity-20">
+                <!-- Navigation links - Hidden on mobile, visible on sm+ -->
+                <div class="hidden sm:flex flex-wrap justify-center lg:justify-end gap-2">
                     <!--<a href="https://nordvpn.com/es/pricing/" target="_blank"
                         class="bg-green-400 hover:bg-green-500 text-blue-900 font-bold px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm shadow-lg transform hover:scale-105">
                         <i class="fas fa-shield-alt"></i>
                         <span class="hidden sm:inline">Get Secure VPN</span>
                     </a>-->
                     <a href="https://negociatumente.com" target="_blank"
-                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
+                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm backdrop-blur-sm">
                         <i class="fas fa-globe"></i>
-                        <span class="hidden sm:inline">Web</span>
+                        <span class="hidden md:inline">Web</span>
                     </a>
                     <a href="https://github.com/negociatumente/monitor-ip" target="_blank"
-                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
+                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm backdrop-blur-sm">
                         <i class="fab fa-github"></i>
-                        <span class="hidden sm:inline">GitHub</span>
+                        <span class="hidden md:inline">GitHub</span>
                     </a>
                     <a href="https://negociatumente.com/guia-redes/" target="_blank"
-                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm backdrop-blur-sm">
+                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm backdrop-blur-sm">
                         <i class="fas fa-book"></i>
-                        <span class="hidden sm:inline">Learn More</span>
+                        <span class="hidden md:inline">Learn More</span>
                     </a>
                 </div>
             </div>
@@ -195,54 +195,79 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
     </header>
 
     <!-- Main Layout with Sidebar -->
-    <div class="flex">
-        <!-- Sidebar -->
-        <aside
-            class="w-64 bg-white dark:bg-gray-800 shadow-lg min-h-screen sticky top-0 hidden lg:block border-r border-gray-200 dark:border-gray-700">
-            <div class="p-4">
+    <div class="flex flex-col lg:flex-row">
+        <!-- Sidebar - Hidden on mobile, visible on lg+ / Can be toggled -->
+        <aside id="sidebarPanel"
+            class="sidebar-panel fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg lg:shadow-none lg:static lg:sticky lg:top-0 lg:block border-r border-gray-200 dark:border-gray-700 transform -translate-x-full lg:translate-x-0 transition-all duration-300 lg:w-64 lg:sidebar-expanded"
+            data-collapsed="false">
+
+            <div class="p-4 max-h-screen overflow-y-auto sidebar-content">
+                <!-- Close button on mobile -->
+                <button onclick="toggleSidebar()" id="sidebarCloseBtn"
+                    class="lg:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+                <!-- Desktop Sidebar Toggle Button -->
+                <button id="desktopSidebarToggle" onclick="toggleDesktopSidebar()"
+                    class="hidden lg:flex p-2 rounded-lg bg-black bg-opacity-5 hover:bg-opacity-20 transition-all items-center justify-center ml-2 mb-4">
+                    <i class="fas fa-chevron-left text-xl text-white"></i> <span class="ml-2 sidebar-label">Hide
+                        Menu</span>
+                </button>
                 <!-- Network Selector -->
-                <div class="mb-6">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
+                <div class="mb-6 network-selector">
+                    <h3
+                        class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3 sidebar-label">
                         Network Type
                     </h3>
                     <div class="space-y-2">
                         <button onclick="switchNetworkType('external')" id="externalTab"
-                            class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all <?php echo !$is_local_network ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'; ?>">
+                            class="btn-sidebar network-selector-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm sm:text-base <?php echo !$is_local_network ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'; ?>"
+                            title="Public Network">
                             <i class="fas fa-globe text-lg"></i>
-                            <span class="font-medium">Public Network</span>
+                            <span class="font-medium sidebar-label">Public Network</span>
                         </button>
                         <button onclick="switchNetworkType('local')" id="localTab"
-                            class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all <?php echo $is_local_network ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'; ?>">
+                            class="btn-sidebar network-selector-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm sm:text-base <?php echo $is_local_network ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'; ?>"
+                            title="Private Network">
                             <i class="fas fa-home text-lg"></i>
-                            <span class="font-medium">Private Network</span>
+                            <span class="font-medium sidebar-label">Private Network</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Quick Actions (only for Local Network) -->
-                <?php if (isset($is_local_network) && $is_local_network): ?>
+                <!-- Quick Actions (for External Network) -->
+                <?php if (!isset($is_local_network) || !$is_local_network): ?>
+
+                <?php else: ?>
+                    <!-- Quick Actions (only for Local Network) -->
                     <div class="mb-6">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
+                        <h3
+                            class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3 sidebar-label">
                             Network Analysis
                         </h3>
                         <div class="space-y-2">
-                            <button onclick="showTopologyMapModal()"
-                                class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md hover:shadow-lg transition-all">
-                                <i class="fas fa-sitemap text-lg"></i>
-                                <span class="font-medium">Topology Map</span>
+                            <button onclick="showTopologyMapModal(); toggleSidebar();" class="btn-sidebar btn-primary"
+                                title="Topology Map">
+                                <i class="fas fa-sitemap"></i>
+                                <span class="sidebar-label">Topology Map</span>
                             </button>
-                            <button onclick="showNetworkHealth()"
-                                class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all">
-                                <i class="fas fa-heartbeat text-lg"></i>
-                                <span class="font-medium">Health Analysis</span>
+                            <button onclick="showNetworkHealth(); toggleSidebar();" class="btn-sidebar btn-primary"
+                                title="Network Health">
+                                <i class="fas fa-heartbeat"></i>
+                                <span class="sidebar-label">Network Health</span>
                             </button>
                         </div>
                     </div>
+
                 <?php endif; ?>
 
 
             </div>
         </aside>
+
+        <!-- Overlay for mobile sidebar -->
+        <div id="sidebarOverlay" onclick="toggleSidebar()"
+            class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
 
         <!-- Main Content Area -->
         <div class="flex-1">
@@ -257,32 +282,73 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
                 <!-- IP Monitoring Table -->
                 <div id="monitoringTable" class='bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden'>
-                    <div class='p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center'>
-                        <h2 class='text-lg font-semibold text-gray-800 dark:text-gray-200'>
+                    <div
+                        class='p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4'>
+                        <h2 class='text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200'>
                             <i class='fas fa-table mr-2'></i> IP Monitoring Table
                         </h2>
-                        <div class='text-sm text-gray-500 dark:text-gray-400'>
-                            <?php echo count($ips_to_monitor); ?> Hosts monitored • Last updated:
-                            <?php echo date('H:i:s'); ?>
+
+                        <!-- Action Buttons -->
+                        <div class="">
+                            <div
+                                class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
+                                <?php if (isset($network_type) && $network_type === 'local'): ?>
+                                    <button type="button" onclick="showScanNetworkModal();"
+                                        class="btn  btn-primary px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
+                                        <i class="fas fa-network-wired"></i> <span class="hidden sm:inline">Scan
+                                            Network</span><span class="sm:hidden">Scan</span>
+                                    </button>
+                                    <button type="button" onclick="showSpeedTestModal();"
+                                        class="btn  btn-secondary px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
+                                        <i class="fas fa-tachometer-alt"></i> <span class="hidden sm:inline">Speed
+                                            Test</span><span class="sm:hidden">Speed Test</span>
+                                    </button>
+                                <?php else: ?>
+                                    <button onclick="showAddIpForm();"
+                                        class="btn  btn-primary px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
+                                        <i class="fas fa-network-wired"></i> <span class="hidden sm:inline">Add IP /
+                                            Domain</span><span class="sm:hidden">Add IP</span>
+                                    </button>
+                                    <button type="button" onclick="showManageServiceForm();"
+                                        class="btn  btn-secondary px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
+                                        <i class="fas fa-tasks"></i> <span class="hidden sm:inline">Manage
+                                            Services</span><span class="sm:hidden">Services</span>
+                                    </button>
+                                <?php endif; ?>
+
+                                <button onclick="showConfigModal();"
+                                    class="btn  btn-accent px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
+                                    <i class="fas fa-file-import"></i> <span class="hidden sm:inline">
+                                       Manage Config</span><span class="sm:hidden">Config</span>
+                                </button>
+
+                                <button type="button" onclick="showClearDataConfirmation();"
+                                    class="btn  btn-danger px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
+                                    <i class="fas fa-trash-alt"></i> <span class="hidden sm:inline">Clear
+                                        Data</span><span class="sm:hidden">Clear</span>
+                                </button>
+                            </div>
                         </div>
+
+
                     </div>
 
                     <!-- Filters -->
                     <div
-                        class="p-4 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-4 items-center">
-                        <div class="flex-1 min-w-[200px]">
+                        class="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700 flex flex-col gap-3 sm:flex-row sm:gap-4 items-stretch sm:items-center">
+                        <div class="flex-1 min-w-0">
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                     <i class="fas fa-search text-gray-400"></i>
                                 </div>
                                 <input type="text" id="searchFilter" onkeyup="filterTable()"
                                     placeholder="Search IP or Domain..."
-                                    class="w-full pl-10 p-2 text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                    class="w-full pl-10 p-2 text-xs sm:text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                             </div>
                         </div>
-                        <div class="w-full sm:w-auto">
+                        <div class="w-full sm:w-auto min-w-0">
                             <select id="serviceFilter" onchange="filterTable()"
-                                class="w-full p-2 text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                class="w-full p-2 text-xs sm:text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                 <option value=""><?php echo $is_local_network ? 'All Devices' : 'All Services'; ?>
                                 </option>
                                 <?php foreach ($services as $service_name => $color): ?>
@@ -294,16 +360,16 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="w-full sm:w-auto">
+                        <div class="w-full sm:w-auto min-w-0">
                             <select id="statusFilter" onchange="filterTable()"
-                                class="w-full p-2 text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                class="w-full p-2 text-xs sm:text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                 <option value="">All Statuses</option>
                                 <option value="UP">UP</option>
                                 <option value="DOWN">DOWN</option>
                             </select>
                         </div>
                         <button onclick="resetFilters()"
-                            class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                            class="text-xs sm:text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 whitespace-nowrap">
                             Reset Filters
                         </button>
                     </div>
@@ -750,55 +816,59 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
                 <!-- Modal para información detallada de IP -->
                 <div id="ipDetailModal"
-                    class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 hidden">
+                    class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 hidden p-4">
                     <div
-                        class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-0 w-full max-w-4xl relative max-h-[95vh] flex flex-col overflow-hidden m-4 border border-gray-200 dark:border-gray-700">
+                        class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-0 w-full max-w-2xl lg:max-w-4xl relative max-h-[95vh] flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700">
 
                         <!-- Modal Header -->
                         <div
-                            class="p-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white flex justify-between items-center shrink-0">
-                            <div class="flex items-center">
-                                <i class="fas fa-network-wired text-2xl mr-3 opacity-80"></i>
-                                <h3 class="text-xl font-bold tracking-tight" id="modalIpTitle">Host Detail</h3>
+                            class="p-4 sm:p-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white flex justify-between items-center shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <i class="fas fa-network-wired text-lg sm:text-2xl mr-2 opacity-80"></i>
+                                <h3 class="text-lg sm:text-xl font-bold tracking-tight truncate" id="modalIpTitle">Host
+                                    Detail</h3>
                             </div>
                             <button onclick="closeIpModal()"
-                                class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
-                                <i class="fas fa-times text-xl"></i>
+                                class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all flex-shrink-0">
+                                <i class="fas fa-times text-lg sm:text-xl"></i>
                             </button>
                         </div>
 
                         <!-- Tab Navigation (Visible mainly for External Network) -->
                         <div id="ipDetailTabsNav"
-                            class="flex bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0">
+                            class="flex bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 overflow-x-auto">
                             <button onclick="switchIpDetailTab('general')" id="ipTabGeneral"
-                                class="px-6 py-3 text-sm font-bold uppercase tracking-wider transition-all border-b-2 border-blue-600 text-blue-600 bg-white dark:bg-gray-800 dark:text-blue-400">
-                                <i class="fas fa-chart-line mr-2"></i> Statistics
+                                class="px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 border-blue-600 text-blue-600 bg-white dark:bg-gray-800 dark:text-blue-400 whitespace-nowrap">
+                                <i class="fas fa-chart-line mr-1 sm:mr-2"></i> <span
+                                    class="hidden sm:inline">Statistics</span><span class="sm:hidden">Stats</span>
                             </button>
                             <button onclick="switchIpDetailTab('diagnostics')" id="ipTabDiagnostics"
-                                class="px-6 py-3 text-sm font-bold uppercase tracking-wider transition-all border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                                <i class="fas fa-search-location mr-2"></i> Diagnostics
+                                class="px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 whitespace-nowrap">
+                                <i class="fas fa-search-location mr-1 sm:mr-2"></i> <span
+                                    class="hidden sm:inline">Diagnostics</span><span class="sm:hidden">Diag</span>
                             </button>
                             <button onclick="switchIpDetailTab('aireport')" id="ipTabAIReport"
-                                class="px-6 py-3 text-sm font-bold uppercase tracking-wider transition-all border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                                <i class="fas fa-robot mr-2"></i> AI Report
+                                class="px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 whitespace-nowrap">
+                                <i class="fas fa-robot mr-1 sm:mr-2"></i> <span class="hidden sm:inline">AI
+                                    Report</span><span class="sm:hidden">AI</span>
                             </button>
                         </div>
 
                         <!-- Scrollable Content -->
-                        <div class="flex-1 overflow-y-auto p-6 bg-white dark:bg-gray-900 custom-scrollbar">
+                        <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-white dark:bg-gray-900 custom-scrollbar">
                             <!-- General Tab Content -->
-                            <div id="ipDetailContentGeneral" class="space-y-6">
+                            <div id="ipDetailContentGeneral" class="space-y-4 sm:space-y-6">
                                 <div id="modalIpContent"></div>
 
-                                <div class="mt-6">
+                                <div class="mt-4 sm:mt-6">
                                     <h4
-                                        class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+                                        class="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 flex items-center">
                                         <i class="fas fa-chart-area mr-2 text-blue-500"></i>
                                         Latency Performance (Last <?php echo $ping_attempts; ?> pings)
                                     </h4>
                                     <div
-                                        class="bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner">
-                                        <canvas id="pingChart" width="400" height="180"></canvas>
+                                        class="bg-gray-50 dark:bg-gray-800 p-3 sm:p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner overflow-auto">
+                                        <canvas id="pingChart" width="400" height="200"></canvas>
                                     </div>
                                 </div>
                             </div>
@@ -806,44 +876,49 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                             <!-- Diagnostics Tab Content (WHOIS/Traceroute) -->
                             <div id="ipDetailContentDiagnostics" class="hidden h-full flex flex-col">
                                 <!-- Integrated from diagnostics modal logic -->
-                                <div class="flex flex-col gap-6">
+                                <div class="flex flex-col gap-4 sm:gap-6">
                                     <!-- GeoIP/WHOIS section -->
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="detail_geoip_container">
-                                        <div class="col-span-2 py-10 flex flex-col items-center">
-                                            <i class="fas fa-spinner fa-spin text-2xl mb-4 text-purple-500"></i>
-                                            <p class="text-gray-500">Initiating geolocation analysis...</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4"
+                                        id="detail_geoip_container">
+                                        <div class="col-span-2 py-8 sm:py-10 flex flex-col items-center">
+                                            <i
+                                                class="fas fa-spinner fa-spin text-xl sm:text-2xl mb-3 sm:mb-4 text-purple-500"></i>
+                                            <p class="text-sm text-gray-500">Initiating geolocation analysis...</p>
                                         </div>
                                     </div>
 
                                     <!-- Traceroute Section -->
-                                    <div class="border-t border-gray-100 dark:border-gray-800 pt-6">
-                                        <div class="flex justify-between items-center mb-4">
-                                            <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500">Routing
-                                                Path</h4>
+                                    <div class="border-t border-gray-100 dark:border-gray-800 pt-4 sm:pt-6">
+                                        <div
+                                            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+                                            <h4
+                                                class="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-500">
+                                                Routing Path</h4>
                                             <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
                                                 <button id="btn-detail-trace-visual"
                                                     onclick="setDetailTracerouteView('visual')"
-                                                    class="px-3 py-1 text-[10px] font-bold rounded-md transition-all bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400">VISUAL</button>
+                                                    class="px-2 sm:px-3 py-1 text-[10px] font-bold rounded-md transition-all bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400">VISUAL</button>
                                                 <button id="btn-detail-trace-raw"
                                                     onclick="setDetailTracerouteView('raw')"
-                                                    class="px-3 py-1 text-[10px] font-bold rounded-md transition-all text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">RAW</button>
+                                                    class="px-2 sm:px-3 py-1 text-[10px] font-bold rounded-md transition-all text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">RAW</button>
                                             </div>
                                         </div>
 
                                         <div id="detail_traceroute_visual"
-                                            class="min-h-[200px] p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner overflow-y-auto max-h-[400px]">
+                                            class="min-h-[200px] p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner overflow-y-auto max-h-[300px] sm:max-h-[400px]">
                                             <div
-                                                class="flex flex-col items-center justify-center py-10 text-gray-400 italic">
+                                                class="flex flex-col items-center justify-center py-8 sm:py-10 text-gray-400 italic text-sm">
                                                 Click "Run Traceroute" to analyze path...
                                             </div>
                                         </div>
                                         <pre id="detail_traceroute_raw"
-                                            class="hidden min-h-[200px] m-0 p-6 bg-black text-green-400 font-mono text-xs overflow-auto rounded-2xl whitespace-pre-wrap leading-relaxed opacity-90">-- Raw output --</pre>
+                                            class="hidden min-h-[200px] m-0 p-3 sm:p-6 bg-black text-green-400 font-mono text-[10px] sm:text-xs overflow-auto rounded-2xl whitespace-pre-wrap leading-relaxed opacity-90">-- Raw output --</pre>
 
-                                        <div class="mt-4">
+                                        <div class="mt-3 sm:mt-4">
                                             <button id="btnRunDetailTraceroute" onclick="runDetailTraceroute()"
-                                                class="w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
-                                                <i class="fas fa-route"></i> Run Network Path Discovery
+                                                class="w-full py-2 sm:py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm sm:text-base rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
+                                                <i class="fas fa-route"></i> <span class="hidden sm:inline">Run Network
+                                                    Path Discovery</span><span class="sm:hidden">Traceroute</span>
                                             </button>
                                         </div>
                                     </div>
@@ -852,16 +927,18 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
                             <!-- AI Report Tab Content -->
                             <div id="ipDetailContentAIReport" class="hidden h-full flex flex-col">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500">AI Diagnostic
-                                        Report</h4>
+                                <div
+                                    class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+                                    <h4 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-500">AI
+                                        Diagnostic Report</h4>
                                     <button onclick="copyAIReportDetail()"
-                                        class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20">
-                                        <i class="fas fa-copy"></i> COPY REPORT
+                                        class="px-2 sm:px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] sm:text-xs font-bold rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 whitespace-nowrap">
+                                        <i class="fas fa-copy"></i> <span class="hidden sm:inline">COPY
+                                            REPORT</span><span class="sm:hidden">COPY</span>
                                     </button>
                                 </div>
                                 <div
-                                    class="flex-1 bg-gray-900 rounded-2xl border border-gray-800 p-6 overflow-y-auto custom-scrollbar font-mono text-xs text-emerald-400/90 leading-relaxed shadow-inner min-h-[300px]">
+                                    class="flex-1 bg-gray-900 rounded-2xl border border-gray-800 p-3 sm:p-6 overflow-y-auto custom-scrollbar font-mono text-[10px] sm:text-xs text-emerald-400/90 leading-relaxed shadow-inner min-h-[300px]">
                                     <div id="detail_aireport_content">Generating comprehensive report...</div>
                                 </div>
                                 <p class="text-[10px] text-gray-500 mt-4 italic">

@@ -712,7 +712,7 @@ async function showNetworkHealth() {
                                 <div class="p-2 bg-teal-100 dark:bg-teal-800/50 rounded-lg text-teal-600 dark:text-teal-300">
                                     <i class="fas fa-network-wired"></i>
                                 </div>
-                                <span class="text-[10px] font-bold text-teal-400 uppercase">Device Lag</span>
+                                <span class="text-[10px] font-bold text-teal-400 uppercase">Latency</span>
                             </div>
                             <div class="mt-3">
                                 <div class="flex items-baseline gap-1">

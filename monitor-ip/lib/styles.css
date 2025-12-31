@@ -265,3 +265,444 @@
             background: linear-gradient(135deg, #16a34a 0%, #1d4ed8 100%);
         }
     }
+
+    /* Slow spin animation for status icons */
+    @keyframes spin-slow {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .animate-spin-slow {
+        animation: spin-slow 3s linear infinite;
+    }
+
+    /* Enhanced Button Styles */
+    .btn-enhanced {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-enhanced:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.2);
+        transition: left 0.5s ease;
+    }
+
+    .btn-enhanced:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-enhanced:hover:before {
+        left: 100%;
+    }
+
+    .btn-enhanced:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Primary Button Variant */
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    }
+
+    /* Success Button Variant */
+    .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+
+    /* Danger Button Variant */
+    .btn-danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    }
+
+    /* Purple/Indigo Button Variant */
+    .btn-secondary {
+        background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+    }
+
+    /* Indigo Button Variant */
+    .btn-accent {
+        background: linear-gradient(135deg, #74726f 0%, #666561 100%);
+        color: white;
+    }
+
+    .btn-accent:hover {
+        background: linear-gradient(135deg, #474747 0%, #353330 100%);
+    }
+
+    /* Icon button for sidebar */
+    .btn-sidebar {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-sidebar i {
+        font-size: 1.125rem;
+        transition: transform 0.3s ease;
+    }
+
+    .btn-sidebar:hover i {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    /* Animation for button entrance */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .btn-entrance {
+        animation: slideInUp 0.4s ease-out;
+    }
+
+    /* ==================== RESPONSIVE STYLES ==================== */
+
+    /* Mobile - Extra Small Screens (< 640px) */
+    @media (max-width: 639px) {
+        body {
+            font-size: 14px;
+        }
+
+        /* Modal adjustments for mobile */
+        .modal-content {
+            width: 95%;
+            max-width: 100%;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+
+        /* Status badge smaller on mobile */
+        .status-badge {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        /* Buttons should be full width on mobile */
+        .btn {
+            min-width: 40px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-sidebar {
+            padding: 0.75rem 0.875rem;
+            font-size: 0.875rem;
+            gap: 0.625rem;
+        }
+
+        .btn-sidebar i {
+            font-size: 1rem;
+        }
+
+        /* Table should scroll horizontally on mobile */
+        table {
+            font-size: 0.75rem;
+        }
+
+        table th {
+            padding: 0.5rem 0.25rem;
+            font-size: 0.65rem;
+        }
+
+        table td {
+            padding: 0.5rem 0.25rem !important;
+        }
+
+        /* Hide less important columns on mobile */
+        @media (max-width: 480px) {
+            table th:nth-child(n+4),
+            table td:nth-child(n+4) {
+                font-size: 0.65rem;
+            }
+        }
+
+        /* Reduce card padding on mobile */
+        .card {
+            border-radius: 0.5rem;
+        }
+
+        /* Progress bars smaller */
+        .progress-animated {
+            height: 0.375rem;
+        }
+    }
+
+    /* Small Screens (640px - 1023px) */
+    @media (min-width: 640px) and (max-width: 1023px) {
+        .modal-content {
+            width: 85%;
+            max-width: 500px;
+        }
+
+        table {
+            font-size: 0.8125rem;
+        }
+
+        table th {
+            padding: 0.5rem 0.375rem;
+            font-size: 0.7rem;
+        }
+
+        table td {
+            padding: 0.5rem 0.375rem;
+        }
+    }
+
+    /* Extra Large Screens (1024px+) */
+    @media (min-width: 1024px) {
+        .modal-content {
+            width: 90%;
+            max-width: 600px;
+        }
+
+        table th {
+            font-size: 0.75rem;
+        }
+
+        table td {
+            padding: 0.75rem;
+        }
+    }
+
+    /* Typography responsiveness */
+    @media (max-width: 639px) {
+        h1 {
+            font-size: 1.25rem;
+        }
+
+        h2 {
+            font-size: 1.125rem;
+        }
+
+        h3 {
+            font-size: 1rem;
+        }
+
+        h4 {
+            font-size: 0.9375rem;
+        }
+    }
+
+    /* Touch device optimizations */
+    @media (hover: none) and (pointer: coarse) {
+        .btn:hover {
+            transform: none;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-sidebar:hover i {
+            transform: none;
+        }
+    }
+
+    /* Flexbox responsive adjustments */
+    @media (max-width: 767px) {
+        .flex-col-mobile {
+            flex-direction: column;
+        }
+
+        .gap-mobile {
+            gap: 1rem;
+        }
+
+        .w-full-mobile {
+            width: 100%;
+        }
+
+        .justify-center-mobile {
+            justify-content: center;
+        }
+    }
+
+    /* Print styles for responsive behavior */
+    @media print {
+        .btn,
+        .modal,
+        .btn-sidebar {
+            display: none;
+        }
+
+        table {
+            font-size: 10pt;
+        }
+    }
+
+    /* Scrollbar styling for better mobile experience */
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+    }
+
+    /* Landscape mode adjustments */
+    @media (max-height: 500px) and (orientation: landscape) {
+        .modal-content {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal {
+            align-items: flex-start;
+            padding-top: 1rem;
+        }
+    }
+
+    /* Dark mode responsive */
+    @media (prefers-color-scheme: dark) {
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    }
+
+    /* ==================== SIDEBAR COLLAPSE STYLES ==================== */
+
+    /* Sidebar expanded state (default) */
+    .sidebar-panel {
+        width: 16rem; /* w-64 */
+        transition: width 0.3s ease, padding 0.3s ease;
+    }
+
+    .sidebar-panel.sidebar-expanded {
+        width: 16rem;
+    }
+
+    /* Sidebar collapsed state */
+    .sidebar-panel.sidebar-collapsed {
+        width: 4.5rem; /* ~72px for icons */
+    }
+
+    .sidebar-panel.sidebar-collapsed .sidebar-content {
+        padding: 0.5rem;
+    }
+
+    /* Hide text labels when sidebar is collapsed */
+    .sidebar-panel.sidebar-collapsed .sidebar-label,
+    .sidebar-panel.sidebar-collapsed > div > h3,
+    .sidebar-panel.sidebar-collapsed .network-selector h3 {
+        display: none;
+    }
+
+    /* Adjust button layout for collapsed state */
+    .sidebar-panel.sidebar-collapsed .btn-sidebar {
+        width: 100%;
+        justify-content: center;
+        padding: 0.75rem;
+        gap: 0;
+    }
+
+    .sidebar-panel.sidebar-collapsed .btn-sidebar i {
+        margin: 0;
+    }
+
+    .sidebar-panel.sidebar-collapsed .btn-sidebar span {
+        display: none;
+    }
+
+    /* Network selector adjustments for collapsed state */
+    .sidebar-panel.sidebar-collapsed .network-selector {
+        padding: 0;
+        margin-bottom: 1rem;
+    }
+
+    .sidebar-panel.sidebar-collapsed .network-selector-btn {
+        width: 100%;
+        padding: 0.75rem 0.5rem;
+        font-size: 0.75rem;
+        gap: 0;
+    }
+
+    .sidebar-panel.sidebar-collapsed .network-selector-btn span {
+        display: none;
+    }
+
+    /* Toggle button rotation */
+    #desktopSidebarToggle i {
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar-panel.sidebar-collapsed ~ div #desktopSidebarToggle i {
+        transform: rotate(180deg);
+    }
+
+    /* Responsive adjustments for collapsed sidebar on large screens */
+    @media (min-width: 1024px) {
+        .sidebar-panel.sidebar-collapsed {
+            position: sticky;
+            top: 0;
+            height: calc(100vh - 5.5rem);
+            overflow-y: auto;
+        }
+    }
+    }
