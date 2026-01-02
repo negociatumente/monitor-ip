@@ -19,14 +19,14 @@ https://negociatumente.com/guia-redes
 ## 🚀 Características  
 ✅ **Monitorización en tiempo real** de servidores y dispositivos. 
 ✅ **Gestión de Servicios**: Agrupa y organiza tus dispositivos por servicios con colores personalizados.  
-✅ **Configurable**: Ajusta intervalos, historial y las ips desde la interfaz.  
-✅ **Múltiples Métodos**: Soporte para Ping (ICMP), HTTP/HTTPS (Curl) y DNS.
-✅ **Trazabilidad de Red**: Realiza traceroutes para diagnosticar rutas de red.
-✅ **Detección de CGNAT**: Identifica si estás detrás de una NAT compartida. 
-✅ **Escaneo de Red Local**: Descubre dispositivos conectados a tu red.  
-✅ **Test de Velocidad**: Mide tu latencia, velocidad de descarga y subida.
-✅ **Reporte de Red**: Genera un reporte de la calidad de tu red.  
-✅ **Compatible** con Windows, Linux y macOS.  
+✅ **Configurable**: Ajusta intervalos, historial y las ips desde la interfaz. 
+✅ **Múltiples Métodos**: Soporte para Ping (ICMP), HTTP/HTTPS (Curl) y DNS. 
+✅ **Trazabilidad de Red**: Realiza traceroutes para diagnosticar rutas de red. 
+✅ **Detección de CGNAT**: Identifica si estás detrás de una NAT compartida.  
+✅ **Escaneo de Red Local**: Descubre dispositivos conectados a tu red. 
+✅ **Test de Velocidad**: Mide tu latencia, velocidad de descarga y subida. 
+✅ **Reporte de Red**: Genera un reporte de la calidad de tu red. 
+✅ **Compatible** con Windows, Linux y macOS. 
 
 ## 📁 Estructura del proyecto
 ```
@@ -41,11 +41,11 @@ monitor-ip/
 │   ├── ping_results.json           # Resultados de los pings remotos
 │   ├── ping_results_local.json     # Resultados de los pings locales
 │   ├── speedtest_results.json      # Resultados de los speedtests
-├── lib/                            # Librerías y recursos
-│   ├── functions.php               # Funciones PHP reutilizables
-│   ├── script.js                   # Scripts JavaScript principales
-│   ├── network_scan.js             # Lógica de escaneo de red y speedtest
-│   └── styles.css                  # Estilos CSS personalizados
+└── lib/                            # Librerías y recursos
+	├── functions.php               # Funciones PHP reutilizables
+    ├── script.js                   # Scripts JavaScript principales
+    ├── network_scan.js             # Lógica de escaneo de red y speedtest
+    └── styles.css                  # Estilos CSS personalizados
 ```
 
 ## 🛠️ Instalación en Docker (Recomendada)
@@ -66,11 +66,11 @@ docker pull ghcr.io/negociatumente/monitor-ip:latest
 
 **🔹Ejecuta el contenedor:**
 ```bash
-docker run -p 8080:80 ghcr.io/negociatumente/monitor-ip:latest
+docker run --network host ghcr.io/negociatumente/monitor-ip:latest
 ``` 
 
 ### 4️⃣ Resultados
-**🔹Finalmente, abre en tu navegador la siguiente url:** http://localhost:8080/monitor-ip
+**🔹Finalmente, abre en tu navegador la siguiente url:** http://localhost/monitor-ip
 
 
 ## 🛠️ Instalación en Linux y MacOS  
