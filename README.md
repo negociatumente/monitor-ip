@@ -17,16 +17,16 @@ https://negociatumente.com/guia-redes
 - Si no se refrescan los pings en la tabla, borrar los pings anteriores con el botón de **Clear Data**.
   
 ## 🚀 Características  
-✅ **Monitorización en tiempo real** de servidores y dispositivos. 
+✅ **Monitorización en tiempo real** de servidores y dispositivos.  
 ✅ **Gestión de Servicios**: Agrupa y organiza tus dispositivos por servicios con colores personalizados.  
-✅ **Configurable**: Ajusta intervalos, historial y las ips desde la interfaz. 
-✅ **Múltiples Métodos**: Soporte para Ping (ICMP), HTTP/HTTPS (Curl) y DNS. 
-✅ **Trazabilidad de Red**: Realiza traceroutes para diagnosticar rutas de red. 
+✅ **Configurable**: Ajusta intervalos, historial y las ips desde la interfaz.  
+✅ **Múltiples Métodos**: Soporte para Ping (ICMP), HTTP/HTTPS (Curl) y DNS.  
+✅ **Trazabilidad de Red**: Realiza traceroutes para diagnosticar rutas de red.  
 ✅ **Detección de CGNAT**: Identifica si estás detrás de una NAT compartida.  
-✅ **Escaneo de Red Local**: Descubre dispositivos conectados a tu red. 
-✅ **Test de Velocidad**: Mide tu latencia, velocidad de descarga y subida. 
-✅ **Reporte de Red**: Genera un reporte de la calidad de tu red. 
-✅ **Compatible** con Windows, Linux y macOS. 
+✅ **Escaneo de Red Local**: Descubre dispositivos conectados a tu red.  
+✅ **Test de Velocidad**: Mide tu latencia, velocidad de descarga y subida.  
+✅ **Reporte de Red**: Genera un reporte de la calidad de tu red.  
+✅ **Compatible** con Windows, Linux y macOS.  
 
 ## 📁 Estructura del proyecto
 ```
@@ -55,7 +55,7 @@ monitor-ip/
 ⚙️ **Un navegador web**
 
 ### 2️⃣ Instalación  
-**🔹Debes descargar e instalar docker en tu sistema (Linux, Windows o MacOS):**
+**🔹Debes descargar e instalar docker en tu sistema (Linux, Windows o MacOS):** 
 https://docs.docker.com/get-docker/  
 
 ### 3️⃣ Configuración
