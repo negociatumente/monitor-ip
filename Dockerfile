@@ -13,7 +13,12 @@ RUN apt-get update \
 		curl \
 		dnsutils \
 		bind9-host \
+		sudo \
 	&& rm -rf /var/lib/apt/lists/*
+
+# Permitir que www-data ejecute ping sin contraseña
+RUN echo 'www-data ALL=(ALL) NOPASSWD: /bin/ping' >> /etc/sudoers.d/www-data \
+	&& chmod 0440 /etc/sudoers.d/www-data
 
 # Set working directory
 WORKDIR /var/www/html/monitor-ip

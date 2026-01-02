@@ -9,7 +9,14 @@ function update_ping_results($ip)
 
     // Comando de ping según el sistema operativo
     $escaped_ip = escapeshellarg($ip);
-    $pingCommand = $isWindows ? "ping -n 1 -w 1000 $escaped_ip" : "ping -c 1 -W 1 $escaped_ip";
+    if ($isWindows) {
+        $pingCommand = "ping -n 1 -w 1000 $escaped_ip";
+    } else {
+        // En Linux, usar sudo si no es root
+        $pingCommand = (posix_getuid() !== 0) 
+            ? "sudo /bin/ping -c 1 -W 1 $escaped_ip" 
+            : "/bin/ping -c 1 -W 1 $escaped_ip";
+    }
 
     // Ejecutar el ping
     $ping = shell_exec($pingCommand);
@@ -93,9 +100,13 @@ function update_ping_results_parallel($ips)
             case 'icmp':
             default:
                 // Standard ICMP ping
-                $command = $isWindows
-                    ? "ping -n 1 -w 1000 $escaped_ip"
-                    : "ping -c 1 -W 1 $escaped_ip";
+                if ($isWindows) {
+                    $command = "ping -n 1 -w 1000 $escaped_ip";
+                } else {
+                    // En Linux, usar sudo si no es root
+                    $sudoPrefix = (posix_getuid() !== 0) ? "sudo " : "";
+                    $command = $sudoPrefix . "/bin/ping -c 1 -W 1 $escaped_ip";
+                }
                 break;
         }
 
