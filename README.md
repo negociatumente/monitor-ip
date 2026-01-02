@@ -17,14 +17,15 @@ https://negociatumente.com/guia-redes
 - Si no se refrescan los pings en la tabla, borrar los pings anteriores con el botón de **Clear Data**.
   
 ## 🚀 Características  
-✅ **Monitorización en tiempo real** de servidores y dispositivos.  
-✅ **Escaneo de Red Local**: Descubre dispositivos conectados a tu red.  
-✅ **Test de Velocidad**: Mide tu latencia, descarga y subida (requiere speedtest-cli).  
-✅ **Múltiples Métodos**: Soporte para Ping (ICMP), HTTP/HTTPS (Curl) y DNS.  
-✅ **Reporte de Red**: Genera un reporte de la calidad de tu red.  
+✅ **Monitorización en tiempo real** de servidores y dispositivos. 
 ✅ **Gestión de Servicios**: Agrupa y organiza tus dispositivos por servicios con colores personalizados.  
-✅ **Configurable**: Ajusta intervalos, historial y alertas desde la interfaz o `config.ini`.  
-✅ **Diseño moderno y visual**: Interfaz oscura/clara con animaciones y gráficos.  
+✅ **Configurable**: Ajusta intervalos, historial y las ips desde la interfaz.  
+✅ **Múltiples Métodos**: Soporte para Ping (ICMP), HTTP/HTTPS (Curl) y DNS.
+✅ **Trazabilidad de Red**: Realiza traceroutes para diagnosticar rutas de red.
+✅ **Detección de CGNAT**: Identifica si estás detrás de una NAT compartida. 
+✅ **Escaneo de Red Local**: Descubre dispositivos conectados a tu red.  
+✅ **Test de Velocidad**: Mide tu latencia, velocidad de descarga y subida.
+✅ **Reporte de Red**: Genera un reporte de la calidad de tu red.  
 ✅ **Compatible** con Windows, Linux y macOS.  
 
 ## 📁 Estructura del proyecto
@@ -47,6 +48,31 @@ monitor-ip/
 │   └── styles.css                  # Estilos CSS personalizados
 ```
 
+## 🛠️ Instalación en Docker (Recomendada)
+
+### 1️⃣ Requisitos  
+⚙️ **Docker**  
+⚙️ **Un navegador web**
+
+### 2️⃣ Instalación  
+**🔹Debes descargar e instalar docker en tu sistema (Linux, Windows o MacOS):**
+https://docs.docker.com/get-docker/  
+
+### 3️⃣ Configuración
+**🔹Clona el repositorio:**
+```bash
+docker pull ghcr.io/negociatumente/monitor-ip:latest
+```
+
+**🔹Ejecuta el contenedor:**
+```bash
+docker run -p 8080:80 ghcr.io/negociatumente/monitor-ip:latest
+``` 
+
+### 4️⃣ Resultados
+**🔹Finalmente, abre en tu navegador la siguiente url:** http://localhost:8080/monitor-ip
+
+
 ## 🛠️ Instalación en Linux y MacOS  
 
 ### 1️⃣ Requisitos  
@@ -57,7 +83,14 @@ monitor-ip/
 ### 2️⃣ Instalación  
 **🔹Instalar PHP, Apache, Git y Speedtest-cli:**  
 ```bash
-sudo apt update && sudo apt install apache2 php git speedtest-cli -y
+sudo apt update && sudo apt install apache2 php git speedtest-cli nmap \
+		iputils-ping \  
+		net-tools \
+		traceroute \
+		iproute2 \
+		curl \
+		dnsutils \
+		bind9-host -y  
 ```
 
 **🔹Clona el repositorio:**  
@@ -96,7 +129,7 @@ sudo systemctl start apache2
 http://localhost/monitor-ip
 ```
 
-## 🛠️ Instalación en Windows  
+## 🛠️ Instalación en Windows  (Funciones Limitadas)
 
 🔹Aquí tienes un video sobre la instalación en Windows:  
 https://www.tiktok.com/@negociatumente/video/7504332909923568919

@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  monitor-ip:
+    build: .
+    volumes:
+      - ./monitor-ip:/var/www/html/monitor-ip
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Madrid
+    network_mode: host

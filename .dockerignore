@@ -1,0 +1,11 @@
+# .dockerignore
+.git
+.gitignore
+.vscode
+.github
+node_modules
+config/*.ini
+results/*.json
+*.log
+Dockerfile
+docker-compose.yml
