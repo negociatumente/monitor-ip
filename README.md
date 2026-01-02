@@ -55,7 +55,7 @@ monitor-ip/
 ⚙️ **Un navegador web**
 
 ### 2️⃣ Instalación  
-**🔹Debes descargar e instalar docker en tu sistema (Linux, Windows o MacOS):** 
+**🔹Debes descargar e instalar docker en tu sistema (Linux, Windows o MacOS):**  
 https://docs.docker.com/get-docker/  
 
 ### 3️⃣ Configuración
@@ -70,7 +70,8 @@ docker run --network host ghcr.io/negociatumente/monitor-ip:latest
 ``` 
 
 ### 4️⃣ Resultados
-**🔹Finalmente, abre en tu navegador la siguiente url:** http://localhost/monitor-ip
+**🔹Finalmente, abre en tu navegador la siguiente url:**  
+http://localhost/monitor-ip
 
 
 ## 🛠️ Instalación en Linux y MacOS  
