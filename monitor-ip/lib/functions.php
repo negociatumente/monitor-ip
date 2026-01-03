@@ -1284,6 +1284,7 @@ function get_network_health()
         $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
         $use_sudo = !$is_root;
     }
+    $sudoPrefix = $use_sudo ? "sudo " : "";
 
     // 1. Find Gateway
     if ($isWindows) {
@@ -1292,7 +1293,6 @@ function get_network_health()
             $gateway_ip = $matches[1];
         }
     } else {
-        $sudoPrefix = $use_sudo ? "sudo " : "";
         $route_output = @shell_exec($sudoPrefix . 'ip route | grep default 2>/dev/null');
         if (preg_match('/default via (\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
             $gateway_ip = $matches[1];
