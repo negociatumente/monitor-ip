@@ -856,7 +856,20 @@ function scan_local_network()
         // 1. Run Nmap (Ping Scan) to populate ARP tables and find devices
         // Using -sn (Ping Scan) + -PR (ARP Ping) if possible, but -sn is adequate.
         // We capture output but getting data mainly from 'ip neigh' is more reliable for MACs
-        shell_exec("nmap -sn " . escapeshellarg($network_range) . " 2>/dev/null");
+
+        // Check for debug mode for sudo permission
+        global $config_path;
+        $config_scan = parse_ini_file($config_path, true);
+        $debug_mode_nmap = (isset($config_scan['settings']['mode']) && $config_scan['settings']['mode'] === 'debug');
+
+        $use_sudo = false;
+        if (!$debug_mode_nmap) {
+            $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
+            $use_sudo = !$is_root;
+        }
+        $sudoPrefix = $use_sudo ? "sudo " : "";
+
+        shell_exec($sudoPrefix . "nmap -sn " . escapeshellarg($network_range) . " 2>/dev/null");
 
         // 2. Read ARP Native Table (ip neigh)
         // This provides IP and MAC for everything the kernel knows about (triggered by nmap)
@@ -885,7 +898,8 @@ function scan_local_network()
 
         // 3. Fallback/Supplement: Nmap parsing (if unprivileged nmap didn't show MACs in ip neigh)
         // If we missed devices that Nmap found but ARP didn't cache (e.g. routed IPs, though unlikely for local scan)
-        $nmap_output = shell_exec("nmap -sn " . escapeshellarg($network_range));
+        // Re-use sudo prefix determined above
+        $nmap_output = shell_exec($sudoPrefix . "nmap -sn " . escapeshellarg($network_range));
         preg_match_all('/Nmap scan report for (?:.*?\(([\d\.]+)\)|([\d\.]+))/', $nmap_output, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $match) {
@@ -924,9 +938,17 @@ function scan_local_network()
             $gateway_ip = $matches[1];
         }
     } else {
-        // En Linux, usar sudo si no es root
-        $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
-        $sudoPrefix = !$is_root ? "sudo " : "";
+        // En Linux, usar sudo si no es root, salvo en modo debug
+        global $config_path;
+        $config_scan = parse_ini_file($config_path, true);
+        $debug_mode = (isset($config_scan['settings']['mode']) && $config_scan['settings']['mode'] === 'debug');
+
+        $use_sudo = false;
+        if (!$debug_mode) {
+            $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
+            $use_sudo = !$is_root;
+        }
+        $sudoPrefix = $use_sudo ? "sudo " : "";
         $route_output = shell_exec($sudoPrefix . 'ip route | grep default');
         if (preg_match('/default via (\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
             $gateway_ip = $matches[1];
@@ -1319,10 +1341,11 @@ function get_network_health()
     // 2. Ping Gateway if found
     if (!empty($gateway_ip)) {
         $escaped_gateway = escapeshellarg($gateway_ip);
-        if ($use_sudo) {
-            $pingCommand = $sudoPrefix . "ping -c 1 -W 1 $escaped_gateway";
+        if ($isWindows) {
+            $pingCommand = "ping -n 1 -w 1000 $escaped_gateway";
         } else {
-            $pingCommand = $isWindows ? "ping -n 1 -w 1000 $escaped_gateway" : "ping -c 1 -W 1 $escaped_gateway";
+            // Re-use logic: if debug_mode is off and not root, sudoPrefix is set
+            $pingCommand = $sudoPrefix . "/bin/ping -c 1 -W 1 $escaped_gateway";
         }
         $ping = @shell_exec($pingCommand);
 
