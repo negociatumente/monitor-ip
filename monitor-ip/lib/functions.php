@@ -1277,6 +1277,14 @@ function get_network_health()
     $isWindows = (PHP_OS_FAMILY === 'Windows');
     $gateway_ip = '';
 
+    // En Linux, usar sudo si no es root (check safe for missing posix ext)
+    $debug_mode = (isset($config['settings']['mode']) && $config['settings']['mode'] === 'debug');
+    $use_sudo = false;
+    if (!$debug_mode) {
+        $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
+        $use_sudo = !$is_root;
+    }
+
     // 1. Find Gateway
     if ($isWindows) {
         $route_output = @shell_exec('route print 0.0.0.0');
@@ -1284,15 +1292,8 @@ function get_network_health()
             $gateway_ip = $matches[1];
         }
     } else {
-        $debug_mode = (isset($config['settings']['mode']) && $config['settings']['mode'] === 'debug');
-        $use_sudo = false;
-        if (!$debug_mode) {
-            $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
-            $use_sudo = !$is_root;
-        }
         $sudoPrefix = $use_sudo ? "sudo " : "";
-
-        $route_output = @shell_exec($sudoPrefix . 'ip route | grep default');
+        $route_output = @shell_exec($sudoPrefix . 'ip route | grep default 2>/dev/null');
         if (preg_match('/default via (\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
             $gateway_ip = $matches[1];
         }
@@ -1318,7 +1319,11 @@ function get_network_health()
     // 2. Ping Gateway if found
     if (!empty($gateway_ip)) {
         $escaped_gateway = escapeshellarg($gateway_ip);
-        $pingCommand = $isWindows ? "ping -n 1 -w 1000 $escaped_gateway" : "ping -c 1 -W 1 $escaped_gateway";
+        if ($use_sudo) {
+            $pingCommand = $sudoPrefix . "ping -c 1 -W 1 $escaped_gateway";
+        } else {
+            $pingCommand = $isWindows ? "ping -n 1 -w 1000 $escaped_gateway" : "ping -c 1 -W 1 $escaped_gateway";
+        }
         $ping = @shell_exec($pingCommand);
 
         if (strpos($ping, 'TTL=') !== false || strpos($ping, 'bytes from') !== false) {
