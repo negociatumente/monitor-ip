@@ -499,18 +499,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_update_ip_ser
 // Manejar la eliminación de servicio
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {
     $service_to_delete = trim($_POST['service_name']);
+    $is_ajax = true;
 
     if (!empty($service_to_delete)) {
-        if (delete_service_from_config($service_to_delete)) {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_cleared" . $network_param);
+        $result = delete_service_from_config($service_to_delete);
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            if ($result) {
+                echo json_encode(['success' => true]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'No se pudo eliminar el servicio']);
+            }
             exit;
         } else {
-            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_clear_failed" . $network_param);
-            exit;
+            if ($result) {
+                header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_cleared" . $network_param);
+                exit;
+            } else {
+                header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_clear_failed" . $network_param);
+                exit;
+            }
         }
     } else {
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=invalid_service_name" . $network_param);
-        exit;
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Nombre de servicio inválido']);
+            exit;
+        } else {
+            header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=invalid_service_name" . $network_param);
+            exit;
+        }
     }
 }
 

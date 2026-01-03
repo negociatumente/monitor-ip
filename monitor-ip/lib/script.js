@@ -405,7 +405,7 @@ function showDeleteConfirmFromDetail() {
     const ip = document.getElementById('modalIpTitle').innerText.replace('IP info: ', '');
     const confirmModal = document.getElementById('deleteIpForm');
     document.getElementById('delete_ip').value = ip;
-    confirmModal.style.zIndex = '100'; // Más alto que el modal de detalle
+    confirmModal.style.zIndex = '200'; // Más alto que el modal de detalle
     confirmModal.style.display = 'flex';
 }
 
@@ -925,15 +925,33 @@ function deleteService(serviceName) {
     window.showCustomConfirm(
         '¿Eliminar servicio?',
         '¿Estás seguro de que deseas eliminar el servicio <b>"' + serviceName + '"</b>? Esto eliminará <b>TODAS</b> las IPs asociadas. Esta acción no se puede deshacer.',
-        function() {
-            document.getElementById('delete_service_name_input').value = serviceName;
-            document.getElementById('deleteServiceForm').submit();
+        function () {
+            // Acción de eliminación
+            const formData = new FormData();
+            formData.append('clear_service', '1');
+            formData.append('service_name', serviceName);
+            fetch('?action=clear_service', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        modalFunctions.showAlert('Servicio eliminado correctamente', 'success');
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        modalFunctions.showAlert('Error: ' + (data.message || 'Error desconocido'), 'error');
+                    }
+                })
+                .catch(error => {
+                    modalFunctions.showAlert('Error: ' + error.message, 'error');
+                });
         }
     );
 }
 
 // Modal de confirmación reutilizable
-window.showCustomConfirm = function(title, message, onConfirm) {
+window.showCustomConfirm = function (title, message, onConfirm) {
     var modal = document.getElementById('customConfirm');
     var header = modal.querySelector('.custom-confirm-header');
     var body = modal.querySelector('.custom-confirm-body');
@@ -943,12 +961,12 @@ window.showCustomConfirm = function(title, message, onConfirm) {
     body.innerHTML = message;
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-    btnOk.onclick = function() {
+    btnOk.onclick = function () {
         modal.style.display = 'none';
         document.body.style.overflow = 'auto';
         if (typeof onConfirm === 'function') onConfirm();
     };
-    btnCancel.onclick = function() {
+    btnCancel.onclick = function () {
         modal.style.display = 'none';
         document.body.style.overflow = 'auto';
     };
@@ -1165,10 +1183,10 @@ document.addEventListener('DOMContentLoaded', function () {
 window.toggleSidebar = function () {
     const sidebarPanel = document.getElementById('sidebarPanel');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
-    
+
     if (sidebarPanel && sidebarOverlay) {
         const isVisible = sidebarPanel.classList.contains('translate-x-0');
-        
+
         if (isVisible) {
             // Hide sidebar
             sidebarPanel.classList.remove('translate-x-0');
@@ -1187,10 +1205,10 @@ window.toggleSidebar = function () {
 window.toggleDesktopSidebar = function () {
     const sidebarPanel = document.getElementById('sidebarPanel');
     const toggleBtn = document.getElementById('desktopSidebarToggle');
-    
+
     if (sidebarPanel && toggleBtn) {
         const isCollapsed = sidebarPanel.classList.contains('sidebar-collapsed');
-        
+
         if (isCollapsed) {
             // Expand sidebar
             sidebarPanel.classList.remove('sidebar-collapsed');
@@ -1219,11 +1237,11 @@ window.toggleDesktopSidebar = function () {
 document.addEventListener('DOMContentLoaded', function () {
     const sidebarPanel = document.getElementById('sidebarPanel');
     const toggleBtn = document.getElementById('desktopSidebarToggle');
-    
+
     if (sidebarPanel) {
         // Check localStorage for saved preference
         const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        
+
         if (isCollapsed) {
             sidebarPanel.classList.add('sidebar-collapsed');
             sidebarPanel.classList.remove('sidebar-expanded');
@@ -1265,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const mobileNavMenu = document.getElementById('mobileNavMenu');
         const header = document.querySelector('header');
-        
+
         if (mobileNavMenu && mobileMenuBtn && header && header.contains(event.target)) {
             // Click inside header, check if it's not the menu button
             if (!mobileMenuBtn.contains(event.target) && !mobileNavMenu.contains(event.target)) {
@@ -1281,7 +1299,7 @@ document.addEventListener('DOMContentLoaded', function () {
 window.addEventListener('resize', function () {
     const sidebarPanel = document.getElementById('sidebarPanel');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
-    
+
     if (window.innerWidth >= 1024) {
         // Hide mobile sidebar on desktop
         if (sidebarPanel) sidebarPanel.classList.remove('-translate-x-full');

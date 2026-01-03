@@ -12,10 +12,8 @@ function update_ping_results($ip)
     if ($isWindows) {
         $pingCommand = "ping -n 1 -w 1000 $escaped_ip";
     } else {
-        // En Linux, usar sudo si no es root
-        $pingCommand = (posix_getuid() !== 0) 
-            ? "sudo /bin/ping -c 1 -W 1 $escaped_ip" 
-            : "/bin/ping -c 1 -W 1 $escaped_ip";
+        // En Linux, ejecutar directamente (ping suele tener permisos setuid o capabilities)
+        $pingCommand = "/bin/ping -c 1 -W 1 $escaped_ip";
     }
 
     // Ejecutar el ping
@@ -103,9 +101,8 @@ function update_ping_results_parallel($ips)
                 if ($isWindows) {
                     $command = "ping -n 1 -w 1000 $escaped_ip";
                 } else {
-                    // En Linux, usar sudo si no es root
-                    $sudoPrefix = (posix_getuid() !== 0) ? "sudo " : "";
-                    $command = $sudoPrefix . "/bin/ping -c 1 -W 1 $escaped_ip";
+                    // En Linux, ejecutar directamente
+                    $command = "/bin/ping -c 1 -W 1 $escaped_ip";
                 }
                 break;
         }
@@ -390,13 +387,19 @@ function delete_service_from_config($service_name)
     $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
 
     // Remove all IPs that use this service
-    if (isset($config[$ips_section])) {
+    if (isset($config[$ips_section]) && is_array($config[$ips_section])) {
+        $ips_to_remove = [];
         foreach ($config[$ips_section] as $ip => $service) {
             if ($service === $service_name) {
-                unset($config[$ips_section][$ip]);
-                if (isset($config['ips-network'][$ip])) {
-                    unset($config['ips-network'][$ip]);
-                }
+                $ips_to_remove[] = $ip;
+            }
+        }
+
+        foreach ($ips_to_remove as $ip) {
+            unset($config[$ips_section][$ip]);
+            // Also clean up from ips-services if exists
+            if (isset($config['ips-services']) && isset($config['ips-services'][$ip])) {
+                unset($config['ips-services'][$ip]);
             }
         }
     }
@@ -414,6 +417,10 @@ function delete_service_from_config($service_name)
     // Write the updated config back to file
     $new_content = '';
     foreach ($config as $section => $values) {
+        // Ensure values is an array before iterating
+        if (!is_array($values))
+            continue;
+
         $new_content .= "[$section]\n";
         foreach ($values as $key => $value) {
             $new_content .= "$key = \"$value\"\n";
@@ -1126,7 +1133,7 @@ function run_complete_speedtest()
         }
     } else {
         // Use speedtest-cli
-        $output = shell_exec('speedtest-cli --simple 2>/dev/null');
+        $output = shell_exec('speedtest-cli --secure --simple 2>/dev/null');
 
         if (!empty($output)) {
             $results['success'] = true;
@@ -1232,9 +1239,6 @@ function get_geoip_info($ip)
     return ['status' => 'fail', 'message' => 'API connection failed or timed out'];
 }
 
-/**
- * Analyze the health of the local network
- */
 /**
  * Analyze the health of the local network
  */

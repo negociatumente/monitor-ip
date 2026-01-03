@@ -66,12 +66,12 @@ docker pull ghcr.io/negociatumente/monitor-ip:latest
 
 **🔹Ejecuta el contenedor:**
 ```bash
-docker run --network host ghcr.io/negociatumente/monitor-ip:latest
+docker run --network host -p 8080:80 ghcr.io/negociatumente/monitor-ip:latest
 ``` 
 
 ### 4️⃣ Resultados
 **🔹Finalmente, abre en tu navegador la siguiente url:**  
-http://localhost/monitor-ip
+http://localhost:8080/monitor-ip
 
 
 ## 🛠️ Instalación en Linux y MacOS  

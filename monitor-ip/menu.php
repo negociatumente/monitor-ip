@@ -73,11 +73,14 @@
                             stroke-dashoffset="<?php echo $circle_offset; ?>" stroke-linecap="round" />
                     </svg>
                     <div class="absolute inset-0 flex items-center justify-center">
-                        <i class="fas fa-heartbeat text-<?php echo $health_color; ?>-500 text-lg sm:text-2xl drop-shadow-md"></i>
+                        <i
+                            class="fas fa-heartbeat text-<?php echo $health_color; ?>-500 text-lg sm:text-2xl drop-shadow-md"></i>
                     </div>
                 </div>
                 <div class="flex-shrink-0">
-                    <p class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Uptime</p>
+                    <p
+                        class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                        Uptime</p>
                     <div class="flex items-baseline gap-2">
                         <span
                             class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100"><?php echo $uptime_percentage; ?>%</span>
@@ -90,25 +93,31 @@
                         <p class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100">
                             <?php echo $stats['total_ips']; ?>
                         </p>
-                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">Total</p>
+                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">
+                            Total</p>
                     </div>
                     <div class="w-px h-8 sm:h-12 bg-gray-300 dark:bg-gray-600"></div>
                     <div class="text-center">
                         <p class="text-2xl sm:text-3xl font-black text-green-600 dark:text-green-400">
                             <?php echo $stats['ips_up']; ?>
                         </p>
-                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">Online</p>
+                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">
+                            Online</p>
                     </div>
                     <div class="w-px h-8 sm:h-12 bg-gray-300 dark:bg-gray-600"></div>
                     <div class="text-center">
-                        <p class="text-2xl sm:text-3xl font-black text-red-600 dark:text-red-400"><?php echo $stats['ips_down']; ?>
+                        <p class="text-2xl sm:text-3xl font-black text-red-600 dark:text-red-400">
+                            <?php echo $stats['ips_down']; ?>
                         </p>
-                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">Offline</p>
+                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">
+                            Offline</p>
                     </div>
                 </div>
 
                 <div class="ml-1 sm:ml-4 mr-1 sm:mr-2">
-                    <p class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Latency</p>
+                    <p
+                        class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                        Latency</p>
                     <div class="flex items-baseline gap-2">
                         <span class="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
                             <?php echo ($stats['average_ping'] !== 'N/A' ? $stats['average_ping'] : '-'); ?>
@@ -142,7 +151,8 @@
                 <i class="fas fa-history text-purple-500 text-xs sm:text-sm"></i>
                 <div class="hidden sm:block">
                     <p class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">History</p>
-                    <span class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_attempts; ?>
+                    <span
+                        class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_attempts; ?>
                         pings</span>
                 </div>
                 <button onclick="showChangePingAttemptsForm(); event.stopPropagation();"
@@ -152,7 +162,7 @@
                 </button>
             </div>
 
-           
+
 
             <!-- El temporizador a la derecha -->
             <div class="flex-1 flex justify-end min-w-0">
@@ -164,9 +174,12 @@
                     </div>
 
                     <div class="relative z-10 flex-1 min-w-0">
-                        <p class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">Next Ping</p>
+                        <p
+                            class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">
+                            Next Ping</p>
                         <div id="nextPingBlock" class="flex items-baseline gap-2">
-                            <span class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100 font-mono tracking-tight"
+                            <span
+                                class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100 font-mono tracking-tight"
                                 id="countdown"><?php echo $ping_interval; ?></span>
                             <span class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300">sec</span>
                         </div>
@@ -193,12 +206,12 @@
                         </button>
                     </div>
                 </div>
-            
+
             </div>
         </div>
     </div>
 
-   
+
 </div>
 
 <!-- Modal: Import/Export Config -->
@@ -211,43 +224,52 @@
                 </div>
                 <div>
                     <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Config Import / Export</h2>
-                    <p class="text-indigo-100 text-xs font-medium">*If you are using Local Network monitoring, make sure to select the correct network type when importing/exporting configurations.</p>
+                    <p class="text-indigo-100 text-xs font-medium">*If you are using Local Network monitoring, make sure
+                        to select the correct network type when importing/exporting configurations.</p>
                 </div>
             </div>
-            <button type="button" onclick="hideConfigModal();" class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
+            <button type="button" onclick="hideConfigModal();"
+                class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <div class="p-6 bg-gray-50 dark:bg-gray-900 rounded-b-2xl">
             <?php if (!empty($import_export_message)): ?>
-                <div class="mb-4 p-3 rounded-xl bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-700 flex items-center gap-2">
+                <div
+                    class="mb-4 p-3 rounded-xl bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-700 flex items-center gap-2">
                     <i class="fas fa-info-circle"></i>
                     <span><?php echo $import_export_message === true ? 'Configuración importada correctamente.' : htmlspecialchars($import_export_message); ?></span>
                 </div>
             <?php endif; ?>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Importar -->
-                <form method="POST" enctype="multipart/form-data" class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
+                <form method="POST" enctype="multipart/form-data"
+                    class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center gap-3 mb-2">
                         <i class="fas fa-file-import text-indigo-500 text-2xl"></i>
                         <span class="font-bold text-gray-700 dark:text-gray-200">Import Configuration</span>
                     </div>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400">*Imports will overwrite existing settings</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">*Imports will overwrite existing settings</p>
 
-                    <input type="hidden" name="network" value="<?php echo isset($network_type) ? $network_type : 'external'; ?>">
-                    <input type="file" name="import_config" accept=".ini,text/plain" required class="block w-full text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2">
-                    <button type="submit" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
+                    <input type="hidden" name="network"
+                        value="<?php echo isset($network_type) ? $network_type : 'external'; ?>">
+                    <input type="file" name="import_config" accept=".ini,text/plain" required
+                        class="block w-full text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2">
+                    <button type="submit"
+                        class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
                         <i class="fas fa-upload"></i> Import
                     </button>
                 </form>
                 <!-- Exportar -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
+                <div
+                    class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center gap-3 mb-2">
                         <i class="fas fa-file-export text-green-500 text-2xl"></i>
                         <span class="font-bold text-gray-700 dark:text-gray-200">Export Configuration</span>
                     </div>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400">Export your current configuration settings</p>
-                    <a href="?export_config=1<?php echo isset($network_type) ? '&network=' . $network_type : ''; ?>" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Export your current configuration settings</p>
+                    <a href="?export_config=1<?php echo isset($network_type) ? '&network=' . $network_type : ''; ?>"
+                        class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
                         <i class="fas fa-download"></i> Export
                     </a>
                 </div>
@@ -258,7 +280,7 @@
 
 <!-- Modal: Add IP Form -->
 <div id="addIpForm" class="modal">
-        <div class="modal-content p-0 max-w-xl shadow-2xl border-0">
+    <div class="modal-content p-0 max-w-xl shadow-2xl border-0">
         <div class="bg-indigo-500 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
@@ -673,7 +695,7 @@
 <!-- Modal: Clear Data Confirmation -->
 <div id="clearDataConfirmation" class="modal">
     <div class="modal-content p-0 max-w-3xl shadow-2xl border-0">
-                <div class="bg-amber-500 p-6 rounded-t-xl flex items-center justify-between">
+        <div class="bg-amber-500 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
                     <i class="fas fa-exclamation-triangle text-3xl text-white drop-shadow"></i>
@@ -780,10 +802,12 @@
                 </div>
                 <div>
                     <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Manage Services</h2>
-                    <p class="text-indigo-100 text-xs font-medium">Personaliza y gestiona los servicios monitorizados</p>
+                    <p class="text-indigo-100 text-xs font-medium">Personaliza y gestiona los servicios monitorizados
+                    </p>
                 </div>
             </div>
-            <button type="button" onclick="hideManageServiceForm();" class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
+            <button type="button" onclick="hideManageServiceForm();"
+                class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -799,9 +823,11 @@
                                 ($method === 'curl' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
                                     'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300');
                             ?>
-                            <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-2xl shadow border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <div
+                                class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-2xl shadow border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                 <div class="flex items-center gap-4">
-                                    <div class="w-7 h-7 rounded-full shadow-sm flex items-center justify-center" style="background-color: <?php echo htmlspecialchars($color); ?>;">
+                                    <div class="w-7 h-7 rounded-full shadow-sm flex items-center justify-center"
+                                        style="background-color: <?php echo htmlspecialchars($color); ?>;">
                                         <i class="fas fa-server text-white text-xs"></i>
                                     </div>
                                     <div>
@@ -809,7 +835,8 @@
                                             <?php echo htmlspecialchars($service_name); ?>
                                         </div>
                                         <div class="text-xs mt-0.5">
-                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold <?php echo $method_class; ?>">
+                                            <span
+                                                class="px-2 py-0.5 rounded text-[10px] font-bold <?php echo $method_class; ?>">
                                                 <?php echo $method_label; ?>
                                             </span>
                                         </div>
@@ -844,12 +871,15 @@
 
             <!-- Edit Form (Hidden by default) -->
             <div id="serviceDetailsForm" style="display:none;" class="pt-2">
-               
-                <form method="POST" action="" class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 border border-gray-200 dark:border-gray-700 flex flex-col gap-4">
+
+                <form method="POST" action=""
+                    class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 border border-gray-200 dark:border-gray-700 flex flex-col gap-4">
                     <input type="hidden" id="old_service_name" name="old_service_name">
                     <div class="">
-                        <label for="edit_service_name" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Service Name</label>
-                        <input type="text" id="edit_service_name" name="service_name" required class="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <label for="edit_service_name"
+                            class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Service Name</label>
+                        <input type="text" id="edit_service_name" name="service_name" required
+                            class="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 mb-4">
@@ -928,8 +958,10 @@
         </div>
         <div class="custom-confirm-body mb-6 text-gray-700 dark:text-gray-200"></div>
         <div class="flex justify-end gap-2">
-            <button type="button" class="custom-confirm-cancel btn px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancelar</button>
-            <button type="button" class="custom-confirm-ok btn px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Eliminar</button>
+            <button type="button"
+                class="custom-confirm-cancel btn px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancelar</button>
+            <button type="button"
+                class="custom-confirm-ok btn px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Eliminar</button>
         </div>
     </div>
 </div>
@@ -937,8 +969,8 @@
 <!-- Modal: Scan Private Network -->
 <div id="scanNetworkModal" class="modal">
 
-        <div class="modal-content p-0 max-w-4xl shadow-2xl border-0">
-     
+    <div class="modal-content p-0 max-w-4xl shadow-2xl border-0">
+
         <div class="bg-indigo-500 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
@@ -995,7 +1027,7 @@
 <!-- Modal: Speed Test -->
 <div id="speedTestModal" class="modal">
     <div class="modal-content p-0 max-w-4xl shadow-2xl border-0">
-     
+
         <div class="bg-purple-500 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">

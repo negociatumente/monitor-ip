@@ -52,6 +52,9 @@ if (isset($_GET['imported'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="IP Monitor - Track and monitor your network devices">
     <title>IP Monitor Dashboard</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%234f46e5%22/><circle cx=%2250%22 cy=%2250%22 r=%2235%22 stroke=%22white%22 stroke-width=%226%22 fill=%22none%22/><path d=%22M50 15 A35 35 0 0 1 50 85 A35 35 0 0 1 50 15 Z%22 stroke=%22white%22 stroke-width=%226%22 fill=%22none%22/><line x1=%2215%22 y1=%2250%22 x2=%2285%22 y2=%2250%22 stroke=%22white%22 stroke-width=%226%22/></svg>">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Font -->
@@ -250,8 +253,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                 <i class="fas fa-heartbeat"></i>
                                 <span class="sidebar-label">Network Health</span>
                             </button>
-                             <button onclick="showTopologyMapModal(); toggleSidebar();" class="btn-sidebar bg-purple-600 text-white"
-                                title="Topology Map">
+                            <button onclick="showTopologyMapModal(); toggleSidebar();"
+                                class="btn-sidebar bg-purple-600 text-white" title="Topology Map">
                                 <i class="fas fa-sitemap"></i>
                                 <span class="sidebar-label">Topology Map</span>
                             </button>
@@ -318,7 +321,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                 <button onclick="showConfigModal();"
                                     class="btn  btn-accent px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
                                     <i class="fas fa-file-import"></i> <span class="hidden sm:inline">
-                                       Manage Config</span><span class="sm:hidden">Config</span>
+                                        Manage Config</span><span class="sm:hidden">Config</span>
                                 </button>
 
                                 <button type="button" onclick="showClearDataConfirmation();"
@@ -682,7 +685,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             ?>
                                             <td class='p-3 text-center'>
                                                 <div class="flex items-center justify-center gap-2">
-                                                   
+
                                                     <button type='button'
                                                         onclick="event.stopPropagation(); showChangeIpServiceModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>', '<?php echo htmlspecialchars($service, ENT_QUOTES, 'UTF-8'); ?>', <?php echo $is_local_network ? 'true' : 'false'; ?>, '<?php echo $is_local_network ? htmlspecialchars($ips_network[$ip] ?? '', ENT_QUOTES, 'UTF-8') : ''; ?>')"
                                                         class='btn text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-800/50 p-2 rounded-md transition-all'
@@ -911,7 +914,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         <div class="mt-3 sm:mt-4">
                                             <button id="btnRunDetailTraceroute" onclick="runDetailTraceroute()"
                                                 class="w-full py-2 sm:py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm sm:text-base rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
-                                                <i class="fas fa-route"></i> <span class="hidden sm:inline">Run Traceroute</span><span class="sm:hidden">Traceroute</span>
+                                                <i class="fas fa-route"></i> <span class="hidden sm:inline">Run
+                                                    Traceroute</span><span class="sm:hidden">Traceroute</span>
                                             </button>
                                         </div>
                                     </div>
@@ -966,7 +970,9 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         </button>
                         <div class="flex items-center mb-6">
                             <i class="fas fa-edit text-blue-500 text-2xl mr-3"></i>
-                            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200"><?php echo isset($is_local_network) && $is_local_network ? 'Change Host' : 'Change Service'; ?></h3>
+                            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200">
+                                <?php echo isset($is_local_network) && $is_local_network ? 'Change Host' : 'Change Service'; ?>
+                            </h3>
                         </div>
                         <form method="POST" action="">
                             <input type="hidden" id="change_service_ip" name="update_ip_service">
@@ -1205,7 +1211,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         class="px-6 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-emerald-500/20">
                         <i class="fas fa-robot"></i> AI Report
                     </button>
-                   
+
                     <button onclick="closeNetworkHealthModal()"
                         class="px-8 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-95">
                         Close Analysis
