@@ -803,10 +803,6 @@ function update_service_config($old_name, $new_name, $new_color, $new_method)
  * Scan private network for active devices
  * Returns array of discovered IPs with their MAC addresses and hostnames
  */
-/**
- * Scan private network for active devices
- * Returns array of discovered IPs with their MAC addresses and hostnames
- */
 function scan_local_network()
 {
     $isWindows = (PHP_OS_FAMILY === 'Windows');
@@ -887,7 +883,7 @@ function scan_local_network()
 
         // 2. Read ARP Native Table (ip neigh)
         // This provides IP and MAC for everything the kernel knows about (triggered by nmap)
-        $neigh_output = shell_exec("ip neigh show");
+        $neigh_output = shell_exec($sudoPrefix . "ip neigh show");
         // Format: 192.168.1.1 dev eth0 lladdr 00:11:22:33:44:55 REACHABLE
         preg_match_all('/(\d+\.\d+\.\d+\.\d+)\s+dev\s+\w+\s+lladdr\s+([0-9a-f:]+)/i', $neigh_output, $matches, PREG_SET_ORDER);
 
