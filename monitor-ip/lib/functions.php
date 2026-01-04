@@ -863,11 +863,25 @@ function scan_local_network()
         $debug_mode_nmap = (isset($config_scan['settings']['mode']) && $config_scan['settings']['mode'] === 'debug');
 
         $use_sudo = false;
+        $sudo_available = false;
         if (!$debug_mode_nmap) {
             $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
             $use_sudo = !$is_root;
+            if ($use_sudo) {
+                $sudo_check = trim(@shell_exec('which sudo 2>/dev/null'));
+                if (!empty($sudo_check)) {
+                    $sudo_nopass = 0 === @shell_exec('sudo -n true 2>/dev/null; echo $?');
+                    if ($sudo_nopass) {
+                        $sudo_available = true;
+                    } else {
+                        $use_sudo = false;
+                    }
+                } else {
+                    $use_sudo = false;
+                }
+            }
         }
-        $sudoPrefix = $use_sudo ? "sudo " : "";
+        $sudoPrefix = ($use_sudo && $sudo_available) ? "sudo " : "";
 
         shell_exec($sudoPrefix . "nmap -sn " . escapeshellarg($network_range) . " 2>/dev/null");
 
