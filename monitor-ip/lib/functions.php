@@ -807,143 +807,60 @@ function scan_local_network()
 {
     $isWindows = (PHP_OS_FAMILY === 'Windows');
     $discovered_devices = [];
-    $found_ips = [];
-
-    // Get private network info
     if ($isWindows) {
-        // Windows implementation (unchanged logic, just structured better)
         $ipconfig = shell_exec('ipconfig');
         preg_match('/IPv4.*?:\s*(\d+\.\d+\.\d+\.\d+)/', $ipconfig, $matches);
         $local_ip = $matches[1] ?? '192.168.1.1';
         $parts = explode('.', $local_ip);
         $network_prefix = implode('.', array_slice($parts, 0, 3));
-
-        $arp_output = shell_exec('arp -a');
-        preg_match_all('/(\d+\.\d+\.\d+\.\d+)\s+([0-9a-f\-]+)/i', $arp_output, $matches, PREG_SET_ORDER);
-
-        foreach ($matches as $match) {
-            $ip = $match[1];
-            $mac = $match[2];
-            if (strpos($ip, $network_prefix) === 0 && $ip !== $local_ip) {
-                $hostname = gethostbyaddr($ip);
-                if ($hostname === $ip)
-                    $hostname = 'Unknown';
-
-                $discovered_devices[] = [
-                    'ip' => $ip,
-                    'mac' => strtoupper(str_replace('-', ':', $mac)),
-                    'hostname' => $hostname
-                ];
-                $found_ips[] = $ip;
-            }
-        }
+        // ...puedes agregar aquí la lógica de Windows si lo necesitas...
     } else {
-        // Linux Implementation: Nmap + IP Neigh + Ping Sweep Fallback
 
-        $local_ip = shell_exec("hostname -I | awk '{print $1}'");
-        $local_ip = trim($local_ip);
-        if (empty($local_ip))
-            $local_ip = '192.168.1.1';
 
+        $local_ip = trim(shell_exec("hostname -I | awk '{print $1}'"));
+        if (empty($local_ip)) $local_ip = '192.168.1.1';
         $parts = explode('.', $local_ip);
         $network_prefix = implode('.', array_slice($parts, 0, 3));
         $network_range = $network_prefix . '.0/24';
 
-        // 1. Run Nmap (Ping Scan) to populate ARP tables and find devices
-        // Using -sn (Ping Scan) + -PR (ARP Ping) if possible, but -sn is adequate.
-        // We capture output but getting data mainly from 'ip neigh' is more reliable for MACs
+        // Ejecuta nmap para poblar la tabla ARP
+        shell_exec("nmap -sn " . escapeshellarg($network_range) . " 2>/dev/null");
 
-        // Check for debug mode for sudo permission
-        global $config_path;
-        $config_scan = parse_ini_file($config_path, true);
-        $debug_mode_nmap = (isset($config_scan['settings']['mode']) && $config_scan['settings']['mode'] === 'debug');
-
-        $use_sudo = false;
-        $sudo_available = false;
-        if (!$debug_mode_nmap) {
-            $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
-            $use_sudo = !$is_root;
-            if ($use_sudo) {
-                $sudo_check = trim(@shell_exec('which sudo 2>/dev/null'));
-                if (!empty($sudo_check)) {
-                    $sudo_nopass = 0 === @shell_exec('sudo -n true 2>/dev/null; echo $?');
-                    if ($sudo_nopass) {
-                        $sudo_available = true;
-                    } else {
-                        $use_sudo = false;
-                    }
-                } else {
-                    $use_sudo = false;
-                }
-            }
-        }
-        $sudoPrefix = ($use_sudo && $sudo_available) ? "sudo " : "";
-
-        shell_exec($sudoPrefix . "nmap -sn " . escapeshellarg($network_range) . " 2>/dev/null");
-
-        // 2. Read ARP Native Table (ip neigh)
-        // This provides IP and MAC for everything the kernel knows about (triggered by nmap)
-        $neigh_output = shell_exec($sudoPrefix . "ip neigh show");
-        // Format: 192.168.1.1 dev eth0 lladdr 00:11:22:33:44:55 REACHABLE
+        // Lee la tabla ARP con ip neigh
+        $neigh_output = shell_exec("ip neigh show");
         preg_match_all('/(\d+\.\d+\.\d+\.\d+)\s+dev\s+\w+\s+lladdr\s+([0-9a-f:]+)/i', $neigh_output, $matches, PREG_SET_ORDER);
 
+        $ips_seen = [];
         foreach ($matches as $match) {
             $ip = $match[1];
-            $mac = $match[2];
-
-            // Filter by subnet
-            if (strpos($ip, $network_prefix) === 0 && $ip !== $local_ip && !in_array($ip, $found_ips)) {
+            $mac = strtoupper($match[2]);
+            if (strpos($ip, $network_prefix) === 0 && !in_array($ip, $ips_seen)) {
                 $hostname = gethostbyaddr($ip);
-                if ($hostname === $ip)
-                    $hostname = 'Unknown';
-
+                if ($hostname === $ip) $hostname = 'Unknown';
                 $discovered_devices[] = [
                     'ip' => $ip,
-                    'mac' => strtoupper($mac),
+                    'mac' => $mac,
                     'hostname' => $hostname
                 ];
-                $found_ips[] = $ip;
+                $ips_seen[] = $ip;
             }
         }
 
-        // 3. Fallback/Supplement: Nmap parsing (if unprivileged nmap didn't show MACs in ip neigh)
-        // If we missed devices that Nmap found but ARP didn't cache (e.g. routed IPs, though unlikely for local scan)
-        // Re-use sudo prefix determined above
-        $nmap_output = shell_exec($sudoPrefix . "nmap -sn " . escapeshellarg($network_range));
-        preg_match_all('/Nmap scan report for (?:.*?\(([\d\.]+)\)|([\d\.]+))/', $nmap_output, $matches, PREG_SET_ORDER);
-
-        foreach ($matches as $match) {
-            $ip = !empty($match[1]) ? $match[1] : $match[2];
-            if ($ip && $ip !== $local_ip && strpos($ip, $network_prefix) === 0 && !in_array($ip, $found_ips)) {
-                $hostname = gethostbyaddr($ip);
-                if ($hostname === $ip)
-                    $hostname = 'Unknown';
-
-                $discovered_devices[] = [
-                    'ip' => $ip,
-                    'mac' => 'UNKNOWN', // Nmap non-root doesn't give MAC easily
-                    'hostname' => $hostname
-                ];
-                $found_ips[] = $ip;
-            }
+        // Añade el propio dispositivo local si no está en la lista
+        if (!in_array($local_ip, $ips_seen)) {
+            $hostname = gethostname();
+            $discovered_devices[] = [
+                'ip' => $local_ip,
+                'mac' => 'SELF',
+                'hostname' => $hostname ?: 'Local Device'
+            ];
         }
-    }
-
-    // Add local device itself
-    if (!in_array($local_ip, $found_ips)) {
-        $hostname = gethostname();
-        $discovered_devices[] = [
-            'ip' => $local_ip,
-            'mac' => 'SELF',
-            'hostname' => $hostname ?: 'Local Device'
-        ];
-        $found_ips[] = $local_ip;
     }
 
     // Add Gateway
     $gateway_ip = '';
     if ($isWindows) {
-        $route_output = shell_exec($sudoPrefix . 'route print 0.0.0.0');
+        $route_output = shell_exec('route print 0.0.0.0');
         if (preg_match('/0\.0\.0\.0\s+0\.0\.0\.0\s+(\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
             $gateway_ip = $matches[1];
         }
@@ -959,7 +876,7 @@ function scan_local_network()
             $use_sudo = !$is_root;
         }
         $sudoPrefix = $use_sudo ? "sudo " : "";
-        $route_output = shell_exec($sudoPrefix . 'ip route | grep default');
+        $route_output = shell_exec('ip route | grep default');
         if (preg_match('/default via (\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
             $gateway_ip = $matches[1];
         }
