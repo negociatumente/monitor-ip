@@ -1302,11 +1302,27 @@ function get_network_health()
     // En Linux, usar sudo si no es root (check safe for missing posix ext)
     $debug_mode = (isset($config['settings']['mode']) && $config['settings']['mode'] === 'debug');
     $use_sudo = false;
+    $sudo_available = false;
     if (!$debug_mode) {
         $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
         $use_sudo = !$is_root;
+        if ($use_sudo) {
+            // Verifica si sudo está disponible y se puede usar sin password
+            $sudo_check = trim(@shell_exec('which sudo 2>/dev/null'));
+            if (!empty($sudo_check)) {
+                // Probar sudo -n true (no password prompt)
+                $sudo_nopass = 0 === @shell_exec('sudo -n true 2>/dev/null; echo $?');
+                if ($sudo_nopass) {
+                    $sudo_available = true;
+                } else {
+                    $use_sudo = false; // No usar sudo si requiere password
+                }
+            } else {
+                $use_sudo = false;
+            }
+        }
     }
-    $sudoPrefix = $use_sudo ? "sudo " : "";
+    $sudoPrefix = ($use_sudo && $sudo_available) ? "sudo " : "";
 
     // 1. Find Gateway
     if ($isWindows) {
