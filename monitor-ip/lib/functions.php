@@ -943,7 +943,7 @@ function scan_local_network()
     // Add Gateway
     $gateway_ip = '';
     if ($isWindows) {
-        $route_output = shell_exec('route print 0.0.0.0');
+        $route_output = shell_exec($sudoPrefix . 'route print 0.0.0.0');
         if (preg_match('/0\.0\.0\.0\s+0\.0\.0\.0\s+(\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
             $gateway_ip = $matches[1];
         }
