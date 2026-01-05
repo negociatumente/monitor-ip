@@ -93,6 +93,7 @@ sudo apt update && sudo apt install -y apache2 php git
 	traceroute \
 	iproute2 \
 	net-tools \
+	nmap	
 ```
 
 **🔹Clona el repositorio:**  

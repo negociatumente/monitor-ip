@@ -11,6 +11,7 @@ RUN apt-get update \
 		traceroute \
 		iproute2 \
 		net-tools \
+		nmap \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Permitir que www-data ejecute ping sin contraseña

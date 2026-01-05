@@ -541,7 +541,10 @@ function getNotificationData($action, $msg = null)
         'config_write_error' => 'Error: No se pudo guardar la configuración.',
         'invalid_service' => 'Error: Debe seleccionar un servicio válido.',
         'ip_exists' => 'Error: Esta IP ya está siendo monitoreada.',
-        'add_ip_failed' => 'Error: No se pudo agregar la IP al sistema.'
+        'add_ip_failed' => 'Error: No se pudo agregar la IP al sistema.',
+        'scan_failed' => 'Error: Falló el escaneo de red local (nmap).',
+        'speedtest_failed' => 'Error: Falló la prueba de velocidad (SpeedTest).',
+        'traceroute_failed' => 'Error: Falló el comando tracert en Windows.'
     ];
 
     if ($action === 'error' && $msg && array_key_exists($msg, $error_messages)) {
@@ -815,7 +818,6 @@ function scan_local_network()
         $local_ip = $matches[1] ?? '192.168.1.1';
         $parts = explode('.', $local_ip);
         $network_prefix = implode('.', array_slice($parts, 0, 3));
-
     } else {
         // Obtener la IP local en Linux
         $local_ip = trim(shell_exec("hostname -I | awk '{print $1}'"));
@@ -825,27 +827,24 @@ function scan_local_network()
         $network_prefix = implode('.', array_slice($parts, 0, 3));
     }
 
-    // Escanear la tabla ARP para descubrir dispositivos
     $discovered_devices = [];
-    $arp_output = shell_exec("arp -a");
     $ips_seen = [];
 
-    foreach (explode("\n", $arp_output) as $line) {
-        // Buscar IP entre paréntesis o al inicio
-        if (preg_match('/\((\d+\.\d+\.\d+\.\d+)\)/', $line, $ip_match)) {
+    // Escaneo con nmap en Windows y Linux
+    $nmap_output = shell_exec("nmap -sn " . $network_prefix . ".1-254");
+    if ($nmap_output === null || strpos($nmap_output, 'Failed') !== false || strpos($nmap_output, 'command not found') !== false) {
+        echo renderNotification('error', 'scan_failed');
+        return [];
+    }
+    foreach (explode("Nmap scan report for ", $nmap_output) as $block) {
+        if (preg_match('/(\d+\.\d+\.\d+\.\d+)/', $block, $ip_match)) {
             $ip = $ip_match[1];
-        } elseif (preg_match('/^(\d+\.\d+\.\d+\.\d+)/', $line, $ip_match)) {
-            $ip = $ip_match[1];
-        } else {
-            continue;
-        }
-        // Buscar MAC address (formato xx:xx:xx:xx:xx:xx o xx-xx-xx-xx-xx-xx)
-        if (preg_match('/(([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})/', $line, $mac_match)) {
-            $mac = strtoupper(str_replace('-', ':', $mac_match[1]));
-        } else {
-            $mac = 'UNKNOWN';
-        }
-        if (strpos($ip, $network_prefix) === 0 && !in_array($ip, $ips_seen)) {
+            // Buscar MAC address
+            if (preg_match('/MAC Address: ([0-9A-Fa-f:]+)/', $block, $mac_match)) {
+                $mac = strtoupper($mac_match[1]);
+            } else {
+                $mac = 'UNKNOWN';
+            }
             $hostname = gethostbyaddr($ip);
             if ($hostname === $ip)
                 $hostname = 'Unknown';
@@ -977,6 +976,7 @@ function run_complete_speedtest()
 {
     $bin_path = __DIR__ . '/SpeedTest++/SpeedTest';
     if (!is_executable($bin_path)) {
+        echo renderNotification('error', 'speedtest_failed');
         return [
             'success' => false,
             'error' => 'El binario SpeedTest no es ejecutable o no existe en: ' . $bin_path
@@ -984,6 +984,7 @@ function run_complete_speedtest()
     }
     $output = shell_exec($bin_path . ' --output json 2>&1');
     if (!$output) {
+        echo renderNotification('error', 'speedtest_failed');
         return [
             'success' => false,
             'error' => 'No se pudo ejecutar SpeedTest. ¿Está instalado y en el PATH?',
@@ -993,6 +994,7 @@ function run_complete_speedtest()
     $data = json_decode($output, true);
     if (!$data) {
         // Guardar la salida cruda para depuración
+        echo renderNotification('error', 'speedtest_failed');
         return [
             'success' => false,
             'error' => 'No se pudo parsear la salida JSON de SpeedTest.',
@@ -1064,6 +1066,10 @@ function run_traceroute($host)
     }
 
     $output = shell_exec($command);
+    if ($isWindows && (empty($output) || strpos($output, 'No se reconoce') !== false || strpos($output, 'not recognized') !== false)) {
+        echo renderNotification('error', 'traceroute_failed');
+        return "Error: Falló el comando tracert en Windows.";
+    }
     return $output ?: "Error running traceroute (tool might not be installed)";
 }
 
@@ -1142,7 +1148,7 @@ function get_network_health()
             $gateway_ip = $matches[1];
         }
     } else {
-        $route_output = @shell_exec($sudoPrefix . 'ip route | grep default 2>/dev/null');
+        $route_output = @shell_exec('ip route | grep default 2>/dev/null');
         if (preg_match('/default via (\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
             $gateway_ip = $matches[1];
         }
