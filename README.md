@@ -84,14 +84,15 @@ http://localhost/monitor-ip
 ### 2️⃣ Instalación  
 **🔹Instalar PHP, Apache, Git y Speedtest-cli:**  
 ```bash
-sudo apt update && sudo apt install apache2 php git speedtest-cli nmap \
-		iputils-ping \  
-		net-tools \
-		traceroute \
-		iproute2 \
-		curl \
-		dnsutils \
-		bind9-host -y  
+sudo apt update && sudo apt install apache2 php git
+	nmap \
+	iputils-ping \  
+	net-tools \
+	traceroute \
+	iproute2 \
+	curl \
+	dnsutils \
+	bind9-host -y  
 ```
 
 **🔹Clona el repositorio:**  

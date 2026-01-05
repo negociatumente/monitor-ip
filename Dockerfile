@@ -4,7 +4,6 @@ FROM php:8.2-apache
 # Instalar speedtest-cli y herramientas de escaneo de red
 RUN apt-get update \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install -y \
-	speedtest-cli \
 		nmap \
 		iputils-ping \
 		net-tools \
@@ -13,8 +12,6 @@ RUN apt-get update \
 		curl \
 		dnsutils \
 		bind9-host \
-		sudo \
-		grep \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Permitir que www-data ejecute ping sin contraseña

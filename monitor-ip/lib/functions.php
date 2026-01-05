@@ -1072,63 +1072,44 @@ function test_upload_speed()
  */
 function run_complete_speedtest()
 {
+    $bin_path = __DIR__ . '/SpeedTest/SpeedTest';
+    if (!is_executable($bin_path)) {
+        return [
+            'success' => false,
+            'error' => 'El binario SpeedTest no es ejecutable o no existe en: ' . $bin_path
+        ];
+    }
+    $output = shell_exec($bin_path . ' --output json 2>&1');
+    if (!$output) {
+        return [
+            'success' => false,
+            'error' => 'No se pudo ejecutar SpeedTest. ¿Está instalado y en el PATH?',
+            'raw_output' => ''
+        ];
+    }
+    $data = json_decode($output, true);
+    if (!$data) {
+        // Guardar la salida cruda para depuración
+        return [
+            'success' => false,
+            'error' => 'No se pudo parsear la salida JSON de SpeedTest.',
+            'raw_output' => $output
+        ];
+    }
     $results = [
-        'success' => false,
-        'latency' => 'N/A',
-        'download' => 'N/A',
-        'upload' => 'N/A',
-        'server' => 'N/A',
-        'isp' => 'N/A'
+        'success' => true,
+        'latency' => $data['ping'] ?? 'N/A',
+        'download' => isset($data['download']) ? round($data['download'] / 1e6, 2) : 'N/A', // bits/s a Mbps
+        'upload' => isset($data['upload']) ? round($data['upload'] / 1e6, 2) : 'N/A',
+        'server' => $data['server']['name'] ?? 'N/A',
+        'isp' => $data['isp'] ?? 'N/A',
+        'raw' => $data,
+        'raw_output' => $output
     ];
 
-    // Check if speedtest-cli is installed
-    $speedtest_check = shell_exec('which speedtest-cli 2>/dev/null');
-
-    if (empty($speedtest_check)) {
-        // Check for Ookla speedtest
-        $speedtest_ookla = shell_exec('which speedtest 2>/dev/null');
-
-        if (!empty($speedtest_ookla)) {
-            // Use Ookla speedtest (JSON format)
-            $output = shell_exec('speedtest --format=json --accept-license --accept-gdpr 2>/dev/null');
-            $data = json_decode($output, true);
-
-            if ($data && isset($data['download'])) {
-                $results['success'] = true;
-                $results['latency'] = round($data['ping']['latency'], 1);
-                $results['download'] = round(($data['download']['bandwidth'] * 8) / 1000000, 2);
-                $results['upload'] = round(($data['upload']['bandwidth'] * 8) / 1000000, 2);
-                $results['server'] = $data['server']['name'] ?? 'Unknown';
-                $results['isp'] = $data['isp'] ?? 'Unknown';
-            }
-        } else {
-            $results['error'] = 'speedtest-cli or speedtest not installed. Install with: pip install speedtest-cli or download from speedtest.net';
-        }
-    } else {
-        // Use speedtest-cli
-        $output = shell_exec('speedtest-cli --secure --simple 2>/dev/null');
-
-        if (!empty($output)) {
-            $results['success'] = true;
-
-            if (preg_match('/Ping:\s+([\d\.]+)\s+ms/', $output, $matches)) {
-                $results['latency'] = round(floatval($matches[1]), 1);
-            }
-
-            if (preg_match('/Download:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
-                $results['download'] = round(floatval($matches[1]), 2);
-            }
-
-            if (preg_match('/Upload:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
-                $results['upload'] = round(floatval($matches[1]), 2);
-            }
-        }
-    }
-
-    if ($results['success']) {
+    if (!empty($results['success'])) {
         save_speedtest_results($results);
     }
-
     return $results;
 }
 

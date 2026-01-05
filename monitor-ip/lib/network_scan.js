@@ -447,7 +447,7 @@ async function startSpeedTest() {
         <div class="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg border border-yellow-200 dark:border-yellow-700">
             <p class="text-sm text-yellow-800 dark:text-yellow-200">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
-                Running speed test... Please wait.
+                Running speed test... Please wait. It may take up to 60 seconds.
             </p>
         </div>
     `;
@@ -550,7 +550,7 @@ async function showNetworkHealth() {
             // Speed Data Preparation
             const download = h.speed ? h.speed.download.toFixed(0) : '--';
             const upload = h.speed ? h.speed.upload.toFixed(0) : '--';
-            const latency = h.speed ? h.speed.latency.toFixed(2) : '--';
+            const latency = h.speed ? h.speed.latency: '--';
             const activeDevs = h.devices ? h.devices.up : 0;
             const totalDevs = h.devices ? h.devices.total : 0;
             const avgDeviceLatency = h.devices ? h.devices.avg_latency : 0;
