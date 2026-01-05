@@ -34,7 +34,7 @@ async function startNetworkScan() {
         <div class="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg border border-yellow-200 dark:border-yellow-700">
             <p class="text-sm text-yellow-800 dark:text-yellow-200">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
-                Scanning network... This may take up to 30 seconds.
+                Scanning network... This may take up to 60 seconds.
             </p>
         </div>
     `;
@@ -467,10 +467,6 @@ async function startSpeedTest() {
             <p class="text-sm text-yellow-800 dark:text-yellow-200">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
                 Running speed test... Please wait. It may take up to 60 seconds.
-            </p>
-            <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-2">
-                <i class="fas fa-info-circle mr-1"></i>
-                Detecting speedtest tool (Speedtest++ or Speedtest CLI)...
             </p>
         </div>
     `;

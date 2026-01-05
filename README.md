@@ -51,20 +51,21 @@ monitor-ip/
 ```
 ## 🔧 Tabla de funcionalidades y compatibilidad de herramientas de red
 
-| Red | Funcionalidad | Paquete/Herramienta | Comando Linux | Comando Windows | Linux Nativo | Windows Nativo | Docker/Linux | Docker/Windows |
-|-----|---------------|---------------------|---------------|-----------------|---------------|----------------|----------------|--------------|
-| Pública | Test de conectividad / latencia | `iputils-ping` | `ping` | `ping` | ✔️ | ✔️ | ✔️ | ✔️ |
-| Pública | Test de peticiones HTTP / APIs | `curl` | `curl` | `curl` | ✔️* | ✔️ | ✔️ | ✔️ |
-| Pública | Test de consultas DNS | `dnsutils` | `dig`, `nslookup` | `nslookup` | ✔️* | ✔️ | ✔️ | ✔️ |
-| Pública | Analizar los saltos de la red | `traceroute` | `traceroute` | `tracert` | ✔️* | ✔️ | ✔️ | ❌ (Aislado) |
-| Privada | Obtener IP del Gateway/Router | `iproute2` | `ip route` | `ipconfig` | ✔️ | ✔️ | ✔️ | ✔️ |
-| Privada | Test de velocidad | `Speedtest++` | `speedtest` | `speedtest.exe` | ✔️ | ✔️* | ✔️ | ✔️ |
-| Privada | Escaneo de dispositivos de la red | `nmap` | `nmap` | `nmap` | ✔️* | ✔️* | ✔️ | ❌ (Aislado) |
+| Funcionalidad | Herramienta | Comando Linux | Comando Windows | Linux Nativo | Windows Nativo | Docker/Linux | Docker/Windows |
+|-----|---------------|---------------------|---------------|-----------------|---------------|----------------|--------------|
+| Test de conectividad / latencia | `iputils-ping` | `ping` | `ping` | ✔️ | ✔️ | ✔️ | ✔️ |
+| Test de peticiones HTTP / APIs | `curl` | `curl` | `curl` | ✔️* | ✔️ | ✔️ | ✔️ |
+| Test de consultas DNS | `dnsutils` | `dig`, `nslookup` | `nslookup` | ✔️* | ✔️ | ✔️ | ✔️ |
+| Analizar los saltos de la red | `traceroute` | `traceroute` | `tracert` | ✔️* | ✔️ | ✔️ | ❌ |
+| Obtener IP del Gateway/Router | `iproute2` | `ip route` | `ipconfig` | ✔️ | ✔️ | ✔️ | ✔️ |
+| Test de velocidad | `Speedtest++` | `speedtest` | `speedtest.exe` | ✔️ | ❔ | ✔️ | ✔️ |
+| Escaneo de dispositivos de la red | `nmap` | `nmap` | `nmap` | ✔️* | ❔ | ✔️ | ❌ |
 
 **Leyenda:**
 - ✔️ = Funciona nativamente
 - ✔️* = Requiere instalación manual
-- ❌ = No disponible (limitaciones de Docker networking)						
+- ❔ = Por desarrollar
+- ❌ = No disponible (el contenedor en Windows está aislado en una subnet)						
 
 
 ## 🛠️ Instalación en Docker (Recomendada)
@@ -158,9 +159,9 @@ http://localhost/monitor-ip
 https://www.tiktok.com/@negociatumente/video/7504332909923568919
 
 ### 1️⃣ Requisitos  
-⚙️ **XAMPP**  https://www.apachefriends.org/es/index.html
-⚙️ **(Opcional) Nmap**  https://nmap.org/download.html
-⚙️ **(Opcional) Speedtest**  https://www.speedtest.net/apps/cli
+⚙️ **XAMPP**  https://www.apachefriends.org/es/index.html  
+⚙️ **(Opcional) Nmap**  https://nmap.org/download.html  
+⚙️ **(Opcional) Speedtest**  https://www.speedtest.net/apps/cli  
 ⚙️ **Un navegador web**    
 
 ### 2️⃣ Instalación  
