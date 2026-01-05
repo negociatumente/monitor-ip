@@ -4,15 +4,13 @@ FROM php:8.2-apache
 # Instalar herramientas de escaneo de red
 RUN apt-get update \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install -y \
-		nmap \
+		sudo \
 		iputils-ping \
-		net-tools \
-		traceroute \
-		iproute2 \
 		curl \
 		dnsutils \
-		bind9-host \
-		sudo \
+		traceroute \
+		iproute2 \
+		net-tools \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Permitir que www-data ejecute ping sin contraseña

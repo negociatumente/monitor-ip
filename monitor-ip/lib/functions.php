@@ -806,84 +806,86 @@ function update_service_config($old_name, $new_name, $new_color, $new_method)
 function scan_local_network()
 {
     $isWindows = (PHP_OS_FAMILY === 'Windows');
-    $discovered_devices = [];
+
+    // Obtener la IP local y el prefijo de red
     if ($isWindows) {
+        // Obtener la IP local en Windows
         $ipconfig = shell_exec('ipconfig');
         preg_match('/IPv4.*?:\s*(\d+\.\d+\.\d+\.\d+)/', $ipconfig, $matches);
         $local_ip = $matches[1] ?? '192.168.1.1';
         $parts = explode('.', $local_ip);
         $network_prefix = implode('.', array_slice($parts, 0, 3));
-        // ...puedes agregar aquí la lógica de Windows si lo necesitas...
+
     } else {
-
-
+        // Obtener la IP local en Linux
         $local_ip = trim(shell_exec("hostname -I | awk '{print $1}'"));
-        if (empty($local_ip)) $local_ip = '192.168.1.1';
+        if (empty($local_ip))
+            $local_ip = '192.168.1.1';
         $parts = explode('.', $local_ip);
         $network_prefix = implode('.', array_slice($parts, 0, 3));
-        $network_range = $network_prefix . '.0/24';
+    }
 
-        // Ejecuta nmap para poblar la tabla ARP
-        shell_exec("nmap -sn " . escapeshellarg($network_range) . " 2>/dev/null");
+    // Escanear la tabla ARP para descubrir dispositivos
+    $discovered_devices = [];
+    $arp_output = shell_exec("arp -a");
+    $ips_seen = [];
 
-        // Lee la tabla ARP con ip neigh
-        $neigh_output = shell_exec("ip neigh show");
-        preg_match_all('/(\d+\.\d+\.\d+\.\d+)\s+dev\s+\w+\s+lladdr\s+([0-9a-f:]+)/i', $neigh_output, $matches, PREG_SET_ORDER);
-
-        $ips_seen = [];
-        foreach ($matches as $match) {
-            $ip = $match[1];
-            $mac = strtoupper($match[2]);
-            if (strpos($ip, $network_prefix) === 0 && !in_array($ip, $ips_seen)) {
-                $hostname = gethostbyaddr($ip);
-                if ($hostname === $ip) $hostname = 'Unknown';
-                $discovered_devices[] = [
-                    'ip' => $ip,
-                    'mac' => $mac,
-                    'hostname' => $hostname
-                ];
-                $ips_seen[] = $ip;
-            }
+    foreach (explode("\n", $arp_output) as $line) {
+        // Buscar IP entre paréntesis o al inicio
+        if (preg_match('/\((\d+\.\d+\.\d+\.\d+)\)/', $line, $ip_match)) {
+            $ip = $ip_match[1];
+        } elseif (preg_match('/^(\d+\.\d+\.\d+\.\d+)/', $line, $ip_match)) {
+            $ip = $ip_match[1];
+        } else {
+            continue;
         }
-
-        // Añade el propio dispositivo local si no está en la lista
-        if (!in_array($local_ip, $ips_seen)) {
-            $hostname = gethostname();
+        // Buscar MAC address (formato xx:xx:xx:xx:xx:xx o xx-xx-xx-xx-xx-xx)
+        if (preg_match('/(([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})/', $line, $mac_match)) {
+            $mac = strtoupper(str_replace('-', ':', $mac_match[1]));
+        } else {
+            $mac = 'UNKNOWN';
+        }
+        if (strpos($ip, $network_prefix) === 0 && !in_array($ip, $ips_seen)) {
+            $hostname = gethostbyaddr($ip);
+            if ($hostname === $ip)
+                $hostname = 'Unknown';
             $discovered_devices[] = [
-                'ip' => $local_ip,
-                'mac' => 'SELF',
-                'hostname' => $hostname ?: 'Local Device'
+                'ip' => $ip,
+                'mac' => $mac,
+                'hostname' => $hostname
             ];
+            $ips_seen[] = $ip;
         }
     }
 
-    // Add Gateway
+    // Añade el propio dispositivo local si no está en la lista
+    if (!in_array($local_ip, $ips_seen)) {
+        $hostname = gethostname();
+        $discovered_devices[] = [
+            'ip' => $local_ip,
+            'mac' => 'SELF',
+            'hostname' => $hostname ?: 'Local Device'
+        ];
+    }
+
+    // Añade la puerta de enlace predeterminada Gateway si no está en la lista
     $gateway_ip = '';
     if ($isWindows) {
+        // En Windows
         $route_output = shell_exec('route print 0.0.0.0');
         if (preg_match('/0\.0\.0\.0\s+0\.0\.0\.0\s+(\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
             $gateway_ip = $matches[1];
         }
     } else {
-        // En Linux, usar sudo si no es root, salvo en modo debug
-        global $config_path;
-        $config_scan = parse_ini_file($config_path, true);
-        $debug_mode = (isset($config_scan['settings']['mode']) && $config_scan['settings']['mode'] === 'debug');
-
-        $use_sudo = false;
-        if (!$debug_mode) {
-            $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
-            $use_sudo = !$is_root;
-        }
-        $sudoPrefix = $use_sudo ? "sudo " : "";
+        // En Linux
         $route_output = shell_exec('ip route | grep default');
         if (preg_match('/default via (\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
             $gateway_ip = $matches[1];
         }
     }
 
+    // Comprobar si la puerta de enlace ya está en la lista
     if (!empty($gateway_ip)) {
-        // Check if gateway is already in the list
         $gateway_found = false;
         foreach ($discovered_devices as &$device) {
             if ($device['ip'] === $gateway_ip) {

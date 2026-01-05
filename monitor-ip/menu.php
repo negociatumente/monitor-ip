@@ -1050,17 +1050,6 @@
                     <i class="fas fa-info-circle mr-2"></i>
                     Click "Start Test" to measure your internet speed using Speedtest.
                 </p>
-                <p class="text-xs text-blue-600 dark:text-blue-300 mt-2">
-                    <i class="fab fa-linux mr-1"></i>
-                    <strong>Linux only:</strong> Requires <code
-                        class="bg-blue-100 dark:bg-blue-800 px-1 rounded">speedtest-cli</code>
-                    <span class="ml-2 text-gray-500">Install: <code
-                            class="bg-gray-100 dark:bg-gray-700 px-1 rounded">pip install speedtest-cli</code></span>
-                </p>
-                <p class="text-xs text-red-500 dark:text-red-400 mt-1">
-                    <i class="fab fa-windows mr-1"></i>
-                    <strong>Windows:</strong> Not supported.
-                </p>
             </div>
         </div>
 

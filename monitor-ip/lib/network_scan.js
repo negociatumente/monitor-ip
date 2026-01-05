@@ -13,6 +13,9 @@ function hideScanNetworkModal() {
                 <i class="fas fa-info-circle mr-2"></i>
                 Click "Start Scan" to discover devices on your local network. This may take a few seconds.
             </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Note: Windows systems needs nmap installed for scanning to work.
+            </p>
         </div>
     `;
     document.getElementById('saveDevicesBtn').style.display = 'none';
@@ -496,15 +499,6 @@ async function startSpeedTest() {
                     <i class="fas fa-exclamation-triangle mr-2"></i>
                     <strong>Error:</strong> ${error.message}
                 </p>
-                <div class="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded text-xs">
-                    <p class="font-semibold text-gray-700 dark:text-gray-300 mb-2">Installation Instructions:</p>
-                    <p class="text-gray-600 dark:text-gray-400 mb-1">
-                        <strong>Option 1 (Python):</strong> <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">pip install speedtest-cli</code>
-                    </p>
-                    <p class="text-gray-600 dark:text-gray-400">
-                        <strong>Option 2 (Ookla):</strong> Download from <a href="https://www.speedtest.net/apps/cli" target="_blank" class="text-blue-500 hover:underline">speedtest.net/apps/cli</a>
-                    </p>
-                </div>
             </div>
         `;
         progressDiv.style.display = 'none';
