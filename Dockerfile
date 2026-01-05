@@ -1,7 +1,7 @@
 # Use the official PHP image as the base image
 FROM php:8.2-apache
 
-# Instalar speedtest-cli y herramientas de escaneo de red
+# Instalar herramientas de escaneo de red
 RUN apt-get update \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install -y \
 		nmap \

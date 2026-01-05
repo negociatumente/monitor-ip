@@ -95,44 +95,7 @@ if (isset($_GET['action'])) {
         exit;
     }
 
-    // Speed Test Endpoints
-    if ($_GET['action'] === 'speed_test_ping' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        header('Content-Type: application/json');
-
-        try {
-            $latency = test_network_latency();
-            echo json_encode([
-                'success' => true,
-                'latency' => $latency
-            ]);
-        } catch (Exception $e) {
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
-        }
-        exit;
-    }
-
-    if ($_GET['action'] === 'speed_test_download' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        header('Content-Type: application/json');
-
-        try {
-            $speed = test_download_speed();
-            echo json_encode([
-                'success' => true,
-                'speed' => $speed
-            ]);
-        } catch (Exception $e) {
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
-        }
-        exit;
-    }
-
-    if ($_GET['action'] === 'speed_test_full' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($_GET['action'] === 'speed_test' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json');
 
         try {

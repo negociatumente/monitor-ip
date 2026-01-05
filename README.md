@@ -41,7 +41,9 @@ monitor-ip/
 │   ├── ping_results.json           # Resultados de los pings remotos
 │   ├── ping_results_local.json     # Resultados de los pings locales
 │   ├── speedtest_results.json      # Resultados de los speedtests
-└── lib/                            # Librerías y recursos
+└── lib/                            # Librerías y recursos del proyecto
+	├── Speedtest++/                # Librería speedtest++ para tests de velocidad
+	│	└── Speedtest               # Script speedtest para tests de velocidad
 	├── functions.php               # Funciones PHP reutilizables
     ├── script.js                   # Scripts JavaScript principales
     ├── network_scan.js             # Lógica de escaneo de red y speedtest

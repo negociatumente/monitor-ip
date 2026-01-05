@@ -969,110 +969,11 @@ function save_local_network_scan($devices)
 
 
 /**
- * Test network latency using speedtest
- */
-function test_network_latency()
-{
-    // Check if speedtest-cli is installed
-    $speedtest_check = shell_exec('which speedtest-cli 2>/dev/null');
-
-    if (empty($speedtest_check)) {
-        // Fallback to simple ping test
-        $ping_output = shell_exec('ping -c 3 8.8.8.8 2>/dev/null');
-        preg_match('/rtt min\/avg\/max\/mdev = [\d\.]+\/([\d\.]+)/', $ping_output, $matches);
-        return isset($matches[1]) ? round(floatval($matches[1]), 1) : 'N/A';
-    }
-
-    // Use speedtest-cli for accurate latency
-    $output = shell_exec('speedtest-cli --simple 2>/dev/null');
-
-    if (preg_match('/Ping:\s+([\d\.]+)\s+ms/', $output, $matches)) {
-        return round(floatval($matches[1]), 1);
-    }
-
-    return 'N/A';
-}
-
-/**
- * Test download speed using speedtest-cli
- */
-function test_download_speed()
-{
-    // Check if speedtest-cli is installed
-    $speedtest_check = shell_exec('which speedtest-cli 2>/dev/null');
-
-    if (empty($speedtest_check)) {
-        // Check for speedtest (Ookla official)
-        $speedtest_ookla = shell_exec('which speedtest 2>/dev/null');
-
-        if (!empty($speedtest_ookla)) {
-            // Use Ookla speedtest
-            $output = shell_exec('speedtest --format=json 2>/dev/null');
-            $data = json_decode($output, true);
-
-            if (isset($data['download']['bandwidth'])) {
-                // Convert from bytes/s to Mbps
-                $mbps = round(($data['download']['bandwidth'] * 8) / 1000000, 2);
-                return $mbps;
-            }
-        }
-
-        return 'N/A';
-    }
-
-    // Use speedtest-cli
-    $output = shell_exec('speedtest-cli --simple 2>/dev/null');
-
-    if (preg_match('/Download:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
-        return round(floatval($matches[1]), 2);
-    }
-
-    return 'N/A';
-}
-
-/**
- * Test upload speed using speedtest-cli
- */
-function test_upload_speed()
-{
-    // Check if speedtest-cli is installed
-    $speedtest_check = shell_exec('which speedtest-cli 2>/dev/null');
-
-    if (empty($speedtest_check)) {
-        // Check for speedtest (Ookla official)
-        $speedtest_ookla = shell_exec('which speedtest 2>/dev/null');
-
-        if (!empty($speedtest_ookla)) {
-            // Use Ookla speedtest
-            $output = shell_exec('speedtest --format=json 2>/dev/null');
-            $data = json_decode($output, true);
-
-            if (isset($data['upload']['bandwidth'])) {
-                // Convert from bytes/s to Mbps
-                $mbps = round(($data['upload']['bandwidth'] * 8) / 1000000, 2);
-                return $mbps;
-            }
-        }
-
-        return 'N/A';
-    }
-
-    // Use speedtest-cli
-    $output = shell_exec('speedtest-cli --simple 2>/dev/null');
-
-    if (preg_match('/Upload:\s+([\d\.]+)\s+Mbit/', $output, $matches)) {
-        return round(floatval($matches[1]), 2);
-    }
-
-    return 'N/A';
-}
-
-/**
  * Run complete speedtest and return all results
  */
 function run_complete_speedtest()
 {
-    $bin_path = __DIR__ . '/SpeedTest/SpeedTest';
+    $bin_path = __DIR__ . '/SpeedTest++/SpeedTest';
     if (!is_executable($bin_path)) {
         return [
             'success' => false,

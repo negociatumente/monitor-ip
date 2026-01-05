@@ -459,7 +459,7 @@ async function startSpeedTest() {
         progressBar.style.width = '10%';
         progressText.textContent = 'Running complete speed test...';
 
-        const response = await fetch('?action=speed_test_full', { method: 'POST' });
+        const response = await fetch('?action=speed_test', { method: 'POST' });
         const data = await response.json();
 
         if (data.success) {
