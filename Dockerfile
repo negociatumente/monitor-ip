@@ -12,6 +12,7 @@ RUN apt-get update \
 		curl \
 		dnsutils \
 		bind9-host \
+		sudo \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Permitir que www-data ejecute ping sin contraseña
