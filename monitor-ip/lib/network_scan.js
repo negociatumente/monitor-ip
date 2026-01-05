@@ -426,6 +426,22 @@ function hideSpeedTestModal() {
                 <i class="fas fa-info-circle mr-2"></i>
                 Click "Start Test" to measure your network speed. This will test download and upload speeds.
             </p>
+            <div class="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border">
+                <p class="text-xs text-gray-600 dark:text-gray-400">
+                    <i class="fas fa-tools mr-1"></i>
+                    <strong>Supported Tools:</strong>
+                </p>
+                <div class="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                    <div class="flex items-center gap-2">
+                        <i class="fab fa-linux text-yellow-600"></i>
+                        <span><strong>Linux/Mac:</strong> Speedtest++ or Speedtest CLI</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fab fa-windows text-blue-600"></i>
+                        <span><strong>Windows:</strong> speedtest.exe (Speedtest CLI)</span>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
     document.getElementById('downloadSpeed').textContent = '--';
@@ -452,6 +468,10 @@ async function startSpeedTest() {
                 <i class="fas fa-spinner fa-spin mr-2"></i>
                 Running speed test... Please wait. It may take up to 60 seconds.
             </p>
+            <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-2">
+                <i class="fas fa-info-circle mr-1"></i>
+                Detecting speedtest tool (Speedtest++ or Speedtest CLI)...
+            </p>
         </div>
     `;
 
@@ -460,45 +480,114 @@ async function startSpeedTest() {
 
     try {
         progressBar.style.width = '10%';
-        progressText.textContent = 'Running complete speed test...';
+        progressText.textContent = 'Detecting speedtest platform...';
 
+        // First detect which speedtest tool is available
         const response = await fetch('?action=speed_test', { method: 'POST' });
         const data = await response.json();
 
+        progressBar.style.width = '50%';
+        progressText.textContent = 'Running speed test analysis...';
+
         if (data.success) {
-            document.getElementById('pingLatency').textContent = data.latency;
-            document.getElementById('downloadSpeed').textContent = data.download;
-            document.getElementById('uploadSpeed').textContent = data.upload;
+            // Handle different speedtest tool outputs
+            let latencyValue = data.latency;
+            let downloadValue = data.download;
+            let uploadValue = data.upload;
+
+            // Detect if results come from speedtest++ or speedtest.exe
+            const toolInfo = data.tool_info || '';
+            const isSpeedtestPlusPlus = toolInfo.includes('Speedtest++') || toolInfo.includes('speedtest++');
+            const isSpeedtestCLI = toolInfo.includes('Speedtest CLI') || toolInfo.includes('speedtest.exe');
+
+            // Format values based on tool used
+            if (isSpeedtestPlusPlus) {
+                // Speedtest++ typically returns values in different format
+                progressText.textContent = 'Processing Speedtest++ results...';
+                // Ensure numeric values are properly formatted
+                latencyValue = parseFloat(latencyValue) || latencyValue;
+                downloadValue = parseFloat(downloadValue) || downloadValue;
+                uploadValue = parseFloat(uploadValue) || uploadValue;
+            } else if (isSpeedtestCLI) {
+                // Official Speedtest CLI (speedtest.exe) format
+                progressText.textContent = 'Processing Speedtest CLI results...';
+                // CLI typically returns clean numeric values
+                latencyValue = parseFloat(latencyValue) || latencyValue;
+                downloadValue = parseFloat(downloadValue) || downloadValue;
+                uploadValue = parseFloat(uploadValue) || uploadValue;
+            }
+
+            progressBar.style.width = '90%';
+            
+            document.getElementById('pingLatency').textContent = latencyValue;
+            document.getElementById('downloadSpeed').textContent = downloadValue;
+            document.getElementById('uploadSpeed').textContent = uploadValue;
 
             progressBar.style.width = '100%';
             progressText.textContent = 'Test complete!';
 
             // Refresh history
             fetchSpeedTestHistory();
+
+            // Show success with tool info
+            let toolDisplay = 'Speed test';
+            if (isSpeedtestPlusPlus) toolDisplay = 'Speedtest++ (Linux)';
+            else if (isSpeedtestCLI) toolDisplay = 'Speedtest CLI (Official)';
+
+            statusDiv.innerHTML = `
+                <div class="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg border border-green-200 dark:border-green-700">
+                    <p class="text-sm text-green-800 dark:text-green-200">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        ${toolDisplay} completed successfully!
+                    </p>
+                    ${toolInfo ? `<p class="text-xs text-green-700 dark:text-green-300 mt-1">${toolInfo}</p>` : ''}
+                </div>
+            `;
         } else {
-            throw new Error(data.message || 'Speed test failed');
+            // Enhanced error handling for different speedtest tools
+            let errorMsg = data.message || 'Speed test failed';
+            let troubleshootMsg = '';
+
+            if (errorMsg.includes('speedtest++') || errorMsg.includes('Speedtest')) {
+                troubleshootMsg = 'Make sure Speedtest++ is installed on Linux/Mac or Speedtest CLI on Windows.';
+            } else if (errorMsg.includes('command not found') || errorMsg.includes('not recognized')) {
+                troubleshootMsg = 'Speedtest tool not found. Please install Speedtest++ (Linux/Mac) or Speedtest CLI (Windows).';
+            } else if (errorMsg.includes('permission')) {
+                troubleshootMsg = 'Permission denied. Make sure the speedtest executable has proper permissions.';
+            } else if (errorMsg.includes('network') || errorMsg.includes('connection')) {
+                troubleshootMsg = 'Network connectivity issue. Check your internet connection.';
+            }
+
+            throw new Error(`${errorMsg}${troubleshootMsg ? ' | ' + troubleshootMsg : ''}`);
         }
 
         setTimeout(() => {
             progressDiv.style.display = 'none';
         }, 2000);
 
-        statusDiv.innerHTML = `
-            <div class="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg border border-green-200 dark:border-green-700">
-                <p class="text-sm text-green-800 dark:text-green-200">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    Speed test completed successfully!
-                </p>
-            </div>
-        `;
-
     } catch (error) {
+        const errorLines = error.message.split(' | ');
+        const mainError = errorLines[0] || 'Speed test failed';
+        const troubleshoot = errorLines[1] || '';
+
         statusDiv.innerHTML = `
             <div class="bg-red-50 dark:bg-red-900/30 p-4 rounded-lg border border-red-200 dark:border-red-700">
                 <p class="text-sm text-red-800 dark:text-red-200 mb-2">
                     <i class="fas fa-exclamation-triangle mr-2"></i>
-                    <strong>Error:</strong> ${error.message}
+                    <strong>Error:</strong> ${mainError}
                 </p>
+                ${troubleshoot ? `
+                    <div class="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
+                        <p class="text-xs text-amber-800 dark:text-amber-300">
+                            <i class="fas fa-lightbulb mr-1"></i>
+                            <strong>Troubleshooting:</strong> ${troubleshoot}
+                        </p>
+                        <p class="text-xs text-amber-700 dark:text-amber-400 mt-2">
+                            • Linux/Mac: <code class="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">sudo apt install speedtest-cli</code><br>
+                            • Windows: Download from <a href="https://www.speedtest.net/apps/cli" class="underline" target="_blank">speedtest.net/apps/cli</a>
+                        </p>
+                    </div>
+                ` : ''}
             </div>
         `;
         progressDiv.style.display = 'none';
@@ -1339,18 +1428,97 @@ async function runDetailTraceroute() {
             html += '<div class="absolute left-[20px] top-6 bottom-6 w-0.5 bg-gradient-to-b from-indigo-500/20 via-blue-500/20 to-transparent z-0"></div>';
 
             let hopsFound = 0;
-            lines.forEach(line => {
-                const match = line.trim().match(/^(\d+)[:]?\s+(.+)$/);
+            const isWindowsTracert = rawOutput.includes('Tracing route to') || rawOutput.includes('ms     ') || rawOutput.includes('Request timed out') || rawOutput.includes('Destination host unreachable');
+            
+            lines.forEach((line, index) => {
+                let match = null;
+                let hopNumber = '';
+                let content = '';
+
+                // Skip header lines
+                if (line.includes('Tracing route to') || line.includes('traceroute to') || 
+                    line.includes('over a maximum of') || line.includes('hop max') || 
+                    line.trim() === '' || index === 0) {
+                    return;
+                }
+
+                if (isWindowsTracert) {
+                    // Windows tracert format: "  1     1 ms     1 ms     1 ms  192.168.1.1"
+                    // or: "  2  Request timed out."
+                    match = line.trim().match(/^(\d+)\s+(.+)$/);
+                    if (match) {
+                        hopNumber = match[1];
+                        content = match[2];
+                    }
+                } else {
+                    // Linux/Mac traceroute format: " 1  gateway (192.168.1.1)  1.234 ms  1.123 ms  1.345 ms"
+                    // or: " 2  * * *"
+                    match = line.trim().match(/^(\d+)\s+(.+)$/);
+                    if (match) {
+                        hopNumber = match[1];
+                        content = match[2];
+                    }
+                }
+
                 if (match) {
                     hopsFound++;
-                    const hopNumber = match[1];
-                    const content = match[2];
-                    const isTimeout = (content.includes('*') && !content.includes('.') && !content.includes(':')) || content.toLowerCase().includes('no reply');
+                    
+                    // Detect timeouts
+                    const isTimeout = content.includes('*') || 
+                                     content.toLowerCase().includes('request timed out') || 
+                                     content.toLowerCase().includes('no reply') ||
+                                     content.toLowerCase().includes('destination host unreachable') ||
+                                     (content.includes('* * *'));
 
-                    const times = content.match(/(\d+\.?\d*\s*ms|<1\s*ms)/g) || [];
-                    let hostName = content.replace(/(\d+\.?\d*\s*ms|<1\s*ms)/g, '').replace(/\*/g, '').trim();
-                    const ipMatch = hostName.match(/\((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\)/) || hostName.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
-                    const ipOnly = ipMatch ? ipMatch[1] : '';
+                    // Extract timing information for both formats
+                    let times = [];
+                    if (isWindowsTracert) {
+                        // Windows: "1 ms     1 ms     1 ms" or "<1 ms"
+                        times = content.match(/(<?\d+\s*ms)/g) || [];
+                    } else {
+                        // Linux/Mac: "1.234 ms  1.123 ms  1.345 ms"
+                        times = content.match(/(\d+\.?\d*\s*ms|<1\s*ms)/g) || [];
+                    }
+
+                    // Extract hostname and IP
+                    let hostName = '';
+                    let ipOnly = '';
+
+                    if (!isTimeout) {
+                        if (isWindowsTracert) {
+                            // For Windows, remove timing info to get hostname/IP
+                            let cleaned = content.replace(/(<?\d+\s*ms)/g, '').trim();
+                            // Extract IP if it exists
+                            const ipMatch = cleaned.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+                            if (ipMatch) {
+                                ipOnly = ipMatch[1];
+                                // Everything before the IP is the hostname
+                                hostName = cleaned.replace(ipOnly, '').trim();
+                                if (!hostName || hostName === ipOnly) {
+                                    hostName = ipOnly;
+                                }
+                            } else {
+                                hostName = cleaned;
+                            }
+                        } else {
+                            // Linux/Mac format: extract hostname and IP from parentheses
+                            let cleaned = content.replace(/(\d+\.?\d*\s*ms|<1\s*ms)/g, '').replace(/\*/g, '').trim();
+                            const ipMatch = cleaned.match(/\((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\)/) || 
+                                           cleaned.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+                            
+                            if (ipMatch) {
+                                ipOnly = ipMatch[1];
+                                // Remove IP and parentheses to get hostname
+                                hostName = cleaned.replace(/\([^)]+\)/, '').replace(ipOnly, '').trim();
+                                if (!hostName) {
+                                    hostName = ipOnly;
+                                }
+                            } else {
+                                hostName = cleaned;
+                            }
+                        }
+                    }
+
                     const isCGNATHop = cgnatIPs.includes(ipOnly);
 
                     html += `
@@ -1362,14 +1530,14 @@ async function runDetailTraceroute() {
                                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
                                     <div class="flex-1 min-w-0">
                                         <h5 class="text-xs font-black ${isTimeout ? 'text-gray-400' : 'text-gray-800 dark:text-gray-200'} truncate flex items-center gap-2">
-                                            ${isTimeout ? '<i class="fas fa-ghost mr-2 opacity-50"></i> No Response' : (hostName || ipOnly || 'Local Hop')}
+                                            ${isTimeout ? '<i class="fas fa-ghost mr-2 opacity-50"></i> No Response / Timeout' : (hostName || ipOnly || 'Local Hop')}
                                             ${isCGNATHop ? '<span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded uppercase tracking-tighter">CGNAT</span>' : ''}
                                         </h5>
-                                        ${ipOnly && hostName !== ipOnly ? `<p class="text-[9px] font-mono text-indigo-500/70 mt-0.5">${ipOnly}</p>` : ''}
+                                        ${ipOnly && hostName !== ipOnly && !isTimeout ? `<p class="text-[9px] font-mono text-indigo-500/70 mt-0.5">${ipOnly}</p>` : ''}
                                     </div>
                                     <div class="flex flex-wrap gap-1">
-                                        ${times.slice(0, 1).map(t => `<span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 rounded text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50">${t}</span>`).join('')}
-                                        ${isTimeout ? '<span class="px-2 py-0.5 bg-red-50 dark:bg-red-900/10 rounded text-[9px] font-mono font-bold text-red-500/60 uppercase">Dropped</span>' : ''}
+                                        ${!isTimeout ? times.slice(0, 3).map(t => `<span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 rounded text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50">${t}</span>`).join('') : ''}
+                                        ${isTimeout ? '<span class="px-2 py-0.5 bg-red-50 dark:bg-red-900/10 rounded text-[9px] font-mono font-bold text-red-500/60 uppercase">Timeout</span>' : ''}
                                     </div>
                                 </div>
                             </div>
@@ -1379,7 +1547,7 @@ async function runDetailTraceroute() {
             });
 
             if (hopsFound === 0) {
-                html = `<div class="p-16 text-center text-gray-400 text-xs italic"><i class="fas fa-terminal mb-4 text-2xl opacity-10"></i><br>Structured output unavailable for this node. Switch to RAW for details.</div>`;
+                html = `<div class="p-16 text-center text-gray-400 text-xs italic"><i class="fas fa-terminal mb-4 text-2xl opacity-10"></i><br>No hops detected. Switch to RAW view to see the complete output.</div>`;
             } else {
                 html += '</div>';
             }

@@ -49,6 +49,23 @@ monitor-ip/
     ├── network_scan.js             # Lógica de escaneo de red y speedtest
     └── styles.css                  # Estilos CSS personalizados
 ```
+## 🔧 Tabla de funcionalidades y compatibilidad de herramientas de red
+
+| Red | Funcionalidad | Paquete/Herramienta | Comando Linux | Comando Windows | Linux Nativo | Windows Nativo | Docker/Linux | Docker/Windows |
+|-----|---------------|---------------------|---------------|-----------------|---------------|----------------|----------------|--------------|
+| Pública | Test de conectividad / latencia | `iputils-ping` | `ping` | `ping` | ✔️ | ✔️ | ✔️ | ✔️ |
+| Pública | Test de peticiones HTTP / APIs | `curl` | `curl` | `curl` | ✔️* | ✔️ | ✔️ | ✔️ |
+| Pública | Test de consultas DNS | `dnsutils` | `dig`, `nslookup` | `nslookup` | ✔️* | ✔️ | ✔️ | ✔️ |
+| Pública | Analizar los saltos de la red | `traceroute` | `traceroute` | `tracert` | ✔️* | ✔️ | ✔️ | ❌ (Aislado) |
+| Privada | Obtener IP del Gateway/Router | `iproute2` | `ip route` | `ipconfig` | ✔️ | ✔️ | ✔️ | ✔️ |
+| Privada | Test de velocidad | `Speedtest++` | `speedtest` | `speedtest.exe` | ✔️ | ✔️* | ✔️ | ✔️ |
+| Privada | Escaneo de dispositivos de la red | `nmap` | `nmap` | `nmap` | ✔️* | ✔️* | ✔️ | ❌ (Aislado) |
+
+**Leyenda:**
+- ✔️ = Funciona nativamente
+- ✔️* = Requiere instalación manual
+- ❌ = No disponible (limitaciones de Docker networking)						
+
 
 ## 🛠️ Instalación en Docker (Recomendada)
 
@@ -84,16 +101,19 @@ http://localhost/monitor-ip
 ⚙️ **Un navegador web**    
 
 ### 2️⃣ Instalación  
-**🔹Instalar PHP, Apache, Git:**  
+**🔹Actualiza los repositorios:**
 ```bash
-sudo apt update && sudo apt install -y apache2 php git
-	iputils-ping \  
-	curl \
-	dnsutils \
-	traceroute \
-	iproute2 \
-	net-tools \
-	nmap	
+sudo apt update
+```
+
+**🔹Instala Apache, PHP y Git:**
+```bash
+sudo apt install apache2 php libapache2-mod-php git -y
+```
+
+**🔹Instala las herramientas de red necesarias:**
+```bash
+sudo apt install iputils-ping curl dnsutils traceroute iproute2 net-tools nmap -y
 ```
 
 **🔹Clona el repositorio:**  
@@ -103,7 +123,7 @@ git clone https://github.com/negociatumente/monitor-ip.git
 
 **🔹Mueve el contenido del proyecto a la carpeta del servidor web:**
 ```bash
-sudo mv ~/monitor-ip/monitor-ip /var/www/html/monitor-ip
+sudo mv ./monitor-ip /var/www/html/monitor-ip
 ```
 
 **🔹Da permisos de escritura a la carpeta de configuración:**
@@ -138,17 +158,25 @@ http://localhost/monitor-ip
 https://www.tiktok.com/@negociatumente/video/7504332909923568919
 
 ### 1️⃣ Requisitos  
-⚙️ **XAMPP**  
+⚙️ **XAMPP**  https://www.apachefriends.org/es/index.html
+⚙️ **(Opcional) Nmap**  https://nmap.org/download.html
+⚙️ **(Opcional) Speedtest**  https://www.speedtest.net/apps/cli
 ⚙️ **Un navegador web**    
 
 ### 2️⃣ Instalación  
-**🔹Descargar XAMPP:**  
-https://www.apachefriends.org/es/download.html  
 
 **🔹Instalar XAMPP:**  
 -Ejecuta el instalador y sigue los pasos.  
 -Asegúrate de seleccionar Apache y PHP en la instalación.  
 -Cuando termine, abre XAMPP Control Panel y presiona "Start" en Apache.  
+
+**🔹Instalar Nmap:**  
+-Descarga el instalador desde la página oficial.  
+-Ejecuta el instalador y sigue los pasos.
+
+**🔹Instalar Speedtest:**  
+-Descarga el instalador desde la página oficial.  
+-Pon el ejecutable speedtest.exe en la carpeta /monitor-ip/lib del proyecto 
 
 ### 3️⃣ Descargar y configurar el proyecto
 **🔹Descargar el código ZIP:**  

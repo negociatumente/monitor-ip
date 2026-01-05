@@ -1,4 +1,33 @@
 <?php
+/**
+ * Detecta si el script se está ejecutando dentro de un contenedor Docker/Podman
+ * @return bool True si está en un contenedor, false en caso contrario
+ */
+function is_running_in_container()
+{
+    // Método 1: Verificar archivo .dockerenv (Docker)
+    if (file_exists('/.dockerenv')) {
+        return true;
+    }
+    
+    // Método 2: Verificar cgroup para referencias de contenedor
+    if (file_exists('/proc/1/cgroup')) {
+        $cgroup_content = @file_get_contents('/proc/1/cgroup');
+        if ($cgroup_content && (strpos($cgroup_content, 'docker') !== false || 
+                               strpos($cgroup_content, 'containerd') !== false ||
+                               strpos($cgroup_content, 'podman') !== false)) {
+            return true;
+        }
+    }
+    
+    // Método 3: Verificar variables de entorno del contenedor
+    if (getenv('container') !== false || getenv('DOCKER_CONTAINER') !== false) {
+        return true;
+    }
+    
+    return false;
+}
+
 // Función para realizar un ping y actualizar los datos
 function update_ping_results($ip)
 {
@@ -7,22 +36,17 @@ function update_ping_results($ip)
     // Detectar si el sistema es Windows
     $isWindows = (PHP_OS_FAMILY === 'Windows');
 
-    // Load configuration to check for debug mode
-    global $config_path;
-    $config_debug = parse_ini_file($config_path, true);
-    $debug_mode = (isset($config_debug['settings']['mode']) && $config_debug['settings']['mode'] === 'debug');
-
     // Comando de ping según el sistema operativo
     $escaped_ip = escapeshellarg($ip);
     if ($isWindows) {
         $pingCommand = "ping -n 1 -w 1000 $escaped_ip";
     } else {
-        // En Linux, usar sudo si no es root, salvo en modo debug
+        // En Linux, usar sudo en contenedores o si no es root en sistemas nativos
         $use_sudo = false;
-        if (!$debug_mode) {
-            $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
-            $use_sudo = !$is_root;
-        }
+        if (is_running_in_container()) {
+            // En contenedores Docker/Podman, usar sudo para ping
+            $use_sudo = true;
+        } 
 
         $sudoPrefix = $use_sudo ? "sudo " : "";
         $pingCommand = $sudoPrefix . "/bin/ping -c 1 -W 1 $escaped_ip";
@@ -113,13 +137,11 @@ function update_ping_results_parallel($ips)
                 if ($isWindows) {
                     $command = "ping -n 1 -w 1000 $escaped_ip";
                 } else {
-                    // Check for debug mode (already loaded in $config at start of function)
-                    $debug_mode = (isset($config['settings']['mode']) && $config['settings']['mode'] === 'debug');
-
+                    // En Linux, usar sudo en contenedores o si no es root en sistemas nativos
                     $use_sudo = false;
-                    if (!$debug_mode) {
-                        $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
-                        $use_sudo = !$is_root;
+                    if (is_running_in_container()) {
+                        // En contenedores Docker/Podman, usar sudo para ping
+                        $use_sudo = true;
                     }
 
                     $sudoPrefix = $use_sudo ? "sudo " : "";
@@ -1179,13 +1201,10 @@ function get_network_health()
     $isWindows = (PHP_OS_FAMILY === 'Windows');
     $gateway_ip = '';
 
-    // Check for debug mode (already loaded in $config at start of function)
-    $debug_mode = (isset($config['settings']['mode']) && $config['settings']['mode'] === 'debug');
-
     $use_sudo = false;
-    if (!$debug_mode) {
-        $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
-        $use_sudo = !$is_root;
+    if (is_running_in_container()) {
+        // En contenedores Docker/Podman, usar sudo para ping
+        $use_sudo = true;
     }
 
     $sudoPrefix = $use_sudo ? "sudo " : "";
@@ -1226,7 +1245,7 @@ function get_network_health()
         if ($isWindows) {
             $pingCommand = "ping -n 1 -w 1000 $escaped_gateway";
         } else {
-            // Re-use logic: if debug_mode is off and not root, sudoPrefix is set
+                // Re-use logic: if debug_mode is off and not root, sudoPrefix is set
             $pingCommand = $sudoPrefix . "/bin/ping -c 1 -W 1 $escaped_gateway";
         }
         $ping = @shell_exec($pingCommand);
