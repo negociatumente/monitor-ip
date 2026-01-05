@@ -974,48 +974,111 @@ function save_local_network_scan($devices)
  */
 function run_complete_speedtest()
 {
-    $bin_path = __DIR__ . '/SpeedTest++/SpeedTest';
-    if (!is_executable($bin_path)) {
-        echo renderNotification('error', 'speedtest_failed');
-        return [
-            'success' => false,
-            'error' => 'El binario SpeedTest no es ejecutable o no existe en: ' . $bin_path
-        ];
-    }
-    $output = shell_exec($bin_path . ' --output json 2>&1');
-    if (!$output) {
-        echo renderNotification('error', 'speedtest_failed');
-        return [
-            'success' => false,
-            'error' => 'No se pudo ejecutar SpeedTest. ¿Está instalado y en el PATH?',
-            'raw_output' => ''
-        ];
-    }
-    $data = json_decode($output, true);
-    if (!$data) {
-        // Guardar la salida cruda para depuración
-        echo renderNotification('error', 'speedtest_failed');
-        return [
-            'success' => false,
-            'error' => 'No se pudo parsear la salida JSON de SpeedTest.',
+
+    $isWindows = (PHP_OS_FAMILY === 'Windows');
+    if ($isWindows) {
+        $bin_path = __DIR__ . '/speedtest.exe';
+        if (!is_executable($bin_path)) {
+            // Mostrar ventana con enlace a Ookla y campos manuales
+            echo "<div class='mb-6 p-4 rounded-lg border-l-4 bg-yellow-100 border-yellow-500 text-yellow-700 shadow-sm' id='notification'>";
+            echo "<div class='flex items-center'>";
+            echo "<i class='fas fa-exclamation-triangle mr-3'></i>";
+            echo "<span>No se encontró speedtest.exe. <a href='https://www.speedtest.net/' target='_blank' style='color:blue;text-decoration:underline;'>Haz clic aquí para realizar el test de velocidad en Ookla</a> y rellena los campos manualmente:</span>";
+            echo "</div>";
+            echo "<form method='post' style='margin-top:10px;'>";
+            echo "<label>Velocidad de descarga (Mbps): <input type='number' step='0.01' name='manual_download' required></label><br>";
+            echo "<label>Velocidad de subida (Mbps): <input type='number' step='0.01' name='manual_upload' required></label><br>";
+            echo "<label>Latencia (ms): <input type='number' step='0.01' name='manual_latency' required></label><br>";
+            echo "<button type='submit' name='save_manual_speedtest' style='margin-top:10px;'>Guardar resultados</button>";
+            echo "</form></div>";
+
+            // Si el usuario envió el formulario, guardar resultados
+            if (isset($_POST['save_manual_speedtest'])) {
+                $results = [
+                    'success' => true,
+                    'latency' => $_POST['manual_latency'],
+                    'download' => $_POST['manual_download'],
+                    'upload' => $_POST['manual_upload'],
+                    'server' => 'Manual',
+                    'isp' => 'Manual',
+                    'raw' => [],
+                    'raw_output' => 'Manual entry'
+                ];
+                save_speedtest_results($results);
+                return $results;
+            }
+            return [
+                'success' => false,
+                'error' => 'No se encontró speedtest.exe. Rellena los campos manualmente.'
+            ];
+        }
+        $output = shell_exec('"' . $bin_path . '" --accept-license --accept-gdpr -f json 2>&1');
+        $data = json_decode($output, true);
+        if (!$data) {
+            echo renderNotification('error', 'speedtest_failed');
+            return [
+                'success' => false,
+                'error' => 'No se pudo parsear la salida JSON de speedtest.exe.',
+                'raw_output' => $output
+            ];
+        }
+        $results = [
+            'success' => true,
+            'latency' => $data['ping'] ?? 'N/A',
+            'download' => isset($data['download']) ? round($data['download'] / 1e6, 2) : 'N/A',
+            'upload' => isset($data['upload']) ? round($data['upload'] / 1e6, 2) : 'N/A',
+            'server' => $data['server']['name'] ?? 'N/A',
+            'isp' => $data['isp'] ?? 'N/A',
+            'raw' => $data,
             'raw_output' => $output
         ];
+        if (!empty($results['success'])) {
+            save_speedtest_results($results);
+        }
+        return $results;
+    } else {
+        // Linux/Mac
+        $bin_path = __DIR__ . '/SpeedTest++/SpeedTest';
+        if (!is_executable($bin_path)) {
+            echo renderNotification('error', 'speedtest_failed');
+            return [
+                'success' => false,
+                'error' => 'El binario SpeedTest no es ejecutable o no existe en: ' . $bin_path
+            ];
+        }
+        $output = shell_exec($bin_path . ' --output json 2>&1');
+        if (!$output) {
+            echo renderNotification('error', 'speedtest_failed');
+            return [
+                'success' => false,
+                'error' => 'No se pudo ejecutar SpeedTest. ¿Está instalado y en el PATH?',
+                'raw_output' => ''
+            ];
+        }
+        $data = json_decode($output, true);
+        if (!$data) {
+            echo renderNotification('error', 'speedtest_failed');
+            return [
+                'success' => false,
+                'error' => 'No se pudo parsear la salida JSON de SpeedTest.',
+                'raw_output' => $output
+            ];
+        }
+        $results = [
+            'success' => true,
+            'latency' => $data['ping'] ?? 'N/A',
+            'download' => isset($data['download']) ? round($data['download'] / 1e6, 2) : 'N/A',
+            'upload' => isset($data['upload']) ? round($data['upload'] / 1e6, 2) : 'N/A',
+            'server' => $data['server']['name'] ?? 'N/A',
+            'isp' => $data['isp'] ?? 'N/A',
+            'raw' => $data,
+            'raw_output' => $output
+        ];
+        if (!empty($results['success'])) {
+            save_speedtest_results($results);
+        }
+        return $results;
     }
-    $results = [
-        'success' => true,
-        'latency' => $data['ping'] ?? 'N/A',
-        'download' => isset($data['download']) ? round($data['download'] / 1e6, 2) : 'N/A', // bits/s a Mbps
-        'upload' => isset($data['upload']) ? round($data['upload'] / 1e6, 2) : 'N/A',
-        'server' => $data['server']['name'] ?? 'N/A',
-        'isp' => $data['isp'] ?? 'N/A',
-        'raw' => $data,
-        'raw_output' => $output
-    ];
-
-    if (!empty($results['success'])) {
-        save_speedtest_results($results);
-    }
-    return $results;
 }
 
 /**
@@ -1116,30 +1179,16 @@ function get_network_health()
     $isWindows = (PHP_OS_FAMILY === 'Windows');
     $gateway_ip = '';
 
-    // En Linux, usar sudo si no es root (check safe for missing posix ext)
+    // Check for debug mode (already loaded in $config at start of function)
     $debug_mode = (isset($config['settings']['mode']) && $config['settings']['mode'] === 'debug');
+
     $use_sudo = false;
-    $sudo_available = false;
     if (!$debug_mode) {
         $is_root = (function_exists('posix_getuid') && posix_getuid() === 0);
         $use_sudo = !$is_root;
-        if ($use_sudo) {
-            // Verifica si sudo está disponible y se puede usar sin password
-            $sudo_check = trim(@shell_exec('which sudo 2>/dev/null'));
-            if (!empty($sudo_check)) {
-                // Probar sudo -n true (no password prompt)
-                $sudo_nopass = 0 === @shell_exec('sudo -n true 2>/dev/null; echo $?');
-                if ($sudo_nopass) {
-                    $sudo_available = true;
-                } else {
-                    $use_sudo = false; // No usar sudo si requiere password
-                }
-            } else {
-                $use_sudo = false;
-            }
-        }
     }
-    $sudoPrefix = ($use_sudo && $sudo_available) ? "sudo " : "";
+
+    $sudoPrefix = $use_sudo ? "sudo " : "";
 
     // 1. Find Gateway
     if ($isWindows) {
