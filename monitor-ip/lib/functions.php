@@ -1335,7 +1335,8 @@ function run_traceroute($host)
         'max_hops' => $max_hops,
         'total_hops' => count($hops),
         'hops' => $hops,
-        'is_windows' => $isWindows
+        'is_windows' => $isWindows,
+        'raw_output' => $output
     ], JSON_PRETTY_PRINT);
 }
 

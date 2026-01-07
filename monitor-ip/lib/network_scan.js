@@ -1367,7 +1367,7 @@ async function runDetailTraceroute() {
             <p class="text-[10px] text-gray-400 mt-2 italic">This may take up to 30 seconds...</p>
         </div>
     `;
-    raw.textContent = "Tracing network path hops (max 15)...";
+    raw.textContent = `Tracing route to ${ip}...\n\nExecuting traceroute command (max 15 hops)...\nPlease wait...`;
 
     try {
         const formData = new FormData();
@@ -1380,8 +1380,9 @@ async function runDetailTraceroute() {
             const data = await response.json();
             
             if (data.success) {
-                // Show raw output
-                raw.textContent = data.raw_output || 'No raw output available';
+                // Show raw output with better formatting
+                const rawOutput = data.raw_output || 'No raw output available';
+                raw.textContent = rawOutput;
                 
                 // Process structured JSON data
                 const hops = data.hops || [];
@@ -1413,7 +1414,7 @@ async function runDetailTraceroute() {
                                 </div>
                                 <div class="flex-1">
                                     <h4 class="text-xs font-black text-amber-800 dark:text-amber-400 uppercase tracking-widest mb-1">CGNAT Detected</h4>
-                                    <p class="text-[10px] text-amber-700 dark:text-amber-300">
+                                    <p class="text-[12px] text-amber-700 dark:text-amber-300">
                                         Your ISP is using Carrier-Grade NAT. Detected node(s): <span class="font-mono font-bold">${cgnatIPs.join(', ')}</span>. 
                                         This may affect port forwarding and direct peer-to-peer connectivity.
                                     </p>
@@ -1466,19 +1467,22 @@ async function runDetailTraceroute() {
                 
                 visual.innerHTML = html;
             } else {
-                // Handle error response
+                // Handle error response - show raw output even on error
                 const errorMessage = data.error || data.message || 'Unknown error occurred';
+                const rawOutput = data.raw_output || 'No output available';
+                
                 visual.innerHTML = `<div class="p-12 text-red-500 text-xs text-center font-bold bg-red-50 dark:bg-red-900/10 rounded-2xl m-4 border border-red-100 dark:border-red-900/20"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><br>${errorMessage}</div>`;
-                raw.textContent = data.raw_output || 'No output available';
+                raw.textContent = rawOutput;
             }
         } else {
-            // Not JSON, fallback to text (tracert output)
-            const data = await response.text();
-            raw.textContent = data;
-            visual.innerHTML = `<div class="p-12 text-gray-700 text-xs font-mono bg-gray-50 dark:bg-gray-900/20 rounded-2xl m-4 border border-gray-100 dark:border-gray-900/20"><pre>${data}</pre></div>`;
+            // Not JSON, fallback to text (raw traceroute output)
+            const rawData = await response.text();
+            raw.textContent = rawData;
+            visual.innerHTML = `<div class="p-12 text-gray-700 dark:text-gray-300 text-xs font-mono bg-gray-50 dark:bg-gray-900/20 rounded-2xl m-4 border border-gray-100 dark:border-gray-900/20 whitespace-pre-wrap">${rawData}</div>`;
         }
     } catch (e) {
         visual.innerHTML = `<div class="p-12 text-red-500 text-xs text-center"><i class="fas fa-wifi-slash text-2xl mb-2"></i><br>Network Error executing Path Discovery</div>`;
+        raw.textContent = `Error: ${e.message}\n\nFailed to execute traceroute command. Please check:\n- Network connectivity\n- Firewall settings\n- Server configuration`;
     } finally {
         btn.disabled = false;
         btn.innerHTML = `<i class="fas fa-route mr-2"></i> Run Traceroute`;
