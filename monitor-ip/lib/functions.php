@@ -1329,6 +1329,18 @@ function run_traceroute($host)
         }
     }
 
+    // Convertir output de Windows a UTF-8 para mostrar correctamente tildes y caracteres especiales
+    $raw_output = $output;
+    if ($isWindows) {
+        $try_encodings = ['CP850', 'CP1252', 'ISO-8859-1'];
+        foreach ($try_encodings as $enc) {
+            $converted = @iconv($enc, 'UTF-8//IGNORE', $output);
+            if ($converted && strpos($converted, "�") === false) {
+                $raw_output = $converted;
+                break;
+            }
+        }
+    }
     return json_encode([
         'success' => true,
         'destination' => $destination,
@@ -1336,7 +1348,7 @@ function run_traceroute($host)
         'total_hops' => count($hops),
         'hops' => $hops,
         'is_windows' => $isWindows,
-        'raw_output' => $output
+        'raw_output' => $raw_output
     ], JSON_PRETTY_PRINT);
 }
 
