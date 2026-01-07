@@ -1,4 +1,3 @@
-
 // Network Scan Functions
 function showScanNetworkModal() {
     modalFunctions.showModal('scanNetworkModal');
@@ -1349,6 +1348,8 @@ function setDetailTracerouteView(mode) {
     }
 }
 
+
+// Linux/Mac traceroute (JSON, visual analysis)
 async function runDetailTraceroute() {
     if (!window.currentIpData) return;
     const ip = window.currentIpData.ip;
@@ -1374,147 +1375,63 @@ async function runDetailTraceroute() {
         formData.append('type', 'traceroute');
 
         const response = await fetch('?action=diagnose', { method: 'POST', body: formData });
-        const data = await response.json();
-
-        if (data.success) {
-            const rawOutput = data.result;
-            raw.textContent = rawOutput;
-
-            // CGNAT Detection: Check for 100.64.0.0/10 range (RFC 6598)
-            let cgnatDetected = false;
-            const cgnatIPs = [];
-            const lines = rawOutput.split('\n');
-
-            lines.forEach(line => {
-                const ipMatch = line.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/g);
-                if (ipMatch) {
-                    ipMatch.forEach(ip => {
-                        const parts = ip.split('.').map(Number);
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            
+            if (data.success) {
+                // Show raw output
+                raw.textContent = data.raw_output || 'No raw output available';
+                
+                // Process structured JSON data
+                const hops = data.hops || [];
+                
+                // CGNAT Detection: Check for 100.64.0.0/10 range (RFC 6598)
+                let cgnatDetected = false;
+                const cgnatIPs = [];
+                
+                hops.forEach(hop => {
+                    if (hop.ip) {
+                        const parts = hop.ip.split('.').map(Number);
                         if (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) {
                             cgnatDetected = true;
-                            if (!cgnatIPs.includes(ip)) cgnatIPs.push(ip);
+                            if (!cgnatIPs.includes(hop.ip)) cgnatIPs.push(hop.ip);
                         }
-                    });
-                }
-            });
+                    }
+                });
 
-            // Header for visual view
-            let html = '<div class="space-y-4 relative pb-0">';
+                // Build visual HTML
+                let html = '<div class="space-y-4 relative pb-0">';
 
-            // Display CGNAT warning banner if detected
-            if (cgnatDetected) {
-                html += `
-                    <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg">
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-exclamation-triangle text-white text-sm"></i>
-                            </div>
-                            <div class="flex-1">
-                                <h4 class="text-xs font-black text-amber-800 dark:text-amber-400 uppercase tracking-widest mb-1">CGNAT Detected</h4>
-                                <p class="text-[10px] text-amber-700 dark:text-amber-300">
-                                    Your ISP is using Carrier-Grade NAT. Detected node(s): <span class="font-mono font-bold">${cgnatIPs.join(', ')}</span>. 
-                                    This may affect port forwarding and direct peer-to-peer connectivity.
-                                </p>
+                // Display CGNAT warning banner if detected
+                if (cgnatDetected) {
+                    html += `
+                        <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg">
+                            <div class="flex items-start gap-3">
+                                <div class="flex-shrink-0 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-exclamation-triangle text-white text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="text-xs font-black text-amber-800 dark:text-amber-400 uppercase tracking-widest mb-1">CGNAT Detected</h4>
+                                    <p class="text-[10px] text-amber-700 dark:text-amber-300">
+                                        Your ISP is using Carrier-Grade NAT. Detected node(s): <span class="font-mono font-bold">${cgnatIPs.join(', ')}</span>. 
+                                        This may affect port forwarding and direct peer-to-peer connectivity.
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-            }
-
-            html += '<div class="absolute left-[20px] top-6 bottom-6 w-0.5 bg-gradient-to-b from-indigo-500/20 via-blue-500/20 to-transparent z-0"></div>';
-
-            let hopsFound = 0;
-            const isWindowsTracert = rawOutput.includes('Tracing route to') || rawOutput.includes('ms     ') || rawOutput.includes('Request timed out') || rawOutput.includes('Destination host unreachable');
-            
-            lines.forEach((line, index) => {
-                let match = null;
-                let hopNumber = '';
-                let content = '';
-
-                // Skip header lines
-                if (line.includes('Tracing route to') || line.includes('traceroute to') || 
-                    line.includes('over a maximum of') || line.includes('hop max') || 
-                    line.trim() === '' || index === 0) {
-                    return;
+                    `;
                 }
 
-                if (isWindowsTracert) {
-                    // Windows tracert format: "  1     1 ms     1 ms     1 ms  192.168.1.1"
-                    // or: "  2  Request timed out."
-                    match = line.trim().match(/^(\d+)\s+(.+)$/);
-                    if (match) {
-                        hopNumber = match[1];
-                        content = match[2];
-                    }
-                } else {
-                    // Linux/Mac traceroute format: " 1  gateway (192.168.1.1)  1.234 ms  1.123 ms  1.345 ms"
-                    // or: " 2  * * *"
-                    match = line.trim().match(/^(\d+)\s+(.+)$/);
-                    if (match) {
-                        hopNumber = match[1];
-                        content = match[2];
-                    }
-                }
+                html += '<div class="absolute left-[20px] top-6 bottom-6 w-0.5 bg-gradient-to-b from-indigo-500/20 via-blue-500/20 to-transparent z-0"></div>';
 
-                if (match) {
-                    hopsFound++;
-                    
-                    // Detect timeouts
-                    const isTimeout = content.includes('*') || 
-                                     content.toLowerCase().includes('request timed out') || 
-                                     content.toLowerCase().includes('no reply') ||
-                                     content.toLowerCase().includes('destination host unreachable') ||
-                                     (content.includes('* * *'));
-
-                    // Extract timing information for both formats
-                    let times = [];
-                    if (isWindowsTracert) {
-                        // Windows: "1 ms     1 ms     1 ms" or "<1 ms"
-                        times = content.match(/(<?\d+\s*ms)/g) || [];
-                    } else {
-                        // Linux/Mac: "1.234 ms  1.123 ms  1.345 ms"
-                        times = content.match(/(\d+\.?\d*\s*ms|<1\s*ms)/g) || [];
-                    }
-
-                    // Extract hostname and IP
-                    let hostName = '';
-                    let ipOnly = '';
-
-                    if (!isTimeout) {
-                        if (isWindowsTracert) {
-                            // For Windows, remove timing info to get hostname/IP
-                            let cleaned = content.replace(/(<?\d+\s*ms)/g, '').trim();
-                            // Extract IP if it exists
-                            const ipMatch = cleaned.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
-                            if (ipMatch) {
-                                ipOnly = ipMatch[1];
-                                // Everything before the IP is the hostname
-                                hostName = cleaned.replace(ipOnly, '').trim();
-                                if (!hostName || hostName === ipOnly) {
-                                    hostName = ipOnly;
-                                }
-                            } else {
-                                hostName = cleaned;
-                            }
-                        } else {
-                            // Linux/Mac format: extract hostname and IP from parentheses
-                            let cleaned = content.replace(/(\d+\.?\d*\s*ms|<1\s*ms)/g, '').replace(/\*/g, '').trim();
-                            const ipMatch = cleaned.match(/\((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\)/) || 
-                                           cleaned.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
-                            
-                            if (ipMatch) {
-                                ipOnly = ipMatch[1];
-                                // Remove IP and parentheses to get hostname
-                                hostName = cleaned.replace(/\([^)]+\)/, '').replace(ipOnly, '').trim();
-                                if (!hostName) {
-                                    hostName = ipOnly;
-                                }
-                            } else {
-                                hostName = cleaned;
-                            }
-                        }
-                    }
-
+                // Process each hop
+                hops.forEach((hop, index) => {
+                    const hopNumber = hop.hop;
+                    const ipOnly = hop.ip || '';
+                    const hostName = hop.hostname || ipOnly || 'Unknown';
+                    const times = hop.times || [];
+                    const isTimeout = hop.status === 'timeout';
                     const isCGNATHop = cgnatIPs.includes(ipOnly);
 
                     html += `
@@ -1526,30 +1443,39 @@ async function runDetailTraceroute() {
                                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
                                     <div class="flex-1 min-w-0">
                                         <h5 class="text-xs font-black ${isTimeout ? 'text-gray-400' : 'text-gray-800 dark:text-gray-200'} truncate flex items-center gap-2">
-                                            ${isTimeout ? '<i class="fas fa-ghost mr-2 opacity-50"></i> No Response / Timeout' : (hostName || ipOnly || 'Local Hop')}
+                                            ${isTimeout ? '<i class="fas fa-ghost mr-2 opacity-50"></i> No Response / Timeout' : hostName}
                                             ${isCGNATHop ? '<span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded uppercase tracking-tighter">CGNAT</span>' : ''}
                                         </h5>
                                         ${ipOnly && hostName !== ipOnly && !isTimeout ? `<p class="text-[9px] font-mono text-indigo-500/70 mt-0.5">${ipOnly}</p>` : ''}
                                     </div>
                                     <div class="flex flex-wrap gap-1">
-                                        ${!isTimeout ? times.slice(0, 3).map(t => `<span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 rounded text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50">${t}</span>`).join('') : ''}
+                                        ${!isTimeout ? times.slice(0, 3).map(t => `<span class="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 rounded text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50">${t}${t.includes('ms') ? '' : ' ms'}</span>`).join('') : ''}
                                         ${isTimeout ? '<span class="px-2 py-0.5 bg-red-50 dark:bg-red-900/10 rounded text-[9px] font-mono font-bold text-red-500/60 uppercase">Timeout</span>' : ''}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     `;
-                }
-            });
+                });
 
-            if (hopsFound === 0) {
-                html = `<div class="p-16 text-center text-gray-400 text-xs italic"><i class="fas fa-terminal mb-4 text-2xl opacity-10"></i><br>No hops detected. Switch to RAW view to see the complete output.</div>`;
+                if (hops.length === 0) {
+                    html = `<div class="p-16 text-center text-gray-400 text-xs italic"><i class="fas fa-terminal mb-4 text-2xl opacity-10"></i><br>No hops detected. Switch to RAW view to see the complete output.</div>`;
+                } else {
+                    html += '</div>';
+                }
+                
+                visual.innerHTML = html;
             } else {
-                html += '</div>';
+                // Handle error response
+                const errorMessage = data.error || data.message || 'Unknown error occurred';
+                visual.innerHTML = `<div class="p-12 text-red-500 text-xs text-center font-bold bg-red-50 dark:bg-red-900/10 rounded-2xl m-4 border border-red-100 dark:border-red-900/20"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><br>${errorMessage}</div>`;
+                raw.textContent = data.raw_output || 'No output available';
             }
-            visual.innerHTML = html;
         } else {
-            visual.innerHTML = `<div class="p-12 text-red-500 text-xs text-center font-bold bg-red-50 dark:bg-red-900/10 rounded-2xl m-4 border border-red-100 dark:border-red-900/20"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><br>${data.message}</div>`;
+            // Not JSON, fallback to text (tracert output)
+            const data = await response.text();
+            raw.textContent = data;
+            visual.innerHTML = `<div class="p-12 text-gray-700 text-xs font-mono bg-gray-50 dark:bg-gray-900/20 rounded-2xl m-4 border border-gray-100 dark:border-gray-900/20"><pre>${data}</pre></div>`;
         }
     } catch (e) {
         visual.innerHTML = `<div class="p-12 text-red-500 text-xs text-center"><i class="fas fa-wifi-slash text-2xl mb-2"></i><br>Network Error executing Path Discovery</div>`;

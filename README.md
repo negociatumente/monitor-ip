@@ -58,13 +58,12 @@ monitor-ip/
 | Test de consultas DNS | `dnsutils` | `dig`, `nslookup` | `nslookup` | ✔️* | ✔️ | ✔️ | ✔️ |
 | Analizar los saltos de la red | `traceroute` | `traceroute` | `tracert` | ✔️* | ✔️ | ✔️ | ❌ |
 | Obtener IP del Gateway/Router | `iproute2` | `ip route` | `ipconfig` | ✔️ | ✔️ | ✔️ | ✔️ |
-| Test de velocidad | `Speedtest++` | `speedtest` | `speedtest.exe` | ✔️ | ❔ | ✔️ | ✔️ |
-| Escaneo de dispositivos de la red | `nmap` | `nmap` | `nmap` | ✔️* | ❔ | ✔️ | ❌ |
+| Test de velocidad | `Speedtest++` | `speedtest` | `speedtest.exe` | ✔️ | ✔️* | ✔️ | ✔️ |
+| Escaneo de dispositivos de la red | `nmap` | `nmap` | `nmap` | ✔️* | ✔️* | ✔️ | ❌ |
 
 **Leyenda:**
-- ✔️ = Funciona nativamente
+- ✔️ = Funciona
 - ✔️* = Requiere instalación manual
-- ❔ = Por desarrollar
 - ❌ = No disponible (el contenedor en Windows está aislado en una subnet)						
 
 

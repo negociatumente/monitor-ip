@@ -128,7 +128,13 @@ if (isset($_GET['action'])) {
             $response = ['success' => true];
 
             if ($type === 'traceroute') {
-                $response['result'] = run_traceroute($ip);
+                $traceroute_json = run_traceroute($ip);
+                $traceroute_data = json_decode($traceroute_json, true);
+                if ($traceroute_data) {
+                    $response = $traceroute_data; // Return the structured traceroute data directly
+                } else {
+                    $response = ['success' => false, 'message' => 'Failed to parse traceroute output', 'result' => $traceroute_json];
+                }
             } elseif ($type === 'geoip') {
                 $response['result'] = get_geoip_info($ip);
             } elseif ($type === 'network_health') {

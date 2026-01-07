@@ -9,22 +9,24 @@ function is_running_in_container()
     if (file_exists('/.dockerenv')) {
         return true;
     }
-    
+
     // Método 2: Verificar cgroup para referencias de contenedor
     if (file_exists('/proc/1/cgroup')) {
         $cgroup_content = @file_get_contents('/proc/1/cgroup');
-        if ($cgroup_content && (strpos($cgroup_content, 'docker') !== false || 
-                               strpos($cgroup_content, 'containerd') !== false ||
-                               strpos($cgroup_content, 'podman') !== false)) {
+        if (
+            $cgroup_content && (strpos($cgroup_content, 'docker') !== false ||
+                strpos($cgroup_content, 'containerd') !== false ||
+                strpos($cgroup_content, 'podman') !== false)
+        ) {
             return true;
         }
     }
-    
+
     // Método 3: Verificar variables de entorno del contenedor
     if (getenv('container') !== false || getenv('DOCKER_CONTAINER') !== false) {
         return true;
     }
-    
+
     return false;
 }
 
@@ -46,7 +48,7 @@ function update_ping_results($ip)
         if (is_running_in_container()) {
             // En contenedores Docker/Podman, usar sudo para ping
             $use_sudo = true;
-        } 
+        }
 
         $sudoPrefix = $use_sudo ? "sudo " : "";
         $pingCommand = $sudoPrefix . "/bin/ping -c 1 -W 1 $escaped_ip";
@@ -996,42 +998,21 @@ function save_local_network_scan($devices)
  */
 function run_complete_speedtest()
 {
-
+    $decimal = "6";
+    
+    // Detect OS
     $isWindows = (PHP_OS_FAMILY === 'Windows');
-    if ($isWindows) {
-        $bin_path = __DIR__ . '/speedtest.exe';
-        if (!is_executable($bin_path)) {
-            // Mostrar ventana con enlace a Ookla y campos manuales
-            echo "<div class='mb-6 p-4 rounded-lg border-l-4 bg-yellow-100 border-yellow-500 text-yellow-700 shadow-sm' id='notification'>";
-            echo "<div class='flex items-center'>";
-            echo "<i class='fas fa-exclamation-triangle mr-3'></i>";
-            echo "<span>No se encontró speedtest.exe. <a href='https://www.speedtest.net/' target='_blank' style='color:blue;text-decoration:underline;'>Haz clic aquí para realizar el test de velocidad en Ookla</a> y rellena los campos manualmente:</span>";
-            echo "</div>";
-            echo "<form method='post' style='margin-top:10px;'>";
-            echo "<label>Velocidad de descarga (Mbps): <input type='number' step='0.01' name='manual_download' required></label><br>";
-            echo "<label>Velocidad de subida (Mbps): <input type='number' step='0.01' name='manual_upload' required></label><br>";
-            echo "<label>Latencia (ms): <input type='number' step='0.01' name='manual_latency' required></label><br>";
-            echo "<button type='submit' name='save_manual_speedtest' style='margin-top:10px;'>Guardar resultados</button>";
-            echo "</form></div>";
 
-            // Si el usuario envió el formulario, guardar resultados
-            if (isset($_POST['save_manual_speedtest'])) {
-                $results = [
-                    'success' => true,
-                    'latency' => $_POST['manual_latency'],
-                    'download' => $_POST['manual_download'],
-                    'upload' => $_POST['manual_upload'],
-                    'server' => 'Manual',
-                    'isp' => 'Manual',
-                    'raw' => [],
-                    'raw_output' => 'Manual entry'
-                ];
-                save_speedtest_results($results);
-                return $results;
-            }
+    // Windows
+    if ($isWindows) {
+        $bin_path = __DIR__ . '\speedtest.exe';
+        if (!is_executable($bin_path)) {
             return [
                 'success' => false,
-                'error' => 'No se encontró speedtest.exe. Rellena los campos manualmente.'
+                'error' => 'speedtest_not_found',
+                'message' => 'No se encontró speedtest.exe',
+                'requires_manual_input' => true,
+                'ookla_url' => 'https://www.speedtest.net/'
             ];
         }
         $output = shell_exec('"' . $bin_path . '" --accept-license --accept-gdpr -f json 2>&1');
@@ -1044,20 +1025,8 @@ function run_complete_speedtest()
                 'raw_output' => $output
             ];
         }
-        $results = [
-            'success' => true,
-            'latency' => $data['ping'] ?? 'N/A',
-            'download' => isset($data['download']) ? round($data['download'] / 1e6, 2) : 'N/A',
-            'upload' => isset($data['upload']) ? round($data['upload'] / 1e6, 2) : 'N/A',
-            'server' => $data['server']['name'] ?? 'N/A',
-            'isp' => $data['isp'] ?? 'N/A',
-            'raw' => $data,
-            'raw_output' => $output
-        ];
-        if (!empty($results['success'])) {
-            save_speedtest_results($results);
-        }
-        return $results;
+    $decimal = "5";
+
     } else {
         // Linux/Mac
         $bin_path = __DIR__ . '/SpeedTest++/SpeedTest';
@@ -1086,21 +1055,91 @@ function run_complete_speedtest()
                 'raw_output' => $output
             ];
         }
-        $results = [
-            'success' => true,
-            'latency' => $data['ping'] ?? 'N/A',
-            'download' => isset($data['download']) ? round($data['download'] / 1e6, 2) : 'N/A',
-            'upload' => isset($data['upload']) ? round($data['upload'] / 1e6, 2) : 'N/A',
-            'server' => $data['server']['name'] ?? 'N/A',
-            'isp' => $data['isp'] ?? 'N/A',
-            'raw' => $data,
-            'raw_output' => $output
-        ];
-        if (!empty($results['success'])) {
-            save_speedtest_results($results);
-        }
-        return $results;
+            $decimal = "6";
+
     }
+
+    // Extract and validate numeric values
+    $latency = 'N/A';
+    if (isset($data['ping']) && is_numeric($data['ping'])) {
+        $latency = floatval($data['ping']);
+    } elseif (isset($data['ping']['latency']) && is_numeric($data['ping']['latency'])) {
+        $latency = floatval($data['ping']['latency']);
+    }
+
+    $download = 'N/A';
+    if (isset($data['download']) && is_numeric($data['download'])) {
+        $download = round($data['download'] / pow(10, $decimal), 2);
+    } elseif (isset($data['download']['bandwidth']) && is_numeric($data['download']['bandwidth'])) {
+        $download = round($data['download']['bandwidth'] / pow(10, $decimal), 2);
+    }
+
+    $upload = 'N/A';
+    if (isset($data['upload']) && is_numeric($data['upload'])) {
+        $upload = round($data['upload'] / pow(10, $decimal), 2);
+    } elseif (isset($data['upload']['bandwidth']) && is_numeric($data['upload']['bandwidth'])) {
+        $upload = round($data['upload']['bandwidth'] / pow(10, $decimal), 2);
+    }
+
+    $results = [
+        'success' => true,
+        'latency' => $latency,
+        'download' => $download,
+        'upload' => $upload,
+        'server' => $data['server']['name'] ?? 'N/A',
+        'isp' => $data['isp'] ?? 'N/A',
+        'raw' => $data,
+        'raw_output' => $output
+    ];
+    if (!empty($results['success'])) {
+        save_speedtest_results($results);
+    }
+    return $results;
+}
+
+
+/**
+ * Save manual speedtest results
+ */
+function save_manual_speedtest($download, $upload, $latency)
+{
+    // Validate input
+    if (!is_numeric($download) || !is_numeric($upload) || !is_numeric($latency)) {
+        return [
+            'success' => false,
+            'error' => 'Datos inválidos. Todos los campos deben ser números.'
+        ];
+    }
+
+    $download = floatval($download);
+    $upload = floatval($upload);
+    $latency = floatval($latency);
+
+    // Basic validation ranges
+    if (
+        $download < 0 || $download > 10000 ||
+        $upload < 0 || $upload > 10000 ||
+        $latency < 0 || $latency > 5000
+    ) {
+        return [
+            'success' => false,
+            'error' => 'Los valores están fuera del rango válido.'
+        ];
+    }
+
+    $results = [
+        'success' => true,
+        'latency' => $latency,
+        'download' => $download,
+        'upload' => $upload,
+        'server' => 'Manual',
+        'isp' => 'Manual',
+        'raw' => [],
+        'raw_output' => 'Manual entry'
+    ];
+
+    save_speedtest_results($results);
+    return $results;
 }
 
 /**
@@ -1151,11 +1190,153 @@ function run_traceroute($host)
     }
 
     $output = shell_exec($command);
+
     if ($isWindows && (empty($output) || strpos($output, 'No se reconoce') !== false || strpos($output, 'not recognized') !== false)) {
-        echo renderNotification('error', 'traceroute_failed');
-        return "Error: Falló el comando tracert en Windows.";
+        return json_encode([
+            'success' => false,
+            'error' => 'Comando tracert no disponible en Windows',
+            'raw_output' => $output ?: 'No output',
+            'hops' => []
+        ]);
     }
-    return $output ?: "Error running traceroute (tool might not be installed)";
+
+    if (empty($output)) {
+        return json_encode([
+            'success' => false,
+            'error' => 'Error running traceroute (tool might not be installed)',
+            'raw_output' => '',
+            'hops' => []
+        ]);
+    }
+
+    // Process the output into structured JSON
+    $lines = explode("\n", $output);
+    $hops = [];
+    $destination = $host;
+    $max_hops = 15;
+
+
+    foreach ($lines as $lineNum => $line) {
+        $line = trim($line);
+
+        // Skip empty lines and headers
+        if (
+            empty($line) ||
+            strpos($line, 'Tracing route to') !== false ||
+            strpos($line, 'traceroute to') !== false ||
+            strpos($line, 'Traza a') !== false ||
+            strpos($line, 'over a maximum of') !== false ||
+            strpos($line, 'hop max') !== false ||
+            strpos($line, 'sobre caminos de') !== false ||
+            strpos($line, 'saltos como máximo') !== false ||
+            strpos($line, 'Traza completa') !== false ||
+            strpos($line, 'Trace complete') !== false
+        ) {
+
+            // Extract destination info if available
+            if (preg_match('/(?:Tracing route to|traceroute to|Traza a)\s+([^\s]+)/', $line, $matches)) {
+                $destination = $matches[1];
+            }
+            if (preg_match('/(?:over a maximum of|sobre caminos de)\s+(\d+)\s+(?:hops|saltos)/', $line, $matches)) {
+                $max_hops = intval($matches[1]);
+            }
+            continue;
+        }
+
+        $hop = null;
+
+        if ($isWindows) {
+            // Windows format: "  1     1 ms     2 ms     1 ms  192.168.1.1"
+            // or: "  2  Request timed out."
+            if (preg_match('/^\s*(\d+)\s+(.+)$/', $line, $matches)) {
+                $hopNumber = intval($matches[1]);
+                $content = trim($matches[2]);
+
+                $hop = [
+                    'hop' => $hopNumber,
+                    'ip' => null,
+                    'hostname' => null,
+                    'times' => [],
+                    'status' => 'success',
+                    'raw_line' => $line
+                ];
+
+                // Check for timeout
+                if (
+                    strpos($content, 'Request timed out') !== false ||
+                    strpos($content, 'Tiempo de espera agotado') !== false
+                ) {
+                    $hop['status'] = 'timeout';
+                } else {
+                    // Extract timing information
+                    if (preg_match_all('/(<?\d+)\s*ms/', $content, $timeMatches)) {
+                        $hop['times'] = $timeMatches[1];
+                    }
+
+                    // Extract IP address
+                    if (preg_match('/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $content, $ipMatch)) {
+                        $hop['ip'] = $ipMatch[1];
+                        // Try to get hostname by removing IP and times
+                        $cleanContent = $content;
+                        $cleanContent = preg_replace('/(<?\d+\s*ms\s*)+/', '', $cleanContent);
+                        $cleanContent = str_replace($hop['ip'], '', $cleanContent);
+                        $hostname = trim($cleanContent);
+                        if (!empty($hostname) && $hostname !== $hop['ip']) {
+                            $hop['hostname'] = $hostname;
+                        }
+                    }
+                }
+            }
+        } else {
+            // Linux/Unix format: " 1  gateway (192.168.1.1)  1.234 ms  1.123 ms  1.345 ms"
+            // or: " 2  * * *"
+            if (preg_match('/^\s*(\d+)\s+(.+)$/', $line, $matches)) {
+                $hopNumber = intval($matches[1]);
+                $content = trim($matches[2]);
+
+                $hop = [
+                    'hop' => $hopNumber,
+                    'ip' => null,
+                    'hostname' => null,
+                    'times' => [],
+                    'status' => 'success',
+                    'raw_line' => $line
+                ];
+
+                // Check for timeout (* * *)
+                if (strpos($content, '* * *') !== false || preg_match('/^\s*\*/', $content)) {
+                    $hop['status'] = 'timeout';
+                } else {
+                    // Extract timing information
+                    if (preg_match_all('/([\d.]+)\s*ms/', $content, $timeMatches)) {
+                        $hop['times'] = $timeMatches[1];
+                    }
+
+                    // Extract hostname and IP from format like "gateway (192.168.1.1)"
+                    if (preg_match('/^([^\(]+)\s*\(([^)]+)\)/', $content, $hostMatch)) {
+                        $hop['hostname'] = trim($hostMatch[1]);
+                        $hop['ip'] = trim($hostMatch[2]);
+                    } elseif (preg_match('/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $content, $ipMatch)) {
+                        // Just IP without hostname
+                        $hop['ip'] = $ipMatch[1];
+                    }
+                }
+            }
+        }
+
+        if ($hop) {
+            $hops[] = $hop;
+        }
+    }
+
+    return json_encode([
+        'success' => true,
+        'destination' => $destination,
+        'max_hops' => $max_hops,
+        'total_hops' => count($hops),
+        'hops' => $hops,
+        'is_windows' => $isWindows
+    ], JSON_PRETTY_PRINT);
 }
 
 
@@ -1245,7 +1426,7 @@ function get_network_health()
         if ($isWindows) {
             $pingCommand = "ping -n 1 -w 1000 $escaped_gateway";
         } else {
-                // Re-use logic: if debug_mode is off and not root, sudoPrefix is set
+            // Re-use logic: if debug_mode is off and not root, sudoPrefix is set
             $pingCommand = $sudoPrefix . "/bin/ping -c 1 -W 1 $escaped_gateway";
         }
         $ping = @shell_exec($pingCommand);

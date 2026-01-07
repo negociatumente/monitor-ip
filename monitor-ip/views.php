@@ -430,7 +430,11 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                     // Encabezados de pings (de derecha a izquierda)
                                     $max_pings_to_show = 5;
                                     $sample_ip = array_key_last($ping_data);
-                                    $latest_pings = $ping_data[$sample_ip] ?? [];
+                                    if ($sample_ip !== null) {
+                                        $latest_pings = $ping_data[$sample_ip] ?? [];
+                                    } else {
+                                        $latest_pings = [];
+                                    }
                                     $num_pings = count($latest_pings);
                                     $header_labels = [];
                                     for ($i = 0; $i < $max_pings_to_show; $i++) {
