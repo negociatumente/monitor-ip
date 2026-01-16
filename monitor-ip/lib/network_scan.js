@@ -425,22 +425,6 @@ function hideSpeedTestModal() {
                 <i class="fas fa-info-circle mr-2"></i>
                 Click "Start Test" to measure your network speed. This will test download and upload speeds.
             </p>
-            <div class="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border">
-                <p class="text-xs text-gray-600 dark:text-gray-400">
-                    <i class="fas fa-tools mr-1"></i>
-                    <strong>Supported Tools:</strong>
-                </p>
-                <div class="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
-                    <div class="flex items-center gap-2">
-                        <i class="fab fa-linux text-yellow-600"></i>
-                        <span><strong>Linux/Mac:</strong> Speedtest++ or Speedtest CLI</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fab fa-windows text-blue-600"></i>
-                        <span><strong>Windows:</strong> speedtest.exe (Speedtest CLI)</span>
-                    </div>
-                </div>
-            </div>
         </div>
     `;
     document.getElementById('downloadSpeed').textContent = '--';
@@ -537,6 +521,21 @@ async function startSpeedTest() {
                     </p>
                     ${toolInfo ? `<p class="text-xs text-green-700 dark:text-green-300 mt-1">${toolInfo}</p>` : ''}
                 </div>
+
+
+                ${parseFloat(downloadValue) < 300 ? `
+                  <div class="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
+                    <p class="text-xs text-orange-700 dark:text-orange-300 mb-2">
+                        <i class="fas fa-lightbulb mr-2"></i><strong>¿Tu red es WiFi es lenta?</strong>
+                    </p>
+                    <p class="text-xs text-orange-600 dark:text-orange-400 mb-3">
+                        Tengo un video sobre como mejorar la velocidad de tu red WiFi.
+                    </p>
+                    <a href="https://www.youtube.com/watch?v=M8RiYmkVHSA" target="_blank" class="inline-block px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-lg transition-colors">
+                        <i class="fas fa-play mr-1.5"></i>Ver Video
+                    </a>
+                </div>
+                ` : ''}
             `;
         } else {
             // Enhanced error handling for different speedtest tools
