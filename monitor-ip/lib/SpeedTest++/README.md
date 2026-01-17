@@ -14,7 +14,7 @@ It supports the new (undocumented) raw TCP protocol for better accuracy.
 
 3. Aggressive multi-threading program in order to saturate your bandwidth quickly.
 
-4. Test supported: Ping / Jitter / Download speed / Upload speed / Packet loss (UDP).
+4. Test supported: Ping / Jitter / Download speed / Upload speed (UDP).
 
 5. Provide a URL to the speedtest.net share results image using option --share
 

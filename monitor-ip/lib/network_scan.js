@@ -397,7 +397,7 @@ async function fetchSpeedTestHistory() {
         const body = document.getElementById('speedTestHistoryBody');
 
         if (!history || history.length === 0) {
-            body.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500 opacity-50 italic">No history available</td></tr>';
+            body.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-gray-500 opacity-50 italic">No history available</td></tr>';
             return;
         }
 
@@ -405,6 +405,8 @@ async function fetchSpeedTestHistory() {
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                 <td class="py-2 text-gray-600 dark:text-gray-400 font-mono text-xs">${row.timestamp}</td>
                 <td class="py-2 font-medium text-purple-600 dark:text-purple-400">${row.latency}<span class="text-[10px] ml-0.5 opacity-70">ms</span></td>
+                <td class="py-2 font-medium text-red-600 dark:text-red-400">${row.packet_loss}<span class="text-[10px] ml-0.5 opacity-70">%</span></td>
+                <td class="py-2 font-medium text-amber-600 dark:text-amber-400">${row.jitter}<span class="text-[10px] ml-0.5 opacity-70">ms</span></td>
                 <td class="py-2 font-medium text-green-600 dark:text-green-400">${row.download}<span class="text-[10px] ml-0.5 opacity-70">Mb</span></td>
                 <td class="py-2 font-medium text-blue-600 dark:text-blue-400">${row.upload}<span class="text-[10px] ml-0.5 opacity-70">Mb</span></td>
             </tr>
@@ -413,6 +415,31 @@ async function fetchSpeedTestHistory() {
         console.error('Failed to fetch speedtest history:', error);
     }
 }
+
+async function clearSpeedTestHistory() {
+    modalFunctions.showModal('clearSpeedTestHistoryConfirmation');
+}
+
+function hideClearSpeedTestHistoryModal() {
+    modalFunctions.hideModal('clearSpeedTestHistoryConfirmation');
+}
+
+async function confirmClearSpeedTestHistory() {
+    try {
+        const response = await fetch('?action=clear_speed_test_history', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            hideClearSpeedTestHistoryModal();
+            fetchSpeedTestHistory();
+        }
+    } catch (error) {
+        console.error('Error clearing speed test history:', error);
+    }
+}
+
+window.clearSpeedTestHistory = clearSpeedTestHistory;
+window.hideClearSpeedTestHistoryModal = hideClearSpeedTestHistoryModal;
+window.confirmClearSpeedTestHistory = confirmClearSpeedTestHistory;
 
 
 function hideSpeedTestModal() {
@@ -430,6 +457,7 @@ function hideSpeedTestModal() {
     document.getElementById('downloadSpeed').textContent = '--';
     document.getElementById('uploadSpeed').textContent = '--';
     document.getElementById('pingLatency').textContent = '--';
+    document.getElementById('pingJitter').textContent = '--';
     document.getElementById('startSpeedTestBtn').style.display = 'inline-block';
 }
 
@@ -455,18 +483,12 @@ async function startSpeedTest() {
     `;
 
     resultsDiv.style.display = 'block';
-    progressDiv.style.display = 'block';
 
     try {
-        progressBar.style.width = '10%';
-        progressText.textContent = 'Detecting speedtest platform...';
 
         // First detect which speedtest tool is available
         const response = await fetch('?action=speed_test', { method: 'POST' });
         const data = await response.json();
-
-        progressBar.style.width = '50%';
-        progressText.textContent = 'Running speed test analysis...';
 
         if (data.success) {
             // Handle different speedtest tool outputs
@@ -497,10 +519,12 @@ async function startSpeedTest() {
             }
 
             progressBar.style.width = '90%';
-            
+
             document.getElementById('pingLatency').textContent = latencyValue;
+            document.getElementById('pingJitter').textContent = data.jitter;
             document.getElementById('downloadSpeed').textContent = downloadValue;
             document.getElementById('uploadSpeed').textContent = uploadValue;
+            document.getElementById('packetLoss').textContent = data.packet_loss;
 
             progressBar.style.width = '100%';
             progressText.textContent = 'Test complete!';
@@ -526,10 +550,10 @@ async function startSpeedTest() {
                 ${parseFloat(downloadValue) < 300 ? `
                   <div class="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
                     <p class="text-xs text-orange-700 dark:text-orange-300 mb-2">
-                        <i class="fas fa-lightbulb mr-2"></i><strong>¿Tu red es WiFi es lenta?</strong>
+                        <i class="fas fa-lightbulb mr-2"></i><strong>¿Tu red WiFi funciona mal?</strong>
                     </p>
                     <p class="text-xs text-orange-600 dark:text-orange-400 mb-3">
-                        Tengo un video sobre como mejorar la velocidad de tu red WiFi.
+                        Tengo un video sobre como mejorar la velocidad y estabilidad de tu red WiFi.
                     </p>
                     <a href="https://www.youtube.com/watch?v=M8RiYmkVHSA" target="_blank" class="inline-block px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-lg transition-colors">
                         <i class="fas fa-play mr-1.5"></i>Ver Video
@@ -627,7 +651,7 @@ async function showNetworkHealth() {
             // Speed Data Preparation
             const download = h.speed ? h.speed.download.toFixed(0) : '--';
             const upload = h.speed ? h.speed.upload.toFixed(0) : '--';
-            const latency = h.speed ? h.speed.latency: '--';
+            const latency = h.speed ? h.speed.latency : '--';
             const activeDevs = h.devices ? h.devices.up : 0;
             const totalDevs = h.devices ? h.devices.total : 0;
             const avgDeviceLatency = h.devices ? h.devices.avg_latency : 0;
@@ -879,7 +903,9 @@ function generateNetworkHealthAIReport() {
         report += `Actual Download: ${h.speed.download} Mb\n`;
         report += `Actual Upload: ${h.speed.upload} Mb\n`;
         report += `Ping Latency: ${h.speed.latency} ms\n`;
-        report += `Performance Efficiency: ${h.speed.performance_ratio || 'N/A'}\n`;
+        report += `Jitter: ${h.speed.jitter} ms\n`;
+        report += `Packet Loss: ${h.speed.packet_loss} %\n`;
+        report += `Performance Efficiency: ${h.speed.performance_ratio}\n`;
     } else {
         report += `Speed Test: No recent data available.\n`;
     }
@@ -1377,19 +1403,19 @@ async function runDetailTraceroute() {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
             const data = await response.json();
-            
+
             if (data.success) {
                 // Show raw output with better formatting
                 const rawOutput = data.raw_output || 'No raw output available';
                 raw.textContent = rawOutput;
-                
+
                 // Process structured JSON data
                 const hops = data.hops || [];
-                
+
                 // CGNAT Detection: Check for 100.64.0.0/10 range (RFC 6598)
                 let cgnatDetected = false;
                 const cgnatIPs = [];
-                
+
                 hops.forEach(hop => {
                     if (hop.ip) {
                         const parts = hop.ip.split('.').map(Number);
@@ -1463,13 +1489,13 @@ async function runDetailTraceroute() {
                 } else {
                     html += '</div>';
                 }
-                
+
                 visual.innerHTML = html;
             } else {
                 // Handle error response - show raw output even on error
                 const errorMessage = data.error || data.message || 'Unknown error occurred';
                 const rawOutput = data.raw_output || 'No output available';
-                
+
                 visual.innerHTML = `<div class="p-12 text-red-500 text-xs text-center font-bold bg-red-50 dark:bg-red-900/10 rounded-2xl m-4 border border-red-100 dark:border-red-900/20"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><br>${errorMessage}</div>`;
                 raw.textContent = rawOutput;
             }
@@ -1649,56 +1675,53 @@ function showScoreExplanation() {
                 <p class="text-gray-600 dark:text-gray-300">The <strong>Health Score (0-100)</strong> is an aggregate metric calculated from 4 key pillars of your network performance:</p>
                 
                 <div class="space-y-3">
+                    <div class="p-3 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-100 dark:border-green-800">
+                        <h6 class="font-bold text-green-700 dark:text-green-300 mb-1 flex justify-between">
+                            <span>1. Gateway Connectivity</span>
+                            <span class="text-xs bg-green-200 dark:bg-green-700 px-2 py-0.5 rounded-full">Max 20 pts</span>
+                        </h6>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">
+                            Verifies if your Router/Gateway is reachable and responding correctly.
+                            <br>&bull; Online: <b>20 pts</b>
+                            <br>&bull; Offline: <b>0 pts</b>
+                        </p>
+                    </div>
+                    <div class="p-3 bg-teal-50 dark:bg-teal-900/30 rounded-xl border border-teal-100 dark:border-teal-800">
+                        <h6 class="font-bold text-teal-700 dark:text-teal-300 mb-1 flex justify-between">
+                            <span>2. Avg Device Latency</span>
+                            <span class="text-xs bg-teal-200 dark:bg-teal-700 px-2 py-0.5 rounded-full">Max 30 pts</span>
+                        </h6>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">
+                            Based on the average response time (Ping) of your local devices.
+                            <br>&bull; &lt; 10ms: <b>30 pts</b>
+                            <br>&bull; &lt; 20ms: <b>20 pts</b>
+                            <br>&bull; &lt; 30ms: <b>10 pts</b>
+                        </p>
+                    </div>
+
                     <div class="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800">
                         <h6 class="font-bold text-indigo-700 dark:text-indigo-300 mb-1 flex justify-between">
-                            <span>1. Download Speed</span>
-                            <span class="text-xs bg-indigo-200 dark:bg-indigo-700 px-2 py-0.5 rounded-full">Max 35 pts</span>
+                            <span>3. Download Speed</span>
+                            <span class="text-xs bg-indigo-200 dark:bg-indigo-700 px-2 py-0.5 rounded-full">Max 20 pts</span>
                         </h6>
                         <p class="text-xs text-gray-600 dark:text-gray-400">
                             Compares your actual <b>Download</b> speed against your internet plan.
-                            <br>&bull; 90%+ of plan: <b>35 pts</b>
-                            <br>&bull; 75%+ of plan: <b>25 pts</b>
-                            <br>&bull; 50%+ of plan: <b>15 pts</b>
-                            <br>&bull; 25%+ of plan: <b>10 pts</b>
-                            <br>&bull; 10%+ of plan: <b>5 pts</b>
+                            <br>&bull; 80%+ of plan: <b>20 pts</b>
+                            <br>&bull; 50%+ of plan: <b>10 pts</b>
+                            <br>&bull; 25%+ of plan: <b>5 pts</b>
                         </p>
                     </div>
 
                     <div class="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-xl border border-purple-100 dark:border-purple-800">
                         <h6 class="font-bold text-purple-700 dark:text-purple-300 mb-1 flex justify-between">
-                            <span>2. Connection Latency</span>
+                            <span>4. Connection Quality</span>
                             <span class="text-xs bg-purple-200 dark:bg-purple-700 px-2 py-0.5 rounded-full">Max 30 pts</span>
                         </h6>
                         <p class="text-xs text-gray-600 dark:text-gray-400">
-                            Measures the responsiveness (Ping) of your connection.
-                            <br>&bull; &lt; 10ms: <b>30 pts</b> (Excellent for gaming)
-                            <br>&bull; &lt; 20ms: <b>25 pts</b>
-                            <br>&bull; &lt; 50ms: <b>15 pts</b>
-                        </p>
-                    </div>
-
-                    <div class="p-3 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-100 dark:border-green-800">
-                        <h6 class="font-bold text-green-700 dark:text-green-300 mb-1 flex justify-between">
-                            <span>3. Gateway Connectivity</span>
-                            <span class="text-xs bg-green-200 dark:bg-green-700 px-2 py-0.5 rounded-full">Max 25 pts</span>
-                        </h6>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">
-                            Verifies if your Router/Gateway is reachable and responding correctly.
-                            <br>&bull; Online: <b>25 pts</b>
-                            <br>&bull; Offline: <b>0 pts</b>
-                        </p>
-                    </div>
-
-                    <div class="p-3 bg-teal-50 dark:bg-teal-900/30 rounded-xl border border-teal-100 dark:border-teal-800">
-                        <h6 class="font-bold text-teal-700 dark:text-teal-300 mb-1 flex justify-between">
-                            <span>4. Avg Device Latency</span>
-                            <span class="text-xs bg-teal-200 dark:bg-teal-700 px-2 py-0.5 rounded-full">Max 10 pts</span>
-                        </h6>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">
-                            Based on the average response time (Ping) of your local devices.
-                            <br>&bull; &lt; 5ms: <b>10 pts</b>
-                            <br>&bull; &lt; 15ms: <b>7 pts</b>
-                            <br>&bull; &lt; 50ms: <b>4 pts</b>
+                            Evaluates connection stability through 3 metrics:
+                            <br><strong>Latency (15 pts):</strong> &lt;20ms: <b>15 pts</b> | &lt;30ms: <b>10 pts</b> | &lt;50ms: <b>5 pts</b>
+                            <br><strong>Jitter (10 pts):</strong> &lt;5ms: <b>10 pts</b> | &lt;10ms: <b>5 pts</b> | &lt;15ms: <b>1 pts</b>
+                            <br><strong>Packet Loss (5 pts):</strong> 0%: <b>5 pts</b> | &lt;2%: <b>3 pts</b> | &lt;5%: <b>1 pts</b>
                         </p>
                     </div>
                 </div>
@@ -1717,3 +1740,437 @@ function showScoreExplanation() {
     });
 }
 window.showScoreExplanation = showScoreExplanation;
+
+/**
+ * Shows the Public IP and ISP information modal
+ */
+function showPublicIPModal() {
+    const modal = document.getElementById('publicIPModal');
+    modal.classList.remove('hidden');
+    fetchPublicIPInfo();
+}
+
+/**
+ * Closes the Public IP modal
+ */
+function closePublicIPModal() {
+    const modal = document.getElementById('publicIPModal');
+    modal.classList.add('hidden');
+}
+
+/**
+ * Fetches public IP and ISP information
+ */
+async function fetchPublicIPInfo() {
+    const content = document.getElementById('publicIPContent');
+
+    try {
+        // Using ip-api.com free tier
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+
+        if (data && data.ip) {
+            let ispInfo = data.org || 'Unknown Provider';
+            // Clean up ISP name (remove AS number)
+            ispInfo = ispInfo.replace(/^AS\d+\s+/, '');
+
+            const flag = getCountryFlag(data.country_code);
+
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <!-- IP Address Section -->
+                    <div class="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 p-6 rounded-2xl border border-blue-200/50 dark:border-blue-700/50">
+                        <p class="text-xs uppercase tracking-widest text-gray-600 dark:text-gray-400 font-bold mb-2">
+                            <i class="fas fa-network-wired mr-2"></i>Your Public IP
+                        </p>
+                        <p class="text-4xl font-black text-blue-600 dark:text-blue-400 font-mono break-all">
+                            ${data.ip}
+                        </p>
+                        <button onclick="copyToClipboard('${data.ip}')" class="mt-3 text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-1">
+                            <i class="fas fa-copy"></i> Copy IP
+                        </button>
+                    </div>
+
+                    <!-- ISP Section -->
+                    <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-2xl border border-purple-200/50 dark:border-purple-700/50">
+                        <p class="text-xs uppercase tracking-widest text-gray-600 dark:text-gray-400 font-bold mb-2">
+                            <i class="fas fa-building mr-2"></i>Internet Service Provider
+                        </p>
+                        <p class="text-lg font-bold text-purple-600 dark:text-purple-400">
+                            ${ispInfo}
+                        </p>
+                    </div>
+
+                    <!-- Location Section -->
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-2xl border border-green-200/50 dark:border-green-700/50">
+                        <p class="text-xs uppercase tracking-widest text-gray-600 dark:text-gray-400 font-bold mb-3">
+                            <i class="fas fa-map-marker-alt mr-2"></i>Location
+                        </p>
+                        <div class="space-y-2">
+                            <p class="text-base font-semibold text-green-600 dark:text-green-400">
+                                ${flag} ${data.city || 'Unknown'}, ${data.region || 'Unknown'}, ${data.country || 'Unknown'}
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                Coordinates: ${data.latitude?.toFixed(4) || 'N/A'}, ${data.longitude?.toFixed(4) || 'N/A'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Additional Info Section -->
+                    <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-6 rounded-2xl border border-amber-200/50 dark:border-amber-700/50">
+                        <p class="text-xs uppercase tracking-widest text-gray-600 dark:text-gray-400 font-bold mb-3">
+                            <i class="fas fa-info-circle mr-2"></i>Additional Info
+                        </p>
+                        <div class="space-y-2 text-sm">
+                            <p><span class="font-semibold text-gray-700 dark:text-gray-300">Timezone:</span> <span class="text-gray-600 dark:text-gray-400">${data.timezone || 'N/A'}</span></p>
+                            <p><span class="font-semibold text-gray-700 dark:text-gray-300">Currency:</span> <span class="text-gray-600 dark:text-gray-400">${data.currency || 'N/A'}</span></p>
+                            <p><span class="font-semibold text-gray-700 dark:text-gray-300">VPN:</span> <span class="text-gray-600 dark:text-gray-400">${data.is_vpn ? 'Detected' : 'Not Detected'}</span></p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            content.innerHTML = `
+                <div class="text-center py-8 text-red-500">
+                    <i class="fas fa-exclamation-circle text-4xl mb-3"></i>
+                    <p class="font-semibold">Unable to retrieve IP information</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        content.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-wifi-slash text-4xl mb-3 text-red-500"></i>
+                <p class="font-semibold text-gray-700 dark:text-gray-300">Error: ${error.message}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Please check your internet connection</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Helper function to get country flag emoji
+ */
+function getCountryFlag(countryCode) {
+    if (!countryCode) return '🌍';
+    const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt());
+    return String.fromCodePoint(...codePoints);
+}
+
+/**
+ * Helper function to copy text to clipboard
+ */
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert('IP copied to clipboard!');
+    });
+}
+
+// Expose functions to window
+window.showPublicIPModal = showPublicIPModal;
+window.closePublicIPModal = closePublicIPModal;
+
+
+/**
+ * Shows the Public IP Modal and fetches data
+ */
+async function showPublicIPModal() {
+    const modal = document.getElementById('publicIpModal');
+    const content = document.getElementById('public_ip_content');
+
+    if (!modal || !content) {
+        console.error('Public IP Modal elements not found');
+        return;
+    }
+
+    // Reset to loading state
+    content.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-8">
+            <div class="relative w-16 h-16 mb-4">
+                <div class="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+            <p class="text-gray-500 text-sm font-medium animate-pulse">Resolving Public Address...</p>
+        </div>
+    `;
+
+    modal.classList.remove('hidden');
+
+    try {
+        const response = await fetch('?action=get_public_ip');
+        const data = await response.json();
+
+        if (data.success && data.result) {
+            const r = data.result;
+
+            content.innerHTML = `
+                <div class="flex flex-col items-center">
+                    <div class="text-center mb-6">
+                        <span class="text-[10px] uppercase font-bold text-gray-400 tracking-widest bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">Your Public IP Address</span>
+                        <h2 class="text-3xl font-black text-gray-800 dark:text-gray-100 mt-2 tracking-tight">${r.query}</h2>
+                    </div>
+
+                    <div class="w-full grid grid-cols-2 gap-4">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-100 dark:border-blue-800/50">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-300">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                                <span class="text-xs font-bold text-blue-400 uppercase">Provider</span>
+                            </div>
+                            <p class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight">${r.isp}</p>
+                            <p class="text-[10px] text-gray-400 mt-0.5">${r.as}</p>
+                        </div>
+
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/50">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-800 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-300">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <span class="text-xs font-bold text-indigo-400 uppercase">Location</span>
+                            </div>
+                            <p class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight flex items-center gap-2">
+                                ${r.countryCode ? `<img src="https://flagcdn.com/20x15/${r.countryCode.toLowerCase()}.png" class="rounded-sm shadow-sm">` : ''} 
+                                ${r.country}
+                            </p>
+                            <p class="text-[10px] text-gray-400 mt-0.5">${r.city}, ${r.regionName}</p>
+                        </div>
+                    </div>
+
+                    <div id="cgnat_status_container" class="w-full mt-4">
+                        <div class="flex items-center justify-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+                             <i class="fas fa-circle-notch fa-spin text-gray-400"></i>
+                             <span class="text-xs text-gray-500">Checking Network Type (CNGAT)...</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Check CGNAT status
+            checkCGNATStatus();
+
+        } else {
+            throw new Error(data.message || 'Unknown error');
+        }
+    } catch (error) {
+        content.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-8 text-center">
+                <div class="w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-exclamation-triangle text-2xl text-red-500"></i>
+                </div>
+                <h4 class="text-lg font-bold text-gray-800 dark:text-gray-100">Detection Failed</h4>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-[200px]">
+                    Could not resolve public network identity via external API.
+                </p>
+                <p class="text-xs text-red-400 mt-2 font-mono bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                    ${error.message}
+                </p>
+                <button onclick="showPublicIPModal()" class="mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-xs font-bold hover:bg-gray-300 transition-colors">
+                    Try Again
+                </button>
+            </div>
+        `;
+    }
+}
+
+async function checkCGNATStatus() {
+    const container = document.getElementById('cgnat_status_container');
+    if (!container) return;
+
+    try {
+        const response = await fetch('?action=check_cgnat');
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.is_cgnat) {
+                container.innerHTML = `
+                    <div class="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800/50">
+                        <div class="p-2 bg-orange-100 dark:bg-orange-800 rounded-lg text-orange-600 dark:text-orange-300">
+                            <i class="fas fa-network-wired"></i>
+                        </div>
+                        <div>
+                            <h5 class="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase tracking-wide">CGNAT Detected</h5>
+                            <p class="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                Your network is behind Carrier-Grade NAT. Port forwarding will not work.
+                                <br><span class="opacity-75 font-mono text-[10px]">Detected via hop: ${data.hop}</span>
+                            </p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="flex items-center justify-between gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800/50">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div>
+                                <h5 class="text-xs font-bold text-green-800 dark:text-green-200 uppercase tracking-wide">Public IP Accessible</h5>
+                                <p class="text-[10px] text-green-700 dark:text-green-300 mt-0.5">
+                                    No local carrier-grade NAT detected.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (e) {
+        container.innerHTML = `
+             <div class="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                 <i class="fas fa-question-circle text-gray-400"></i>
+                 <span class="text-xs text-gray-500">Could not verify NAT status</span>
+            </div>
+        `;
+    }
+}
+
+function closePublicIpModal() {
+    const modal = document.getElementById('publicIpModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Ensure functions are exposed to window
+window.showPublicIPModal = showPublicIPModal;
+window.closePublicIpModal = closePublicIpModal;
+
+/**
+ * Shows the Quick Network Topology Modal and fetches data
+ */
+async function showQuickTopologyModal() {
+    const modal = document.getElementById('quickTopologyModal');
+    const content = document.getElementById('topology_content');
+
+    if (!modal || !content) return;
+
+    // Reset to loading state
+    content.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-12">
+            <div class="relative w-16 h-16 mb-4">
+                <div class="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-purple-500 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+            <p class="text-gray-500 text-sm font-medium animate-pulse">Mapping Network Topology...</p>
+        </div>
+    `;
+
+    modal.classList.remove('hidden');
+
+    try {
+        const response = await fetch('?action=get_topology_data');
+        const data = await response.json();
+
+        if (data.success) {
+            content.innerHTML = `
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-4 relative">
+                    <!-- Connecting Lines (Desktop) -->
+                    <div class="hidden md:block absolute top-1/2 left-8 right-8 h-1 bg-gray-200 dark:bg-gray-800 -z-10 transform -translate-y-1/2"></div>
+                    
+                    <!-- 1. Device Node -->
+                    <div class="flex flex-col items-center z-10 w-full md:w-1/4">
+                        <div class="w-16 h-16 bg-white dark:bg-gray-800 rounded-full border-4 border-indigo-500 shadow-lg flex items-center justify-center mb-3 relative z-10 transition-transform hover:scale-110">
+                            <i class="fas fa-desktop text-2xl text-indigo-500"></i>
+                             <div class="absolute -bottom-2 px-2 py-0.5 bg-indigo-500 text-white text-[8px] uppercase font-bold rounded-full whitespace-nowrap">My Device</div>
+                        </div>
+                        <div class="text-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700 w-full">
+                            <h4 class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Local Address</h4>
+                            <p class="text-sm font-black text-gray-800 dark:text-gray-100 font-mono tracking-tighter">${data.local_ip}</p>
+                        </div>
+                    </div>
+
+                    <!-- Arrow -->
+                    <div class="md:hidden text-gray-300 dark:text-gray-700">
+                        <i class="fas fa-arrow-down text-xl"></i>
+                    </div>
+
+                    <!-- 2. Router Node (Dual IP) -->
+                    <div class="flex flex-col items-center z-10 w-full md:w-1/4">
+                        <div class="w-20 h-20 bg-white dark:bg-gray-800 rounded-full border-4 border-purple-500 shadow-xl flex items-center justify-center mb-3 relative z-10 transition-transform hover:scale-110">
+                            <i class="fas fa-network-wired text-3xl text-purple-500"></i>
+                            <div class="absolute -bottom-2 px-2 py-0.5 bg-purple-500 text-white text-[8px] uppercase font-bold rounded-full whitespace-nowrap">Router / Gateway</div>
+                        </div>
+                        <div class="text-center bg-purple-50 dark:bg-purple-900/10 p-3 rounded-xl border border-purple-100 dark:border-purple-800/30 w-full shadow-sm">
+                            <div class="mb-2">
+                                <h4 class="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-0.5">LAN IP (Private)</h4>
+                                <p class="text-xs font-black text-gray-800 dark:text-gray-100 font-mono">${data.gateway_ip}</p>
+                            </div>
+                            <div class="pt-2 border-t border-purple-100 dark:border-purple-800/30">
+                                <h4 class="text-[9px] font-bold text-blue-500 uppercase tracking-widest mb-0.5">WAN IP (Public)</h4>
+                                <p class="text-xs font-black text-blue-600 dark:text-blue-400 font-mono">${data.public_ip}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Arrow -->
+                    <div class="md:hidden text-gray-300 dark:text-gray-700">
+                        <i class="fas fa-arrow-down text-xl"></i>
+                    </div>
+
+                    <!-- 3. ISP Node -->
+                    <div class="flex flex-col items-center z-10 w-full md:w-1/4">
+                        <div class="w-16 h-16 bg-white dark:bg-gray-800 rounded-full border-4 border-blue-500 shadow-lg flex items-center justify-center mb-3 relative z-10 transition-transform hover:scale-110">
+                            <i class="fas fa-cloud text-2xl text-blue-500"></i>
+                             <div class="absolute -bottom-2 px-2 py-0.5 bg-blue-500 text-white text-[8px] uppercase font-bold rounded-full whitespace-nowrap">ISP / Internet</div>
+                        </div>
+                        <div class="text-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700 w-full">
+                            <h4 class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Provider</h4>
+                            <p class="text-xs font-black text-gray-800 dark:text-gray-100 truncate w-full" title="${data.isp}">${data.isp}</p>
+                        </div>
+                    </div>
+
+                    <!-- Arrow -->
+                    <div class="md:hidden text-gray-300 dark:text-gray-700">
+                        <i class="fas fa-arrow-down text-xl"></i>
+                    </div>
+
+                    <!-- 4. Target Node (Google DNS) -->
+                    <div class="flex flex-col items-center z-10 w-full md:w-1/4">
+                        <div class="w-16 h-16 bg-white dark:bg-gray-800 rounded-full border-4 border-emerald-500 shadow-lg flex items-center justify-center mb-3 relative z-10 transition-transform hover:scale-110">
+                            <i class="fas fa-bullseye text-2xl text-emerald-500"></i>
+                             <div class="absolute -bottom-2 px-2 py-0.5 bg-emerald-500 text-white text-[8px] uppercase font-bold rounded-full whitespace-nowrap">Destination</div>
+                        </div>
+                        <div class="text-center bg-emerald-50 dark:bg-emerald-900/10 p-3 rounded-xl border border-emerald-100 dark:border-emerald-800/30 w-full shadow-sm">
+                            <h4 class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Service Checked</h4>
+                            <p class="text-sm font-black text-emerald-700 dark:text-emerald-400 font-mono tracking-tighter">${data.target_ip}</p>
+                            <p class="text-[9px] font-bold text-emerald-500/70 mt-1 uppercase whitespace-nowrap">Google DNS</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-10 text-center bg-gray-50 dark:bg-gray-800/30 py-4 px-6 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed italic">
+                        <i class="fas fa-project-diagram mr-2 text-purple-400"></i>
+                        The diagram shows how your device connects to the internet through your router, which acts as a bridge between your <strong>Private LAN</strong> (${data.gateway_ip}) and the <strong>Public WAN</strong> (${data.public_ip}).
+                    </p>
+                </div>
+            `;
+        } else {
+            throw new Error(data.message || 'Unknown error');
+        }
+    } catch (e) {
+        content.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-exclamation-triangle text-3xl text-red-500 mb-4"></i>
+                <p class="text-red-500 font-bold">Failed to load topology data: ${e.message}</p>
+                <button onclick="showQuickTopologyModal()" class="mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-sm font-bold">Try Again</button>
+            </div>
+        `;
+    }
+}
+
+function closeQuickTopologyModal() {
+    const modal = document.getElementById('quickTopologyModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+window.showQuickTopologyModal = showQuickTopologyModal;
+window.closeQuickTopologyModal = closeQuickTopologyModal;

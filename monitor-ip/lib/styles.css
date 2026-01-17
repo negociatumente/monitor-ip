@@ -271,6 +271,7 @@
         from {
             transform: rotate(0deg);
         }
+
         to {
             transform: rotate(360deg);
         }
@@ -401,6 +402,7 @@
             opacity: 0;
             transform: translateY(10px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
@@ -466,6 +468,7 @@
 
         /* Hide less important columns on mobile */
         @media (max-width: 480px) {
+
             table th:nth-child(n+4),
             table td:nth-child(n+4) {
                 font-size: 0.65rem;
@@ -575,6 +578,7 @@
 
     /* Print styles for responsive behavior */
     @media print {
+
         .btn,
         .modal,
         .btn-sidebar {
@@ -630,7 +634,8 @@
 
     /* Sidebar expanded state (default) */
     .sidebar-panel {
-        width: 16rem; /* w-64 */
+        width: 16rem;
+        /* w-64 */
         transition: width 0.3s ease, padding 0.3s ease;
     }
 
@@ -640,7 +645,8 @@
 
     /* Sidebar collapsed state */
     .sidebar-panel.sidebar-collapsed {
-        width: 4.5rem; /* ~72px for icons */
+        width: 4.5rem;
+        /* ~72px for icons */
     }
 
     .sidebar-panel.sidebar-collapsed .sidebar-content {
@@ -649,7 +655,7 @@
 
     /* Hide text labels when sidebar is collapsed */
     .sidebar-panel.sidebar-collapsed .sidebar-label,
-    .sidebar-panel.sidebar-collapsed > div > h3,
+    .sidebar-panel.sidebar-collapsed>div>h3,
     .sidebar-panel.sidebar-collapsed .network-selector h3 {
         display: none;
     }
@@ -692,7 +698,7 @@
         transition: transform 0.3s ease;
     }
 
-    .sidebar-panel.sidebar-collapsed ~ div #desktopSidebarToggle i {
+    .sidebar-panel.sidebar-collapsed~div #desktopSidebarToggle i {
         transform: rotate(180deg);
     }
 
