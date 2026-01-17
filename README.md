@@ -1,32 +1,33 @@
 # 🌐 Monitor de IPs  
-Este proyecto permite monitorear la conectividad a servidores desde tu red local. Es útil para **diagnosticar bloqueos de tu proveedor de Internet (ISP)** y verificar la disponibilidad de estos servicios. Ademas, puedes realizar un escaneo de red local para descubrir dispositivos conectados a tu red y medir latencias y velocidades de tu red. Finalmente, puedes generar un reporte de la calidad de tu red.
+Este proyecto permite **monitorear la conectividad** a servidores desde tu red local y **corregir problemas en tu red**. Es útil para diagnosticar bloqueos de tu proveedor de Internet (ISP) y verificar la disponibilidad de estos servicios. Ademas, puedes realizar un escaneo de red local para descubrir dispositivos conectados a tu red y medir latencias y velocidades de tu red. Finalmente, puedes generar un reporte de la calidad de tu red.
 
-## 📖 Ayuda  
+## 📖 ¿Problemas con tu red?
 
-Para saber más sobre monitorización de IPs y redes tienes la siguiente **guía**:  
-https://negociatumente.com/guia-redes
+**¿Tu Internet va lento? ¿Sospechas que tu operador te está limitando?** No pierdas más tiempo intentando adivinar qué está fallando.
+
+🎯 Esta herramienta te **ayudará a**:  
+✅ **Detectar bloqueos** de tu operador de Internet  
+✅ **Diagnosticar problemas** de tu red local  
+✅ **Optimizar tu red** para un máximo rendimiento  
+✅ **Ahorrar dinero** evitando técnicos innecesarios  
+
+**¿Necesitas más información?**  
+👉 **[ACCEDE A LA GUÍA DE REDES](https://negociatumente.com/guia-redes)** 👈
+
 
 ![ip-monitor](https://github.com/user-attachments/assets/fcab05ae-e28f-4916-a62c-6f8e94bcf189)
 
 ## ⚠️ Aviso  
 - Este proyecto es solo para **uso personal y diagnóstico de red**.  
 - **No** se debe **abusar** de los pings a IPs públicas para evitar tráfico innecesario.
-- Este proyecto es solo para **uso personal y diagnóstico de red**.  
-- Los pings se lanzan según el parámetro **Timer Interval** o al pulsar el botón manual.
-- Solo se almacenan los estados de los últimos pings lanzados según el parámetro **Ping History**.
-- Si no se refrescan los pings en la tabla, borrar los pings anteriores con el botón de **Clear Data**.
   
 ## 🚀 Características  
-✅ **Monitorización en tiempo real** de servidores y dispositivos.  
-✅ **Gestión de Servicios**: Agrupa y organiza tus dispositivos por servicios con colores personalizados.  
-✅ **Configurable**: Ajusta intervalos, historial y las ips desde la interfaz.  
-✅ **Múltiples Métodos**: Soporte para Ping (ICMP), HTTP/HTTPS (Curl) y DNS.  
-✅ **Trazabilidad de Red**: Realiza traceroutes para diagnosticar rutas de red.  
-✅ **Detección de CGNAT**: Identifica si estás detrás de una NAT compartida.  
+✅ **Monitorización en tiempo real** de servidores públicos y dispositivos locales.  
 ✅ **Escaneo de Red Local**: Descubre dispositivos conectados a tu red.  
 ✅ **Test de Velocidad**: Mide tu latencia, velocidad de descarga y subida.  
+✅ **Trazabilidad de Red**: Analiza los saltos de la red para identificar problemas.  
+✅ **Detección de CGNAT**: Identifica si estás detrás de una NAT compartida.  
 ✅ **Reporte de Red**: Genera un reporte de la calidad de tu red.  
-✅ **Compatible** con Windows, Linux y macOS.  
 
 ## 📁 Estructura del proyecto
 ```
