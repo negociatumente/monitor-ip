@@ -15,7 +15,7 @@ Este proyecto permite **monitorear la conectividad** a servidores desde tu red l
 👉 **[ACCEDE A LA GUÍA DE REDES](https://negociatumente.com/guia-redes)** 👈
 
 
-![ip-monitor](https://github.com/user-attachments/assets/fcab05ae-e28f-4916-a62c-6f8e94bcf189)
+![IP Monitor](assets/monitor-v1.0.png)
 
 ## ⚠️ Aviso  
 - Este proyecto es solo para **uso personal y diagnóstico de red**.  
