@@ -24,9 +24,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Copy .dockerignore to root
+        run: |
+          cp docker/.dockerignore .dockerignore
+
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository }}:latest .
+          docker build -f docker/Dockerfile -t ghcr.io/${{ github.repository }}:latest .
 
       - name: Push Docker image
         run: |
