@@ -1,6 +1,9 @@
 # 🌐 Monitor de IPs  
 Este proyecto permite **monitorear la conectividad** a servidores desde tu red local y **corregir problemas en tu red**. Es útil para diagnosticar bloqueos de tu proveedor de Internet (ISP) y verificar la disponibilidad de estos servicios. Ademas, puedes realizar un escaneo de red local para descubrir dispositivos conectados a tu red y medir latencias y velocidades de tu red. Finalmente, puedes generar un reporte de la calidad de tu red.
 
+**Tutorial Completo**  
+👉 **[VIDEO YOUTUBE: Aprende a Monitorizar IPs](https://www.youtube.com/watch?v=B5o-eO8cS7Q)** 👈
+
 ## 📖 ¿Problemas con tu red?
 
 **¿Tu Internet va lento? ¿Sospechas que tu operador te está limitando?** No pierdas más tiempo intentando adivinar qué está fallando.
@@ -12,7 +15,7 @@ Este proyecto permite **monitorear la conectividad** a servidores desde tu red l
 ✅ **Ahorrar dinero** evitando técnicos innecesarios  
 
 **¿Necesitas más información?**  
-👉 **[ACCEDE A LA GUÍA DE REDES](https://negociatumente.com/guia-redes)** 👈
+👉 **[ACCEDE A LA GUÍA: Aprende a Monitorizar Servicios en Internet](https://negociatumente.com/guia-redes)** 👈
 
 
 ![IP Monitor](assets/monitor-v1.0.png)
