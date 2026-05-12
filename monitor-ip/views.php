@@ -239,6 +239,24 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
                 <!-- Quick Actions (for External Network) -->
                 <?php if (!isset($is_local_network) || !$is_local_network): ?>
+                    <div class="mb-6">
+                        <h3
+                            class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3 sidebar-label">
+                            Network Tools
+                        </h3>
+                        <div class="space-y-2">
+                            <button onclick="showPublicIPModal(); toggleSidebar();"
+                                class="btn-sidebar bg-blue-600 text-white" title="Public IP & ISP">
+                                <i class="fas fa-info-circle"></i>
+                                <span class="sidebar-label">Whats My IP</span>
+                            </button>
+                            <button onclick="showQuickTopologyModal(); toggleSidebar();"
+                                class="btn-sidebar bg-purple-600 text-white" title="Network Topology">
+                                <i class="fas fa-project-diagram"></i>
+                                <span class="sidebar-label">Topology</span>
+                            </button>
+                        </div>
+                    </div>
 
                 <?php else: ?>
                     <!-- Quick Actions (only for Local Network) -->
@@ -441,11 +459,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         if ($i === 0) {
                                             $header_labels[] = 'now';
                                         } else {
-                                            if ($num_pings >= $max_pings_to_show) {
-                                                $ping_index = $i - 1;
-                                            } else {
-                                                $ping_index = $i;
-                                            }
+                                            $ping_index = $i;
                                             $timestamp = isset($latest_pings[$ping_index]) ? ($latest_pings[$ping_index]['timestamp'] ?? '-') : '-';
                                             if ($timestamp !== '-') {
                                                 $date = new DateTime($timestamp);
@@ -600,7 +614,18 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td class='p-3 font-mono text-sm'><?php echo $ip; ?></td>
+                                            <td class='p-3 font-mono text-sm'>
+                                                <div class="flex items-center gap-2">
+                                                    <?php echo $ip; ?>
+                                                    <?php if ($is_local_network && ($service === 'Gateway' || $service === 'AP/Mesh')): ?>
+                                                        <a href="http://<?php echo $ip; ?>" target="_blank"
+                                                            class="text-blue-500 hover:text-blue-700 transition-colors inline-flex items-center justify-center p-1 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                                            title="Configure">
+                                                            <i class="fas fa-external-link-alt text-xs"></i>
+                                                        </a>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
                                             <?php if ($is_local_network): ?>
                                                 <td class='p-3'>
                                                     <span
@@ -653,37 +678,30 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                                 ?>
                                             </td>
                                             <?php
-                                            // Mostrar los pings de derecha a izquierda, primero celdas vacías (izquierda), luego pings reales (derecha)
+                                            // Mostrar los pings de derecha a izquierda
                                             $max_pings_to_show = 5;
                                             $ping_results = $result['ping_results'];
-                                            $num_pings = count(value: $ping_results);
-                                            $pings_to_show = array_slice($ping_results, 0, $max_pings_to_show);
-                                            $empty_cells = $max_pings_to_show - count($pings_to_show);
-                                            // Primero las celdas vacías (izquierda)
-                                            for ($i = 0; $i < $empty_cells; $i++) {
-                                                echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-gray-300 text-gray-500 rounded-md shadow-sm' title='No data'><i class='fas fa-minus text-xs'></i></div></td>";
-                                            }
-                                            // Luego los pings reales (derecha)
-                                            for ($i = count($pings_to_show) - 1; $i >= 0; $i--) {
-                                                $ping = $pings_to_show[$i];
-                                                if ($num_pings >= $max_pings_to_show && $i === 0) {
-                                                    // Última columna (derecha), mostrar 'now' si hay 5 o más pings
-                                                    if (($ping['status'] ?? '-') === 'UP') {
-                                                        echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='UP - now'><i class='fas fa-check text-xs'></i></div></td>";
-                                                    } elseif (($ping['status'] ?? '-') === 'DOWN') {
-                                                        echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-red-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='DOWN - now'><i class='fas fa-times text-xs'></i></div></td>";
-                                                    } else {
-                                                        echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-gray-300 text-gray-500 rounded-md shadow-sm' title='No data'><i class='fas fa-minus text-xs'></i></div></td>";
-                                                    }
+
+                                            // Imprimir celdas de pings (máximo 5)
+                                            for ($i = $max_pings_to_show - 1; $i >= 0; $i--) {
+                                                $ping = $ping_results[$i] ?? null;
+                                                $is_now = ($i === 0);
+
+                                                if (!$ping || ($ping['status'] ?? '-') === '-' || ($ping['status'] ?? '-') === 'EMPTY') {
+                                                    echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-gray-300 text-gray-500 rounded-md shadow-sm' title='No data'><i class='fas fa-minus text-xs'></i></div></td>";
                                                 } else {
-                                                    if (($ping['status'] ?? 'EMPTY') === 'UP') {
-                                                        $response_time = isset($ping['response_time']) ? $ping['response_time'] : 'N/A';
-                                                        echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-green-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='UP - {$response_time}'><i class='fas fa-check text-xs'></i></div></td>";
-                                                    } elseif (($ping['status'] ?? 'EMPTY') === 'DOWN') {
-                                                        echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-red-500 text-white rounded-md shadow-sm hover:shadow-md transition-shadow' title='DOWN'><i class='fas fa-times text-xs'></i></div></td>";
-                                                    } else {
-                                                        echo "<td class='p-2 text-center'><div class='inline-flex items-center justify-center w-6 h-6 bg-gray-300 text-gray-500 rounded-md shadow-sm' title='No data'><i class='fas fa-minus text-xs'></i></div></td>";
-                                                    }
+                                                    $status = $ping['status'] ?? 'DOWN';
+                                                    $bg_class = $status === 'UP' ? 'bg-green-500' : 'bg-red-500';
+                                                    $icon_class = $status === 'UP' ? 'fa-check' : 'fa-times';
+                                                    $response_time = $ping['response_time'] ?? 'N/A';
+                                                    $display_time = ($is_now) ? "now" : $response_time;
+
+                                                    echo "<td class='p-2 text-center'>
+                                                            <div class='inline-flex items-center justify-center w-6 h-6 {$bg_class} text-white rounded-md shadow-sm hover:shadow-md transition-all " . ($is_now ? "ring-2 ring-blue-400 ring-offset-2 dark:ring-offset-gray-800" : "") . "' 
+                                                                 title='{$status} - {$display_time}'>
+                                                                <i class='fas {$icon_class} text-xs'></i>
+                                                            </div>
+                                                          </td>";
                                                 }
                                             }
                                             ?>
@@ -1296,6 +1314,103 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
         </div>
     </div>
 
+    <!-- Modal: Public IP View -->
+    <div id="publicIpModal"
+        class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+        <div
+            class="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
+
+            <div class="p-5 bg-gradient-to-br from-blue-600 to-indigo-700 text-white relative overflow-hidden">
+                <!-- Decorative background elements -->
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i class="fas fa-globe-americas text-9xl"></i>
+                </div>
+
+                <div class="flex justify-between items-start relative z-10">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
+                            <i class="fas fa-globe text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold tracking-tight">Public Identity</h3>
+                            <p class="text-blue-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
+                                External Network Face
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="closePublicIpModal()"
+                        class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="public_ip_content" class="p-6">
+                <!-- Loading State -->
+                <div class="flex flex-col items-center justify-center py-8">
+                    <div class="relative w-16 h-16 mb-4">
+                        <div class="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+                        <div
+                            class="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin">
+                        </div>
+                    </div>
+                    <p class="text-gray-500 text-sm font-medium animate-pulse">Resolving Public Address...</p>
+                </div>
+            </div>
+
+            <div
+                class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex justify-center">
+                <p class="text-[10px] text-gray-400 text-center max-w-xs">
+                    This information is what external servers see when you connect to the internet.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Network Topology View -->
+    <div id="quickTopologyModal"
+        class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+        <div
+            class="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
+
+            <div class="p-6 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i class="fas fa-project-diagram text-9xl"></i>
+                </div>
+                <div class="flex justify-between items-start relative z-10">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
+                            <i class="fas fa-network-wired text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold tracking-tight">Network Topology</h3>
+                            <p class="text-purple-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
+                                Connection Flow & Identity
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="closeQuickTopologyModal()"
+                        class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="topology_content" class="p-8">
+                <!-- Loading State -->
+                <div class="flex flex-col items-center justify-center py-12">
+                    <div class="relative w-16 h-16 mb-4">
+                        <div class="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+                        <div
+                            class="absolute inset-0 border-4 border-purple-500 rounded-full border-t-transparent animate-spin">
+                        </div>
+                    </div>
+                    <p class="text-gray-500 text-sm font-medium animate-pulse">Mapping Network Topology...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <style>
         .active-diag-tab {
             background-color: white !important;
@@ -1317,6 +1432,24 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #333;
             border-radius: 10px;
+        }
+
+        @keyframes pulse-subtle {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.85;
+                transform: scale(0.98);
+            }
+        }
+
+        .animate-pulse-subtle {
+            animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
     </style>
 

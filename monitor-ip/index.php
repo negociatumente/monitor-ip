@@ -118,6 +118,20 @@ if (isset($_GET['action'])) {
         exit;
     }
 
+    if ($_GET['action'] === 'clear_speed_test_history' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+        try {
+            $history_file = __DIR__ . '/results/speedtest_results.json';
+            if (file_exists($history_file)) {
+                file_put_contents($history_file, json_encode([]));
+            }
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
 
     if ($_GET['action'] === 'diagnose' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json');
@@ -142,6 +156,119 @@ if (isset($_GET['action'])) {
             }
 
             echo json_encode($response);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    if ($_GET['action'] === 'get_public_ip' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        header('Content-Type: application/json');
+        try {
+            // Fetch from ip-api.com (free, no key required for basic usage)
+            // Using logic similar to get_geoip_info but for the server itself
+            $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+            $json = @file_get_contents('http://ip-api.com/json/?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,query', false, $ctx);
+
+            if ($json === false) {
+                throw new Exception('Failed to contact IP API');
+            }
+
+            $data = json_decode($json, true);
+            if ($data['status'] !== 'success') {
+                throw new Exception('External API Error: ' . ($data['message'] ?? 'Unknown'));
+            }
+
+            echo json_encode(['success' => true, 'result' => $data]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    if ($_GET['action'] === 'check_cgnat' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        header('Content-Type: application/json');
+        try {
+            $json = run_traceroute('1.1.1.1', 3);
+            $data = json_decode($json, true);
+            $cgnat_detected = false;
+            $cgnat_hop = null;
+
+            if ($data && $data['success'] && !empty($data['hops'])) {
+                foreach ($data['hops'] as $hop) {
+                    $ip = $hop['ip'];
+                    if ($ip) {
+                        $parts = explode('.', $ip);
+                        if (count($parts) === 4 && $parts[0] == 100 && $parts[1] >= 64 && $parts[1] <= 127) {
+                            $cgnat_detected = true;
+                            $cgnat_hop = $ip;
+                            break;
+                        }
+                    }
+                }
+            }
+            echo json_encode(['success' => true, 'is_cgnat' => $cgnat_detected, 'hop' => $cgnat_hop]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    if ($_GET['action'] === 'get_topology_data' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        header('Content-Type: application/json');
+        try {
+            // 1. Get Public IP (Quick fetch)
+            $ctx = stream_context_create(['http' => ['timeout' => 3]]);
+            $public_json = @file_get_contents('http://ip-api.com/json/?fields=query,isp', false, $ctx);
+            $public_data = json_decode($public_json, true);
+            $public_ip = $public_data['query'] ?? 'Unknown';
+
+            // Detection Tools Paths
+            $isWindows = (PHP_OS_FAMILY === 'Windows');
+
+            // 2. Get Gateway IP
+            $gateway_ip = '';
+            if ($isWindows) {
+                $route_output = @shell_exec('route print 0.0.0.0');
+                if (preg_match('/0\.0\.0\.0\s+0\.0\.0\.0\s+(\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
+                    $gateway_ip = $matches[1];
+                }
+            } else {
+                $route_output = @shell_exec("ip route | grep default");
+                if (preg_match('/via (\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
+                    $gateway_ip = $matches[1];
+                }
+            }
+            if (empty($gateway_ip))
+                $gateway_ip = '192.168.1.1 (Est.)';
+
+            // 3. Get Local Device IP
+            $local_ip = '';
+            if ($isWindows) {
+                $ipconfig = shell_exec('ipconfig');
+                if (preg_match('/IPv4.*?:\s*(\d+\.\d+\.\d+\.\d+)(?=[^}]*?Default Gateway.*?:\s*(?!0\.0\.0\.0)(?:\d+\.){3}\d+)/s', $ipconfig, $matches)) {
+                    $local_ip = $matches[1];
+                } elseif (preg_match('/IPv4.*?:\s*(\d+\.\d+\.\d+\.\d+)/', $ipconfig, $matches)) {
+                    $local_ip = $matches[1];
+                }
+            } else {
+                $local_ip = trim(shell_exec("ip route get 8.8.8.8 2>/dev/null | grep -oP 'src \K\S+'"));
+                if (empty($local_ip)) {
+                    $local_ip = trim(shell_exec("hostname -I | awk '{print $1}'"));
+                }
+            }
+            if (empty($local_ip))
+                $local_ip = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
+
+            echo json_encode([
+                'success' => true,
+                'public_ip' => $public_ip ?: 'Unknown',
+                'gateway_ip' => $gateway_ip,
+                'local_ip' => $local_ip,
+                'isp' => $public_data['isp'] ?? 'Unknown ISP',
+                'target_ip' => 'www.google.es'
+            ]);
+
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }

@@ -1054,7 +1054,7 @@
         </div>
 
         <div id="speedTestResults" class="p-4" style="display:none;">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <!-- Download Speed -->
                 <div
                     class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 p-4 rounded-lg border border-green-200 dark:border-green-700">
@@ -1076,8 +1076,9 @@
                     <div class="text-3xl font-bold text-blue-600 dark:text-blue-400" id="uploadSpeed">--</div>
                     <div class="text-xs text-blue-600 dark:text-blue-400">Mbps</div>
                 </div>
-
-                <!-- Ping/Latency -->
+            </div>
+            <!-- Ping/Latency -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div
                     class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
                     <div class="flex items-center justify-between mb-2">
@@ -1086,6 +1087,28 @@
                     </div>
                     <div class="text-3xl font-bold text-purple-600 dark:text-purple-400" id="pingLatency">--</div>
                     <div class="text-xs text-purple-600 dark:text-purple-400">ms</div>
+                </div>
+
+                <!-- Jitter -->
+                <div
+                    class="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 p-4 rounded-lg border border-amber-200 dark:border-amber-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-amber-700 dark:text-amber-300">Jitter</span>
+                        <i class="fas fa-wave-square text-amber-500"></i>
+                    </div>
+                    <div class="text-3xl font-bold text-amber-600 dark:text-amber-400" id="pingJitter">--</div>
+                    <div class="text-xs text-amber-600 dark:text-amber-400">ms</div>
+                </div>
+
+                <!-- Packet Loss -->
+                <div
+                    class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 p-4 rounded-lg border border-red-200 dark:border-red-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-red-700 dark:text-red-300">Packet Loss</span>
+                        <i class="fas fa-percentage text-red-500"></i>
+                    </div>
+                    <div class="text-3xl font-bold text-red-600 dark:text-red-400" id="packetLoss">--</div>
+                    <div class="text-xs text-red-600 dark:text-red-400">%</div>
                 </div>
             </div>
 
@@ -1102,15 +1125,23 @@
 
             <!-- Historical Results -->
             <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
-                <h3 class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
-                    <i class="fas fa-history mr-2 opacity-70"></i> Recent History (Last 5)
-                </h3>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-md font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                        <i class="fas fa-history mr-2 opacity-70"></i> Recent History (Last 5)
+                    </h3>
+                    <button type="button" onclick="clearSpeedTestHistory();"
+                        class="text-xs font-bold text-red-500 hover:text-red-700 transition-colors flex items-center gap-1">
+                        <i class="fas fa-trash-alt"></i> Clear History
+                    </button>
+                </div>
                 <div id="speedTestHistory" class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead>
                             <tr class="text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
                                 <th class="pb-2 font-medium">Date & Time</th>
                                 <th class="pb-2 font-medium">Lat.</th>
+                                <th class="pb-2 font-medium">Loss</th>
+                                <th class="pb-2 font-medium">Jitter</th>
                                 <th class="pb-2 font-medium">Down.</th>
                                 <th class="pb-2 font-medium">Up.</th>
                             </tr>
@@ -1132,6 +1163,57 @@
                 class="btn px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
                 <i class="fas fa-play mr-2"></i> Start Test
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Clear Speed Test History Confirmation -->
+<div id="clearSpeedTestHistoryConfirmation" class="modal">
+    <div class="modal-content p-0 max-w-xl shadow-2xl border-0">
+        <div class="bg-red-500 p-6 rounded-t-xl flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
+                    <i class="fas fa-trash-alt text-3xl text-white drop-shadow"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Clear Speed Test History</h2>
+                    <p class="text-indigo-100 text-xs font-medium">This action will permanently delete all recorded
+                        tests.</p>
+                </div>
+            </div>
+            <button type="button" onclick="hideClearSpeedTestHistoryModal();"
+                class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-6 bg-white dark:bg-gray-800 rounded-b-2xl">
+            <div class="bg-red-50 dark:bg-red-900/30 p-4 rounded-lg mb-6 border border-red-200 dark:border-red-900">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-bold text-red-800 dark:text-red-300">Are you sure?</h3>
+                        <p class="text-red-700 dark:text-red-200 mt-1 text-sm font-medium">
+                            You are about to delete the entire speed test history.
+                            This data is used to track your provider's performance over time.
+                            <strong>This action cannot be undone.</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="hideClearSpeedTestHistoryModal();"
+                    class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-all font-semibold">
+                    <i class="fas fa-times mr-2"></i> Cancel
+                </button>
+                <button type="button" onclick="confirmClearSpeedTestHistory();"
+                    class="btn px-6 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg shadow-lg shadow-red-500/30 transition-all font-bold">
+                    <i class="fas fa-trash-alt mr-2"></i> Delete
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -1177,4 +1259,38 @@
             </button>
         </div>
     </div>
+</div>
+
+<!-- Public IP Modal -->
+<div id="publicIPModal" class="modal">
+    <div class="modal-content bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full mx-4">
+        <div class="bg-gradient-to-r from-blue-500 to-cyan-600 p-6 rounded-t-3xl">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black text-white flex items-center gap-3">
+                    <i class="fas fa-globe"></i>
+                    Public IP Information
+                </h2>
+                <button type="button" onclick="closePublicIPModal();"
+                    class="text-white hover:bg-white/20 rounded-full p-2 transition-all">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <div id="publicIPContent" class="flex flex-col items-center justify-center py-8">
+                <i class="fas fa-spinner fa-spin text-4xl mb-4 text-blue-500"></i>
+                <p class="text-sm text-gray-500 font-medium">Loading IP information...</p>
+            </div>
+        </div>
+
+        <div
+            class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 rounded-b-3xl border-t border-gray-200 dark:border-gray-700">
+            <button onclick="closePublicIPModal()"
+                class="w-full py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-all">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
 </div>

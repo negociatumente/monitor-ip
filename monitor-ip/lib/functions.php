@@ -253,7 +253,7 @@ function analyze_ip($ip)
 {
     global $ping_data;
 
-    $ping_results = $ping_data[$ip] ?? array_fill(0, 5, ["status" => "-", "timestamp" => "-", "response_time" => "-", "packet_loss" => "-"]);
+    $ping_results = $ping_data[$ip] ?? array_fill(0, 5, ["status" => "-", "timestamp" => "-", "response_time" => "-"]);
     $success_count = 0;
     $total_response_time = 0;
     $response_time_count = 0;
@@ -992,6 +992,51 @@ function save_local_network_scan($devices)
     return save_config_file($config, $config_path);
 }
 
+/**
+ * Calculate packet loss for a given host
+ */
+function calculate_packet_loss($ip, $count = 10)
+{
+    $isWindows = (PHP_OS_FAMILY === 'Windows');
+    $escaped_ip = escapeshellarg($ip);
+
+    if ($isWindows) {
+        $cmd = "ping -n $count -w 1000 $escaped_ip";
+    } else {
+        $use_sudo = is_running_in_container();
+        $sudoPrefix = $use_sudo ? "sudo " : "";
+        $cmd = $sudoPrefix . "/bin/ping -c $count -W 1 $escaped_ip";
+    }
+
+    $output = shell_exec($cmd);
+    if (!$output)
+        return 0;
+
+    if ($isWindows) {
+        // UTF-8 conversion for correct parsing on Windows (might be CP850 or similar)
+        $try_encodings = ['CP850', 'CP1252', 'ISO-8859-1'];
+        foreach ($try_encodings as $enc) {
+            $converted = @iconv($enc, 'UTF-8//IGNORE', $output);
+            if ($converted && (strpos($converted, "% loss") !== false || strpos($converted, "% de pérdida") !== false)) {
+                $output = $converted;
+                break;
+            }
+        }
+
+        // Example: "(10% loss)" or "(10% de pérdida)"
+        if (preg_match('/\((\d+)%\s*(?:de pérdida|loss)\)/u', $output, $matches)) {
+            return (int) $matches[1];
+        }
+    } else {
+        // Example: "10% packet loss"
+        if (preg_match('/(\d+)%\s*packet loss/', $output, $matches)) {
+            return (int) $matches[1];
+        }
+    }
+
+    return 0;
+}
+
 
 /**
  * Run complete speedtest and return all results
@@ -999,7 +1044,7 @@ function save_local_network_scan($devices)
 function run_complete_speedtest()
 {
     $decimal = "6";
-    
+
     // Detect OS
     $isWindows = (PHP_OS_FAMILY === 'Windows');
 
@@ -1025,7 +1070,7 @@ function run_complete_speedtest()
                 'raw_output' => $output
             ];
         }
-    $decimal = "5";
+        $decimal = "5";
 
     } else {
         // Linux/Mac
@@ -1055,7 +1100,7 @@ function run_complete_speedtest()
                 'raw_output' => $output
             ];
         }
-            $decimal = "6";
+        $decimal = "6";
 
     }
 
@@ -1081,11 +1126,22 @@ function run_complete_speedtest()
         $upload = round($data['upload']['bandwidth'] / pow(10, $decimal), 2);
     }
 
+    // Extract Jitter
+    $jitter = 0;
+    if (isset($data['jitter']) && is_numeric($data['jitter'])) {
+        $jitter = floatval($data['jitter']);
+    }
+
+    // Packet Loss test after speed test
+    $packet_loss = calculate_packet_loss('1.1.1.1', 8);
+
     $results = [
         'success' => true,
         'latency' => $latency,
         'download' => $download,
         'upload' => $upload,
+        'jitter' => $jitter,
+        'packet_loss' => $packet_loss,
         'server' => $data['server']['name'] ?? 'N/A',
         'isp' => $data['isp'] ?? 'N/A',
         'raw' => $data,
@@ -1132,6 +1188,8 @@ function save_manual_speedtest($download, $upload, $latency)
         'latency' => $latency,
         'download' => $download,
         'upload' => $upload,
+        'jitter' => 'N/A',
+        'packet_loss' => 0,
         'server' => 'Manual',
         'isp' => 'Manual',
         'raw' => [],
@@ -1164,7 +1222,9 @@ function save_speedtest_results($results)
         'timestamp' => date('Y-m-d H:i:s'),
         'latency' => $results['latency'],
         'download' => $results['download'],
-        'upload' => $results['upload']
+        'upload' => $results['upload'],
+        'jitter' => $results['jitter'] ?? 'N/A',
+        'packet_loss' => $results['packet_loss'] ?? 0,
     ];
 
     array_unshift($history, $new_entry);
@@ -1177,16 +1237,17 @@ function save_speedtest_results($results)
 /**
  * Run traceroute to a host
  */
-function run_traceroute($host)
+function run_traceroute($host, $max_hops = 15)
 {
     $isWindows = (PHP_OS_FAMILY === 'Windows');
     $host_escaped = escapeshellarg($host);
+    $max_hops_int = intval($max_hops);
 
     if ($isWindows) {
-        $command = "tracert -d -h 15 $host_escaped";
+        $command = "tracert -d -h $max_hops_int $host_escaped";
     } else {
         // Fallback logic for Linux: try traceroute, then tracepath
-        $command = "traceroute -n -m 15 $host_escaped 2>&1 || tracepath -n -m 15 $host_escaped 2>&1";
+        $command = "traceroute -n -m $max_hops_int $host_escaped 2>&1 || tracepath -n -m $max_hops_int $host_escaped 2>&1";
     }
 
     $output = shell_exec($command);
@@ -1509,60 +1570,56 @@ function get_network_health()
     // 5. Final Summary logic
     $health_score = 0;
     $score_details = [
-        'gateway' => ['score' => 0, 'max' => 25, 'label' => 'Gateway Connectivity'],
-        'devices' => ['score' => 0, 'max' => 10, 'label' => 'Avg Device Latency'],
-        'speed' => ['score' => 0, 'max' => 35, 'label' => 'Download Speed'],
-        'latency' => ['score' => 0, 'max' => 30, 'label' => 'Connection Latency']
+        'gateway' => ['score' => 0, 'max' => 20, 'label' => 'Gateway Connectivity'],
+        'devices' => ['score' => 0, 'max' => 30, 'label' => 'Avg Device Latency'],
+        'speed' => ['score' => 0, 'max' => 20, 'label' => 'Download Speed'],
+        'latency' => ['score' => 0, 'max' => 30, 'label' => 'Connection Quality']
     ];
 
-    // Gateway connectivity (25 points)
+    // Gateway connectivity (20 points)
     if ($report['gateway']['status'] === 'ONLINE') {
-        $points = 25;
+        $points = 20;
         $health_score += $points;
         $score_details['gateway']['score'] = $points;
     }
 
-    // Local device latency (10 points)
+    // Local device latency (30 points)
     $avg_dev_latency = $report['devices']['avg_latency'];
     if ($avg_dev_latency > 0) {
         if ($avg_dev_latency < 5) {
-            $points = 10;
+            $points = 30;
         } elseif ($avg_dev_latency < 15) {
-            $points = 7;
+            $points = 20;
         } elseif ($avg_dev_latency < 50) {
-            $points = 4;
+            $points = 10;
         } else {
-            $points = 1;
+            $points = 0;
         }
     } else {
         // If no latency data (e.g. no devices UP), give 0 or neutral
-        $points = ($report['devices']['up'] > 0) ? 1 : 0;
+        $points = ($report['devices']['up'] > 0) ? 5 : 0;
     }
 
     // Fallback/Bonus if 0 latency but devices are UP (local monitoring might be too fast or logic issue, but usually implies good connect)
     if ($active_count > 0 && $avg_dev_latency == 0)
-        $points = 10;
+        $points = 30;
 
     $health_score += $points;
     $score_details['devices']['score'] = $points;
 
 
-    // Speed performance (35 points)
+    // Speed performance (20 points)
     if (is_array($report['speed']) && $theoretical_speed > 0) {
         $speed_results = (array) $report['speed'];
         $actual_download = (float) ($speed_results['download'] ?? 0);
         $performance_ratio = $actual_download / $theoretical_speed;
 
         $points = 0;
-        if ($performance_ratio >= 0.9)
-            $points = 35;
-        elseif ($performance_ratio >= 0.75)
-            $points = 25;
+        if ($performance_ratio >= 0.8)
+            $points = 20;
         elseif ($performance_ratio >= 0.5)
-            $points = 15;
-        elseif ($performance_ratio >= 0.25)
             $points = 10;
-        elseif ($performance_ratio >= 0.1)
+        elseif ($performance_ratio >= 0.25)
             $points = 5;
 
         $health_score += $points;
@@ -1572,28 +1629,50 @@ function get_network_health()
         $report['speed'] = $speed_results;
     } elseif (is_array($report['speed'])) {
         // Fallback score if no theoretical speed is set but test exists
-        $points = 15;
+        $points = 10;
         $health_score += $points;
         $score_details['speed']['score'] = $points;
     }
 
-    // Latency performance (30 points)
-    if (!empty($report['speed']) && is_array($report['speed']) && isset($report['speed']['latency'])) {
-        $latency = (float) $report['speed']['latency'];
-
+    // Latency performance (30 points total: 15 latency + 10 jitter + 5 packet loss)
+    if (!empty($report['speed']) && is_array($report['speed'])) {
         $points = 0;
-        // Bonus for very low latency
-        if ($latency > 0) {
-            if ($latency < 10)
-                $points = 30;
-            elseif ($latency < 20)
-                $points = 25;
-            elseif ($latency < 50)
-                $points = 15;
-            elseif ($latency < 100)
-                $points = 5;
-            // > 100ms gets 0 points for latency
+
+        // Latency scoring (15 points max - 3 levels)
+        if (isset($report['speed']['latency'])) {
+            $latency = (float) $report['speed']['latency'];
+            if ($latency > 0) {
+                if ($latency < 10)
+                    $points += 15;
+                elseif ($latency < 20)
+                    $points += 10;
+                elseif ($latency < 30)
+                    $points += 5;
+            }
         }
+
+        // Jitter scoring (10 points max - 3 levels)
+        if (isset($report['speed']['jitter'])) {
+            $jitter = (float) $report['speed']['jitter'];
+            if ($jitter < 5)
+                $points += 10;
+            elseif ($jitter < 10)
+                $points += 5;
+            elseif ($jitter < 15)
+                $points += 1;
+        }
+
+        // Packet Loss scoring (5 points max - 3 levels)
+        if (isset($report['speed']['packet_loss'])) {
+            $packet_loss = (float) $report['speed']['packet_loss'];
+            if ($packet_loss == 0)
+                $points += 5;
+            elseif ($packet_loss < 2)
+                $points += 3;
+            elseif ($packet_loss < 5)
+                $points += 1;
+        }
+
         $health_score += $points;
         $score_details['latency']['score'] = $points;
     }

@@ -1,9 +1,11 @@
 version: '3.8'
 services:
   monitor-ip:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     volumes:
-      - ./monitor-ip:/var/www/html/monitor-ip
+      - ../monitor-ip:/var/www/html/monitor-ip
     restart: unless-stopped
     environment:
       - TZ=Europe/Madrid
