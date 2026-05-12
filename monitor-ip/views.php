@@ -57,6 +57,19 @@ if (isset($_GET['imported'])) {
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+    <script>
+        // Check local storage for dark mode preference before rendering body
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
     <!-- Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -176,7 +189,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                 </div>
 
                 <!-- Navigation links - Hidden on mobile, visible on sm+ -->
-                <div class="hidden sm:flex flex-wrap justify-center lg:justify-end gap-2">
+                <div class="hidden sm:flex flex-wrap justify-center lg:justify-end gap-2 items-center">
                     <!--<a href="https://nordvpn.com/es/pricing/" target="_blank"
                         class="bg-green-400 hover:bg-green-500 text-blue-900 font-bold px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm shadow-lg transform hover:scale-105">
                         <i class="fas fa-shield-alt"></i>
@@ -216,11 +229,20 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                     class="lg:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                     <i class="fas fa-times text-lg"></i>
                 </button>
-                <!-- Desktop Sidebar Toggle Button -->
-                <button id="desktopSidebarToggle" onclick="toggleDesktopSidebar()"
-                    class="hidden lg:flex px-2 py-3 w-full  gap-2  rounded-lg hover:bg-opacity-20 transition-all items-center mb-4">
-                    <i class="fas fa-chevron-left text-lg "></i> <span class="ml-2 sidebar-label">Hide Menu</span>
-                </button>
+                <div class="flex items-center justify-between gap-2 mb-4 mt-8 lg:mt-0">
+                    <!-- Desktop Sidebar Toggle Button -->
+                    <button id="desktopSidebarToggle" onclick="toggleDesktopSidebar()"
+                        class="hidden lg:flex px-2 py-2 flex-1 gap-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all items-center">
+                        <i class="fas fa-chevron-left text-lg"></i> <span class="ml-2 sidebar-label">Hide Menu</span>
+                    </button>
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleTheme()" id="sidebarThemeToggleBtn"
+                        class="p-2 lg:p-2.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all ml-auto"
+                        title="Toggle Dark/Light Mode">
+                        <i class="fas fa-moon hidden dark:inline text-lg w-5 text-center"></i>
+                        <i class="fas fa-sun inline dark:hidden text-yellow-500 text-lg w-5 text-center"></i>
+                    </button>
+                </div>
                 <!-- Network Selector -->
                 <div class="mb-6 network-selector">
                     <h3
@@ -286,6 +308,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                     </div>
 
                 <?php endif; ?>
+
 
 
             </div>

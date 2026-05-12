@@ -3,6 +3,19 @@
  */
 
 /**
+ * Theme Toggle Functionality
+ */
+function toggleTheme() {
+    if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.theme = 'light';
+    } else {
+        document.documentElement.classList.add('dark');
+        localStorage.theme = 'dark';
+    }
+}
+
+/**
  * Modal management functions
  * Includes functions to show/hide modals, custom alerts, and confirmations.
  */

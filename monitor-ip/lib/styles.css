@@ -28,6 +28,11 @@
         transition: all 0.3s ease;
     }
 
+    .dark .modal-content {
+        background-color: #1f2937;
+        color: #f3f4f6;
+    }
+
     .status-badge {
         padding: 0.25rem 0.75rem;
         border-radius: 9999px;
@@ -710,5 +715,4 @@
             height: calc(100vh - 5.5rem);
             overflow-y: auto;
         }
-    }
     }

@@ -217,8 +217,8 @@
 
 <!-- Modal: Import/Export Config -->
 <div id="configModal" class="modal">
-    <div class="modal-content p-0 max-w-3xl shadow-2xl border-0">
-        <div class="bg-gray-500 p-6 rounded-t-xl flex items-center justify-between">
+    <div class="modal-content p-0 max-w-3xl shadow-2xl border-0 bg-white dark:bg-gray-800">
+        <div class="bg-gray-500 dark:bg-gray-700 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
                     <i class="fas fa-cogs text-3xl text-white drop-shadow"></i>
@@ -281,8 +281,8 @@
 
 <!-- Modal: Add IP Form -->
 <div id="addIpForm" class="modal">
-    <div class="modal-content p-0 max-w-xl shadow-2xl border-0">
-        <div class="bg-indigo-500 p-6 rounded-t-xl flex items-center justify-between">
+    <div class="modal-content p-0 max-w-xl shadow-2xl border-0 bg-white dark:bg-gray-800">
+        <div class="bg-indigo-500 dark:bg-indigo-700 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
                     <i class="fas fa-plus-circle text-3xl text-white drop-shadow"></i>
@@ -695,8 +695,8 @@
 
 <!-- Modal: Clear Data Confirmation -->
 <div id="clearDataConfirmation" class="modal">
-    <div class="modal-content p-0 max-w-3xl shadow-2xl border-0">
-        <div class="bg-amber-500 p-6 rounded-t-xl flex items-center justify-between">
+    <div class="modal-content p-0 max-w-3xl shadow-2xl border-0 bg-white dark:bg-gray-800">
+        <div class="bg-amber-500 dark:bg-amber-700 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
                     <i class="fas fa-exclamation-triangle text-3xl text-white drop-shadow"></i>
@@ -795,8 +795,8 @@
 
 <!-- Modal: Manage Services -->
 <div id="manageServiceForm" class="modal">
-    <div class="modal-content p-0 max-w-lg shadow-2xl border-0">
-        <div class="bg-purple-500 p-6 rounded-t-xl flex items-center justify-between">
+    <div class="modal-content p-0 max-w-lg shadow-2xl border-0 bg-white dark:bg-gray-800">
+        <div class="bg-purple-500 dark:bg-purple-700 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
                     <i class="fas fa-tasks text-3xl text-white drop-shadow"></i>
@@ -970,9 +970,8 @@
 <!-- Modal: Scan Private Network -->
 <div id="scanNetworkModal" class="modal">
 
-    <div class="modal-content p-0 max-w-4xl shadow-2xl border-0">
-
-        <div class="bg-indigo-500 p-6 rounded-t-xl flex items-center justify-between">
+    <div class="modal-content p-0 max-w-4xl shadow-2xl border-0 bg-white dark:bg-gray-800">
+        <div class="bg-indigo-500 dark:bg-indigo-700 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
                     <i class="fas fa-network-wired text-3xl text-white drop-shadow"></i>
@@ -1027,9 +1026,8 @@
 
 <!-- Modal: Speed Test -->
 <div id="speedTestModal" class="modal">
-    <div class="modal-content p-0 max-w-4xl shadow-2xl border-0">
-
-        <div class="bg-purple-500 p-6 rounded-t-xl flex items-center justify-between">
+    <div class="modal-content p-0 max-w-4xl shadow-2xl border-0 bg-white dark:bg-gray-800">
+        <div class="bg-purple-500 dark:bg-purple-700 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
                     <i class="fas fa-tachometer-alt text-3xl text-white drop-shadow"></i>
@@ -1170,8 +1168,8 @@
 
 <!-- Modal: Clear Speed Test History Confirmation -->
 <div id="clearSpeedTestHistoryConfirmation" class="modal">
-    <div class="modal-content p-0 max-w-xl shadow-2xl border-0">
-        <div class="bg-red-500 p-6 rounded-t-xl flex items-center justify-between">
+    <div class="modal-content p-0 max-w-xl shadow-2xl border-0 bg-white dark:bg-gray-800">
+        <div class="bg-red-500 dark:bg-red-700 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
                     <i class="fas fa-trash-alt text-3xl text-white drop-shadow"></i>
