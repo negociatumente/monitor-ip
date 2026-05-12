@@ -50,8 +50,10 @@
         }
         ?>
 
-        <!-- Single Row Layout - Responsive -->
-        <div class="flex items-center gap-2 sm:gap-4 flex-nowrap min-w-max">
+        <!-- Horizontal scroll wrapper for mobile/tablet -->
+        <div class="overflow-x-auto w-full pb-4 custom-scrollbar">
+            <!-- Single Row Layout - Responsive -->
+            <div class="flex items-center gap-2 sm:gap-4 flex-nowrap min-w-max pr-4">
             <!-- Health Circle - Enhanced -->
             <div
                 class="flex items-center gap-2 sm:gap-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-2 sm:p-3 shadow-2xl border-2 border-gray-300/50 dark:border-gray-600/50 hover:shadow-3xl transition-all flex-shrink-0">
@@ -209,9 +211,8 @@
 
             </div>
         </div>
+        </div> <!-- Close horizontal scroll wrapper -->
     </div>
-
-
 </div>
 
 <!-- Modal: Import/Export Config -->

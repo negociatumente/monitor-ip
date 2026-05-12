@@ -150,6 +150,12 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                 <!-- Logo and title -->
                 <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                    <!-- Hamburger - only shows on mobile to open sidebar -->
+                    <button id="mobileMenuBtn" onclick="toggleSidebar()"
+                        class="lg:hidden flex-shrink-0 bg-white/15 hover:bg-white/25 active:bg-white/30 p-2 sm:p-2.5 rounded-lg transition-all duration-200"
+                        aria-label="Open navigation menu">
+                        <i class="fas fa-bars text-lg sm:text-xl leading-none"></i>
+                    </button>
                     <div
                         class="bg-white bg-opacity-20 p-2 sm:p-3 rounded-full group-hover:bg-opacity-30 transition-all duration-300">
                         <i class="fas <?php echo $header_icon; ?> text-lg sm:text-2xl text-white"></i>
@@ -309,9 +315,9 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         </h2>
 
                         <!-- Action Buttons -->
-                        <div class="">
+                        <div class="w-full sm:w-auto">
                             <div
-                                class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
+                                class="grid grid-cols-2 sm:flex sm:flex-row flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
                                 <?php if (isset($network_type) && $network_type === 'local'): ?>
                                     <button type="button" onclick="showScanNetworkModal();"
                                         class="btn  btn-primary px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
