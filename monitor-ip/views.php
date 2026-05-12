@@ -1276,18 +1276,23 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
                     <!-- Zoom Controls -->
                     <div class="flex bg-black/20 p-1 rounded-xl mr-4">
+                        <button onclick="resetTopologyLayout()"
+                            class="px-3 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors text-xs font-bold gap-2 text-white border-r border-white/20 mr-1 pr-4"
+                            title="Reset Layout">
+                            <i class="fas fa-undo"></i> <span class="hidden sm:inline">Reset Layout</span>
+                        </button>
                         <button onclick="zoomTopology(1.1)"
-                            class="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
+                            class="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors text-white"
                             title="Zoom In">
                             <i class="fas fa-search-plus"></i>
                         </button>
                         <button onclick="zoomTopology(0.9)"
-                            class="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
+                            class="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors text-white"
                             title="Zoom Out">
                             <i class="fas fa-search-minus"></i>
                         </button>
                         <button onclick="resetTopologyZoom()"
-                            class="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors"
+                            class="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors text-white"
                             title="Reset Zoom">
                             <i class="fas fa-expand"></i>
                         </button>

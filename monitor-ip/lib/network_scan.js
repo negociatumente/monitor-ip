@@ -1024,6 +1024,125 @@ function resetTopologyZoom() {
     applyTopologyZoom();
 }
 
+// --- Topology Drag & Drop Logic ---
+let isDraggingTopology = false;
+let hasMovedDuringDrag = false;
+let draggedElement = null;
+let dragStartX, dragStartY;
+let elementStartX, elementStartY;
+let currentDraggedIp = null;
+
+function loadTopologyPositions() {
+    try {
+        return JSON.parse(localStorage.getItem('topologyPositions') || '{}');
+    } catch(e) { return {}; }
+}
+
+function saveTopologyPositions(pos) {
+    localStorage.setItem('topologyPositions', JSON.stringify(pos));
+}
+
+function startTopologyDrag(e, element, ip) {
+    // Only accept left clicks or touches
+    if (e.type === 'mousedown' && e.button !== 0) return;
+    
+    isDraggingTopology = true;
+    hasMovedDuringDrag = false;
+    draggedElement = element;
+    currentDraggedIp = ip;
+    
+    // Bring to front
+    draggedElement.style.zIndex = "1000";
+    
+    const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+    const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+    
+    // Get current offset
+    const positions = loadTopologyPositions();
+    elementStartX = positions[ip] ? (positions[ip].x || 0) : 0;
+    elementStartY = positions[ip] ? (positions[ip].y || 0) : 0;
+    
+    dragStartX = clientX;
+    dragStartY = clientY;
+
+    document.addEventListener('mousemove', doTopologyDrag);
+    document.addEventListener('touchmove', doTopologyDrag, {passive: false});
+    document.addEventListener('mouseup', endTopologyDrag);
+    document.addEventListener('touchend', endTopologyDrag);
+}
+
+function doTopologyDrag(e) {
+    if (!isDraggingTopology || !draggedElement) return;
+    
+    e.preventDefault(); // Prevent scrolling while dragging
+
+    const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+    const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+    const dx = (clientX - dragStartX) / currentTopologyScale;
+    const dy = (clientY - dragStartY) / currentTopologyScale;
+
+    // Minimum movement threshold to differentiate click from drag
+    if (!hasMovedDuringDrag && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+        hasMovedDuringDrag = true;
+        draggedElement.style.transition = 'none'; // Disable transition during drag
+    }
+
+    if (hasMovedDuringDrag) {
+        const newX = elementStartX + dx;
+        const newY = elementStartY + dy;
+        draggedElement.style.transform = `translate(${newX}px, ${newY}px)`;
+        draggedElement.dataset.tx = newX;
+        draggedElement.dataset.ty = newY;
+    }
+}
+
+function endTopologyDrag(e) {
+    if (!isDraggingTopology) return;
+    isDraggingTopology = false;
+    
+    if (draggedElement && currentDraggedIp && hasMovedDuringDrag) {
+        const positions = loadTopologyPositions();
+        positions[currentDraggedIp] = {
+            x: parseFloat(draggedElement.dataset.tx || 0),
+            y: parseFloat(draggedElement.dataset.ty || 0)
+        };
+        saveTopologyPositions(positions);
+        draggedElement.style.transition = 'transform 0.3s ease-out'; // Restore transition
+    }
+    
+    if (draggedElement) {
+        draggedElement.style.zIndex = "50";
+    }
+
+    draggedElement = null;
+    currentDraggedIp = null;
+
+    document.removeEventListener('mousemove', doTopologyDrag);
+    document.removeEventListener('touchmove', doTopologyDrag);
+    document.removeEventListener('mouseup', endTopologyDrag);
+    document.removeEventListener('touchend', endTopologyDrag);
+    
+    // Keep hasMovedDuringDrag true for a split second to prevent click
+    setTimeout(() => {
+        hasMovedDuringDrag = false;
+    }, 100);
+}
+
+function handleTopologyClick(ip) {
+    if (hasMovedDuringDrag) return;
+    showIpDetailModal(ip);
+}
+
+function resetTopologyLayout() {
+    localStorage.removeItem('topologyPositions');
+    renderTopologyMap();
+}
+
+window.startTopologyDrag = startTopologyDrag;
+window.handleTopologyClick = handleTopologyClick;
+window.resetTopologyLayout = resetTopologyLayout;
+
 function applyTopologyZoom() {
     const wrapper = document.querySelector('.topology-wrapper-h');
     if (wrapper) {
@@ -1083,6 +1202,12 @@ function renderTopologyMap() {
     const busLineClass = isH ? 'w-12 h-0.5 bg-indigo-600' : 'w-0.5 h-12 bg-indigo-600';
     const segmentListClass = isH ? 'flex flex-col gap-12 relative' : 'flex flex-col gap-12 relative mt-4';
 
+    const positions = loadTopologyPositions();
+    const getPosStyle = (ip) => {
+        if (!positions[ip]) return 'position: relative; z-index: 50; transition: transform 0.3s ease-out;';
+        return `position: relative; z-index: 50; transition: transform 0.3s ease-out; transform: translate(${positions[ip].x}px, ${positions[ip].y}px);`;
+    };
+
     // Start building HTML
     let html = `
         <div class="topology-wrapper-h p-12 ${wrapperClass}">
@@ -1108,13 +1233,19 @@ function renderTopologyMap() {
 
             <!-- Level 2: Gateway (Router) -->
             <div class="flex flex-col items-center z-20">
-                <div class="p-6 bg-indigo-600 text-white rounded-3xl shadow-2xl border-4 border-white dark:border-gray-800 flex flex-col items-center min-w-[160px] relative group hover:scale-105 transition-all">
-                    <div class="absolute -top-3 -right-3 w-8 h-8 bg-green-500 rounded-full border-4 border-white dark:border-gray-900 flex items-center justify-center shadow-lg">
-                        <i class="fas fa-check text-[10px]"></i>
+                <div class="draggable-wrapper cursor-move" 
+                     style="${getPosStyle(gateway ? gateway.ip : 'gateway')}"
+                     onmousedown="startTopologyDrag(event, this, '${gateway ? gateway.ip : 'gateway'}')"
+                     ontouchstart="startTopologyDrag(event, this, '${gateway ? gateway.ip : 'gateway'}')">
+                    <div class="p-6 bg-indigo-600 text-white rounded-3xl shadow-2xl border-4 border-white dark:border-gray-800 flex flex-col items-center min-w-[160px] relative group hover:scale-105 transition-all"
+                         onclick="if(!hasMovedDuringDrag && '${gateway ? gateway.ip : ''}') showIpDetailModal('${gateway ? gateway.ip : ''}')">
+                        <div class="absolute -top-3 -right-3 w-8 h-8 bg-green-500 rounded-full border-4 border-white dark:border-gray-900 flex items-center justify-center shadow-lg">
+                            <i class="fas fa-check text-[10px]"></i>
+                        </div>
+                        <i class="fas fa-server text-3xl mb-3"></i>
+                        <div class="text-xs font-black uppercase tracking-tight">${gateway ? gateway.service : 'Router'}</div>
+                        <div class="text-[10px] font-mono opacity-60">${gateway ? gateway.ip : '192.168.18.1'}</div>
                     </div>
-                    <i class="fas fa-server text-3xl mb-3"></i>
-                    <div class="text-xs font-black uppercase tracking-tight">${gateway ? gateway.service : 'Router'}</div>
-                    <div class="text-[10px] font-mono opacity-60">${gateway ? gateway.ip : '192.168.18.1'}</div>
                 </div>
             </div>
 
@@ -1210,6 +1341,9 @@ function renderRepeaterNode(repeater, allOthers) {
         return false;
     });
 
+    const positions = loadTopologyPositions();
+    const posStyle = positions[repeater.ip] ? `transform: translate(${positions[repeater.ip].x}px, ${positions[repeater.ip].y}px);` : '';
+
     return `
         <div class="flex items-center group/segment">
             <!-- Connection to main bus -->
@@ -1224,11 +1358,16 @@ function renderRepeaterNode(repeater, allOthers) {
                 </div>
                 <div class="flex items-center gap-2">
                     <!-- Square Repeater Hub -->
-                    <div class="w-24 h-24 bg-red-600 text-white rounded-xl shadow-xl border-4 border-white dark:border-gray-800 flex flex-col items-center justify-center z-10 hover:scale-110 transition-all cursor-pointer relative" 
-                         onclick="showIpDetailModal('${repeater.ip}')">
-                        <i class="fas fa-broadcast-tower text-2xl mb-1"></i>
-                        <div class="text-[10px] font-black uppercase tracking-tighter text-center leading-tight px-2">${repeater.service}</div>
-                        <div class="text-[8px] font-mono opacity-60 mt-0.5">${repeater.ip}</div>
+                    <div class="draggable-wrapper cursor-move"
+                         style="position: relative; z-index: 50; transition: transform 0.3s ease-out; ${posStyle}"
+                         onmousedown="startTopologyDrag(event, this, '${repeater.ip}')"
+                         ontouchstart="startTopologyDrag(event, this, '${repeater.ip}')">
+                        <div class="w-24 h-24 bg-red-600 text-white rounded-xl shadow-xl border-4 border-white dark:border-gray-800 flex flex-col items-center justify-center z-10 hover:scale-110 transition-all cursor-pointer relative" 
+                             onclick="handleTopologyClick('${repeater.ip}')">
+                            <i class="fas fa-broadcast-tower text-2xl mb-1"></i>
+                            <div class="text-[10px] font-black uppercase tracking-tighter text-center leading-tight px-2">${repeater.service}</div>
+                            <div class="text-[8px] font-mono opacity-60 mt-0.5">${repeater.ip}</div>
+                        </div>
                     </div>
                     
                     ${repeaterDevices.length > 0 ? `
@@ -1256,30 +1395,38 @@ function renderDeviceSkin(dev) {
     const latencyColor = latencyVal < 30 ? 'text-emerald-500' : (latencyVal < 100 ? 'text-amber-500' : 'text-red-500');
     const responseTimeDisplay = !isNaN(latencyVal) ? latencyVal.toFixed(2) : dev.average_response_time;
 
+    const positions = loadTopologyPositions();
+    const posStyle = positions[dev.ip] ? `transform: translate(${positions[dev.ip].x}px, ${positions[dev.ip].y}px);` : '';
+
     return `
-        <div class="device-card-h p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm flex items-center gap-4 min-w-[200px] cursor-pointer relative overflow-hidden group/card" 
-             onclick="showIpDetailModal('${dev.ip}')">
-            
-            <!-- Side Status Indicator -->
-            <div class="absolute left-0 top-0 bottom-0 w-1 ${statusColor} opacity-50 group-hover/card:opacity-100 transition-opacity"></div>
-            
-            <div class="w-11 h-11 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 group-hover/card:text-indigo-500 transition-all group-hover/card:scale-110 shadow-inner">
-                <i class="fas fa-desktop text-md"></i>
-            </div>
-            
-            <div class="flex flex-col overflow-hidden">
-                <div class="flex items-center gap-2">
-                    <span class="text-[12px] font-black tracking-tight truncate text-gray-800 dark:text-gray-100">${dev.service}</span>
+        <div class="draggable-wrapper cursor-move" 
+             style="position: relative; z-index: 50; transition: transform 0.3s ease-out; ${posStyle}"
+             onmousedown="startTopologyDrag(event, this, '${dev.ip}')"
+             ontouchstart="startTopologyDrag(event, this, '${dev.ip}')">
+            <div class="device-card-h p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm flex items-center gap-4 min-w-[200px] cursor-pointer relative overflow-hidden group/card" 
+                 onclick="handleTopologyClick('${dev.ip}')">
+                
+                <!-- Side Status Indicator -->
+                <div class="absolute left-0 top-0 bottom-0 w-1 ${statusColor} opacity-50 group-hover/card:opacity-100 transition-opacity"></div>
+                
+                <div class="w-11 h-11 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 group-hover/card:text-indigo-500 transition-all group-hover/card:scale-110 shadow-inner">
+                    <i class="fas fa-desktop text-md"></i>
                 </div>
-                <div class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 ${statusColor} rounded-full animate-pulse"></span>
-                    <span class="text-[10px] font-mono text-gray-500">${dev.ip}</span>
+                
+                <div class="flex flex-col overflow-hidden">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[12px] font-black tracking-tight truncate text-gray-800 dark:text-gray-100">${dev.service}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 ${statusColor} rounded-full animate-pulse"></span>
+                        <span class="text-[10px] font-mono text-gray-500">${dev.ip}</span>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="ml-auto flex flex-col items-end border-l border-gray-100 dark:border-gray-700 pl-4">
-                 <span class="text-[12px] font-black ${latencyColor}">${responseTimeDisplay}</span>
-                 <span class="text-[8px] text-gray-400 uppercase font-black tracking-tighter">ms</span>
+                
+                <div class="ml-auto flex flex-col items-end border-l border-gray-100 dark:border-gray-700 pl-4">
+                     <span class="text-[12px] font-black ${latencyColor}">${responseTimeDisplay}</span>
+                     <span class="text-[8px] text-gray-400 uppercase font-black tracking-tighter">ms</span>
+                </div>
             </div>
         </div>
     `;
