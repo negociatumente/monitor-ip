@@ -329,6 +329,11 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         <i class="fas fa-tachometer-alt"></i> <span class="hidden sm:inline">Speed
                                             Test</span><span class="sm:hidden">Speed Test</span>
                                     </button>
+                                    <button type="button" onclick="showSetNetworkSpeedModal();"
+                                        class="btn  btn-info px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto text-white" style="background-color: #6366f1;">
+                                        <i class="fas fa-bolt"></i> <span class="hidden sm:inline">Set
+                                            Speed</span><span class="sm:hidden">Set Speed</span>
+                                    </button>
                                 <?php else: ?>
                                     <button onclick="showAddIpForm();"
                                         class="btn  btn-primary px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
