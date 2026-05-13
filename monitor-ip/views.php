@@ -127,6 +127,7 @@ if (isset($_GET['imported'])) {
                     'response_class' => $response_styling['class'],
                     'ping_results' => $result['ping_results'],
                     'network_type' => $ips_network[$ip] ?? null,
+                    'type' => $ips_types[$ip] ?? null,
                     'ip' => $ip,
                 ]);
             }
@@ -337,10 +338,11 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                             <i class='fas fa-table mr-2'></i> IP Monitoring Table
                         </h2>
 
-                        <!-- Action Buttons -->
-                        <div class="w-full sm:w-auto">
+                        <!-- Action Buttons and Filter -->
+                        <div class="w-full sm:w-auto flex flex-col md:flex-row gap-3 items-center">
+
                             <div
-                                class="grid grid-cols-2 sm:flex sm:flex-row flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
+                                class="grid grid-cols-2 sm:flex sm:flex-row flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start w-full md:w-auto">
                                 <?php if (isset($network_type) && $network_type === 'local'): ?>
                                     <button type="button" onclick="showScanNetworkModal();"
                                         class="btn  btn-primary px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
@@ -353,7 +355,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             Test</span><span class="sm:hidden">Speed Test</span>
                                     </button>
                                     <button type="button" onclick="showSetNetworkSpeedModal();"
-                                        class="btn  btn-info px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto text-white" style="background-color: #6366f1;">
+                                        class="btn  btn-info px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto text-white"
+                                        style="background-color: #6366f1;">
                                         <i class="fas fa-bolt"></i> <span class="hidden sm:inline">Set
                                             Speed</span><span class="sm:hidden">Set Speed</span>
                                     </button>
@@ -401,19 +404,21 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                             </div>
                         </div>
                         <div class="w-full sm:w-auto min-w-0">
-                            <select id="serviceFilter" onchange="filterTable()"
+                            <select id="typeFilter" onchange="filterTable()"
                                 class="w-full p-2 text-xs sm:text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                <option value=""><?php echo $is_local_network ? 'All Devices' : 'All Services'; ?>
-                                </option>
-                                <?php foreach ($services as $service_name => $color): ?>
-                                    <?php if ($service_name !== "DEFAULT"): ?>
-                                        <option value="<?php echo htmlspecialchars($service_name); ?>">
-                                            <?php echo htmlspecialchars($service_name); ?>
-                                        </option>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
+                                <option value="">All Types</option>
+                                <?php
+                                $unique_types = array_unique(array_values($ips_types));
+                                sort($unique_types);
+                                foreach ($unique_types as $type) {
+                                    if (!empty($type)) {
+                                        echo '<option value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '</option>';
+                                    }
+                                }
+                                ?>
                             </select>
                         </div>
+
                         <div class="w-full sm:w-auto min-w-0">
                             <select id="statusFilter" onchange="filterTable()"
                                 class="w-full p-2 text-xs sm:text-sm bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
@@ -431,9 +436,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         <table class='min-w-max w-full'>
                             <thead>
                                 <tr class='bg-gray-50 dark:bg-gray-700 text-left'>
-                                    <th class='p-3 whitespace-nowrap'>
-                                        <?php echo $is_local_network ? 'Device' : 'Service'; ?>
-                                    </th>
+                                    <th class='p-3 whitespace-nowrap'>Host</th>
+                                    <th class='p-3 whitespace-nowrap'>Type</th>
                                     <th class='p-3 whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600'
                                         onclick="window.location.href='?sort=ip&order=<?php echo (isset($_GET['sort']) && $_GET['sort'] === 'ip' && isset($_GET['order']) && $_GET['order'] === 'asc') ? 'desc' : 'asc'; ?><?php echo $network_param; ?>&no_ping=1'">
                                         <div class="flex items-center gap-1">
@@ -638,15 +642,25 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         $method_icon = $method === 'icmp' ? 'network-wired' : ($method === 'curl' ? 'globe' : 'server');
                                         ?>
                                         <tr class='hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-150 cursor-pointer'
+                                            data-category="<?php echo htmlspecialchars($ips_types[$ip] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                             onclick="showIpDetailModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')">
                                             <td class='p-3 group'>
                                                 <div class='flex items-center gap-2'>
-                                                    <span
-                                                        class='inline-block px-3 py-1 rounded-full text-sm font-medium transition-transform group-hover:scale-105 shadow-sm'
-                                                        style='background-color: <?php echo $service_styling['color']; ?>; color: <?php echo $service_styling['text_color']; ?>'>
-                                                        <?php echo $service; ?>
+                                                    <span class="text-sm font-bold text-gray-800 dark:text-gray-200">
+                                                        <?php echo htmlspecialchars($service, ENT_QUOTES, 'UTF-8'); ?>
                                                     </span>
                                                 </div>
+                                            </td>
+                                            <td class='p-3'>
+                                                <?php if ($is_local_network): ?>
+                                                    <span
+                                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                        <i class="fas fa-tag mr-1 text-[10px]"></i>
+                                                        <?php echo htmlspecialchars($ips_types[$ip] ?? 'Unknown', ENT_QUOTES, 'UTF-8'); ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="text-gray-400 dark:text-gray-600 text-xs italic">N/A</span>
+                                                <?php endif; ?>
                                             </td>
                                             <td class='p-3 font-mono text-sm'>
                                                 <div class="flex items-center gap-2">
@@ -1043,29 +1057,31 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                     <label for="new_device_name"
                                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Device
                                         Name</label>
-
-                                    <!-- Quick Select for special devices -->
-                                    <div
-                                        class="flex items-center gap-4 mb-3 p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-800">
-                                        <label class="flex items-center gap-2 cursor-pointer group">
-                                            <input type="checkbox" id="check_is_gateway"
-                                                onchange="handleSpecialDeviceCheck('gateway')"
-                                                class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
-                                            <span
-                                                class="text-[10px] font-black uppercase tracking-widest text-gray-500 group-hover:text-blue-500 transition-colors">Gateway</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 cursor-pointer group">
-                                            <input type="checkbox" id="check_is_repeater"
-                                                onchange="handleSpecialDeviceCheck('repeater')"
-                                                class="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600">
-                                            <span
-                                                class="text-[10px] font-black uppercase tracking-widest text-gray-500 group-hover:text-red-500 transition-colors">Repetidor</span>
-                                        </label>
-                                    </div>
-
                                     <input type="text" id="new_device_name" name="new_device_name"
-                                        class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                                        required>
+                                        placeholder="e.g. My iPhone"
+                                        class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div class="mb-5">
+                                    <label for="new_device_type"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Device
+                                        Type</label>
+                                    <div class="relative">
+                                        <select id="new_device_type" name="new_device_type"
+                                            class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                                            required>
+                                            <option value="Gateway">Gateway</option>
+                                            <option value="AP/Mesh">AP/Mesh</option>
+                                            <option value="Cámara">Cámara</option>
+                                            <option value="Móvil">Móvil</option>
+                                            <option value="Ordenador">Ordenador</option>
+                                            <option value="Impresora">Impresora</option>
+                                            <option value="Otro">Otro</option>
+                                        </select>
+                                        <div
+                                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="mb-5">
                                     <label for="new_network_type"
@@ -1113,50 +1129,51 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         </div>
                                     </div>
                                 </div>
-                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
 
-                            <!-- New Service Creation -->
-                            <div id="newServiceForIpForm" style="display: none;"
-                                class="mb-5 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
-                                <div class="mb-3">
-                                    <label for="new_service_inline_name"
-                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service
-                                        Name</label>
-                                    <input type="text" id="new_service_inline_name" name="new_service_inline_name"
-                                        placeholder="e.g. Critical Server"
-                                        class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:text-white">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="new_service_inline_color"
-                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
-                                    <div class="flex items-center space-x-3">
-                                        <input type="color" id="new_service_inline_color"
-                                            name="new_service_inline_color" value="#3b82f6"
-                                            class="h-10 w-16 rounded border border-gray-300 cursor-pointer dark:bg-gray-700 dark:border-gray-600">
-                                        <div class="flex-1">
-                                            <div class="w-full h-10 rounded shadow-sm border border-gray-200 dark:border-gray-700"
-                                                id="new_service_inline_color_preview" style="background-color: #3b82f6">
-                                            </div>
-                                        </div>
+                    <!-- New Service Creation -->
+                    <div id="newServiceForIpForm" style="display: none;"
+                        class="mb-5 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
+                        <div class="mb-3">
+                            <label for="new_service_inline_name"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service
+                                Name</label>
+                            <input type="text" id="new_service_inline_name" name="new_service_inline_name"
+                                placeholder="e.g. Critical Server"
+                                class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+                        </div>
+                        <div class="mb-3">
+                            <label for="new_service_inline_color"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
+                            <div class="flex items-center space-x-3">
+                                <input type="color" id="new_service_inline_color" name="new_service_inline_color"
+                                    value="#3b82f6"
+                                    class="h-10 w-16 rounded border border-gray-300 cursor-pointer dark:bg-gray-700 dark:border-gray-600">
+                                <div class="flex-1">
+                                    <div class="w-full h-10 rounded shadow-sm border border-gray-200 dark:border-gray-700"
+                                        id="new_service_inline_color_preview" style="background-color: #3b82f6">
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="flex justify-end gap-3 mt-6">
-                                <button type="button" onclick="closeChangeIpServiceModal()"
-                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                                    Cancel
-                                </button>
-                                <button type="submit" name="confirm_update_ip_service"
-                                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 shadow-md transition-all active:scale-95">
-                                    <i class="fas fa-save mr-2"></i> Save Changes
-                                </button>
-                            </div>
-                        </form>
+                        </div>
                     </div>
+
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" onclick="closeChangeIpServiceModal()"
+                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" name="confirm_update_ip_service"
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 shadow-md transition-all active:scale-95">
+                            <i class="fas fa-save mr-2"></i> Save Changes
+                        </button>
+                    </div>
+                    </form>
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
     <!-- Footer -->

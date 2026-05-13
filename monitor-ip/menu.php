@@ -54,163 +54,164 @@
         <div class="overflow-x-auto w-full pb-4 custom-scrollbar">
             <!-- Single Row Layout - Responsive -->
             <div class="flex items-center gap-2 sm:gap-4 flex-nowrap min-w-max pr-4">
-            <!-- Health Circle - Enhanced -->
-            <div
-                class="flex items-center gap-2 sm:gap-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-2 sm:p-3 shadow-2xl border-2 border-gray-300/50 dark:border-gray-600/50 hover:shadow-3xl transition-all flex-shrink-0">
-                <div class="relative w-16 sm:w-20 h-16 sm:h-20 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 80 80">
-                        <defs>
-                            <linearGradient id="healthGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%"
-                                    style="stop-color:rgb(<?php echo $health_color === 'emerald' ? '16,185,129' : ($health_color === 'amber' ? '245,158,11' : '239,68,68'); ?>);stop-opacity:1" />
-                                <stop offset="100%"
-                                    style="stop-color:rgb(<?php echo $health_color === 'emerald' ? '5,150,105' : ($health_color === 'amber' ? '217,119,6' : '220,38,38'); ?>);stop-opacity:1" />
-                            </linearGradient>
-                        </defs>
-                        <circle cx="40" cy="40" r="32" stroke="currentColor" stroke-width="5" fill="transparent"
-                            class="text-gray-200 dark:text-gray-700" />
-                        <circle cx="40" cy="40" r="32" stroke="url(#healthGradient)" stroke-width="5" fill="transparent"
-                            class="transition-all duration-1000 ease-out drop-shadow-lg"
-                            stroke-dasharray="<?php echo $circle_circumference; ?>"
-                            stroke-dashoffset="<?php echo $circle_offset; ?>" stroke-linecap="round" />
-                    </svg>
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <i
-                            class="fas fa-heartbeat text-<?php echo $health_color; ?>-500 text-lg sm:text-2xl drop-shadow-md"></i>
-                    </div>
-                </div>
-                <div class="flex-shrink-0">
-                    <p
-                        class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                        Uptime</p>
-                    <div class="flex items-baseline gap-2">
-                        <span
-                            class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100"><?php echo $uptime_percentage; ?>%</span>
-                    </div>
-                </div>
-
-
-                <div class="flex items-center gap-2 sm:gap-5 ml-1 sm:ml-4 mr-1 sm:mr-4">
-                    <div class="text-center">
-                        <p class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100">
-                            <?php echo $stats['total_ips']; ?>
-                        </p>
-                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">
-                            Total</p>
-                    </div>
-                    <div class="w-px h-8 sm:h-12 bg-gray-300 dark:bg-gray-600"></div>
-                    <div class="text-center">
-                        <p class="text-2xl sm:text-3xl font-black text-green-600 dark:text-green-400">
-                            <?php echo $stats['ips_up']; ?>
-                        </p>
-                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">
-                            Online</p>
-                    </div>
-                    <div class="w-px h-8 sm:h-12 bg-gray-300 dark:bg-gray-600"></div>
-                    <div class="text-center">
-                        <p class="text-2xl sm:text-3xl font-black text-red-600 dark:text-red-400">
-                            <?php echo $stats['ips_down']; ?>
-                        </p>
-                        <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">
-                            Offline</p>
-                    </div>
-                </div>
-
-                <div class="ml-1 sm:ml-4 mr-1 sm:mr-2">
-                    <p
-                        class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                        Latency</p>
-                    <div class="flex items-baseline gap-2">
-                        <span class="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
-                            <?php echo ($stats['average_ping'] !== 'N/A' ? $stats['average_ping'] : '-'); ?>
-                        </span>
-                        <span
-                            class="text-xs sm:text-base text-gray-500 dark:text-gray-400 font-semibold"><?php echo ($stats['average_ping'] !== 'N/A' ? 'ms' : 'N/A'); ?></span>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Compact Timer Interval -->
-            <div class="flex items-center gap-2 bg-blue-50/80 dark:bg-blue-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-blue-200/50 dark:border-blue-700/40 hover:bg-blue-100/80 dark:hover:bg-blue-900/30 transition-all group cursor-pointer flex-shrink-0"
-                onclick="showChangeTimerForm();">
-                <i class="fas fa-clock text-blue-500 text-xs sm:text-sm"></i>
-                <div class="hidden sm:block">
-                    <p class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Interval</p>
-                    <span
-                        class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_interval; ?>s</span>
-                </div>
-                <button onclick="showChangeTimerForm(); event.stopPropagation();"
-                    class="ml-1 p-1 rounded hover:bg-blue-200/50 dark:hover:bg-blue-800/40 transition-all opacity-0 group-hover:opacity-100"
-                    title="Change Timer">
-                    <i class="fas fa-edit text-blue-600 dark:text-blue-400 text-[10px] sm:text-xs"></i>
-                </button>
-            </div>
-
-            <!-- Compact Ping History -->
-            <div class="flex items-center gap-2 bg-purple-50/80 dark:bg-purple-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-purple-200/50 dark:border-purple-700/40 hover:bg-purple-100/80 dark:hover:bg-purple-900/30 transition-all group cursor-pointer flex-shrink-0"
-                onclick="showChangePingAttemptsForm();">
-                <i class="fas fa-history text-purple-500 text-xs sm:text-sm"></i>
-                <div class="hidden sm:block">
-                    <p class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">History</p>
-                    <span
-                        class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_attempts; ?>
-                        pings</span>
-                </div>
-                <button onclick="showChangePingAttemptsForm(); event.stopPropagation();"
-                    class="ml-1 p-1 rounded hover:bg-purple-200/50 dark:hover:bg-purple-800/40 transition-all opacity-0 group-hover:opacity-100"
-                    title="Change History">
-                    <i class="fas fa-edit text-purple-600 dark:text-purple-400 text-[10px] sm:text-xs"></i>
-                </button>
-            </div>
-
-
-
-            <!-- El temporizador a la derecha -->
-            <div class="flex-1 flex justify-end min-w-0">
+                <!-- Health Circle - Enhanced -->
                 <div
-                    class="flex items-center gap-2 sm:gap-4 bg-white dark:bg-gray-800 rounded-2xl p-2 sm:p-4 shadow-xl border-2 border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-all relative overflow-hidden group min-w-0">
-                    <!-- Subtle animated background -->
-                    <div
-                        class="absolute inset-0 bg-gradient-to-r from-gray-50/0 via-gray-100/30 to-gray-50/0 dark:from-gray-700/0 dark:via-gray-600/30 dark:to-gray-700/0 group-hover:via-gray-100/50 dark:group-hover:via-gray-600/50 transition-all duration-1000">
+                    class="flex items-center gap-2 sm:gap-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-2 sm:p-3 shadow-2xl border-2 border-gray-300/50 dark:border-gray-600/50 hover:shadow-3xl transition-all flex-shrink-0">
+                    <div class="relative w-16 sm:w-20 h-16 sm:h-20 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 80 80">
+                            <defs>
+                                <linearGradient id="healthGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%"
+                                        style="stop-color:rgb(<?php echo $health_color === 'emerald' ? '16,185,129' : ($health_color === 'amber' ? '245,158,11' : '239,68,68'); ?>);stop-opacity:1" />
+                                    <stop offset="100%"
+                                        style="stop-color:rgb(<?php echo $health_color === 'emerald' ? '5,150,105' : ($health_color === 'amber' ? '217,119,6' : '220,38,38'); ?>);stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="40" cy="40" r="32" stroke="currentColor" stroke-width="5" fill="transparent"
+                                class="text-gray-200 dark:text-gray-700" />
+                            <circle cx="40" cy="40" r="32" stroke="url(#healthGradient)" stroke-width="5"
+                                fill="transparent" class="transition-all duration-1000 ease-out drop-shadow-lg"
+                                stroke-dasharray="<?php echo $circle_circumference; ?>"
+                                stroke-dashoffset="<?php echo $circle_offset; ?>" stroke-linecap="round" />
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <i
+                                class="fas fa-heartbeat text-<?php echo $health_color; ?>-500 text-lg sm:text-2xl drop-shadow-md"></i>
+                        </div>
                     </div>
-
-                    <div class="relative z-10 flex-1 min-w-0">
+                    <div class="flex-shrink-0">
                         <p
-                            class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">
-                            Next Ping</p>
-                        <div id="nextPingBlock" class="flex items-baseline gap-2">
+                            class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                            Uptime</p>
+                        <div class="flex items-baseline gap-2">
                             <span
-                                class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100 font-mono tracking-tight"
-                                id="countdown"><?php echo $ping_interval; ?></span>
-                            <span class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300">sec</span>
-                        </div>
-                        <div id="stoppedMsg" style="display:none;"
-                            class="relative z-10 flex items-center gap-2 rounded-xl  ">
-                            <i class="fas fa-pause-circle text-orange-600 dark:text-orange-400"></i>
-                            <span class="text-sm font-bold text-orange-700 dark:text-orange-300">Paused</span>
+                                class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100"><?php echo $uptime_percentage; ?>%</span>
                         </div>
                     </div>
 
-                    <div
-                        class="relative z-10 flex items-center gap-1 sm:gap-2 ml-2 sm:ml-3 pl-2 sm:pl-3 border-l border-gray-200 dark:border-gray-700 flex-shrink-0">
-                        <button id="checkNowBtn" onclick="reloadPage();"
-                            class="btn bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs transition-all shadow-md hover:shadow-lg font-semibold">
-                            <i class="fas fa-redo-alt mr-1 hidden sm:inline"></i>Check
-                        </button>
-                        <button id="stopPingBtn" onclick="stopPing();"
-                            class="btn bg-gray-500 hover:bg-gray-600 text-white px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-lg text-xs transition-all shadow-md hover:shadow-lg">
-                            <i class="fas fa-pause"></i>
-                        </button>
-                        <button id="resumePingBtn" onclick="startPing();" style="display:none;"
-                            class="btn bg-green-500 hover:bg-green-600 text-white px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-lg text-xs transition-all shadow-md hover:shadow-lg">
-                            <i class="fas fa-play"></i>
-                        </button>
+
+                    <div class="flex items-center gap-2 sm:gap-5 ml-1 sm:ml-4 mr-1 sm:mr-4">
+                        <div class="text-center">
+                            <p class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100">
+                                <?php echo $stats['total_ips']; ?>
+                            </p>
+                            <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">
+                                Total</p>
+                        </div>
+                        <div class="w-px h-8 sm:h-12 bg-gray-300 dark:bg-gray-600"></div>
+                        <div class="text-center">
+                            <p class="text-2xl sm:text-3xl font-black text-green-600 dark:text-green-400">
+                                <?php echo $stats['ips_up']; ?>
+                            </p>
+                            <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">
+                                Online</p>
+                        </div>
+                        <div class="w-px h-8 sm:h-12 bg-gray-300 dark:bg-gray-600"></div>
+                        <div class="text-center">
+                            <p class="text-2xl sm:text-3xl font-black text-red-600 dark:text-red-400">
+                                <?php echo $stats['ips_down']; ?>
+                            </p>
+                            <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mt-1">
+                                Offline</p>
+                        </div>
                     </div>
+
+                    <div class="ml-1 sm:ml-4 mr-1 sm:mr-2">
+                        <p
+                            class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                            Latency</p>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
+                                <?php echo ($stats['average_ping'] !== 'N/A' ? $stats['average_ping'] : '-'); ?>
+                            </span>
+                            <span
+                                class="text-xs sm:text-base text-gray-500 dark:text-gray-400 font-semibold"><?php echo ($stats['average_ping'] !== 'N/A' ? 'ms' : 'N/A'); ?></span>
+                        </div>
+                    </div>
+
                 </div>
 
+                <!-- Compact Timer Interval -->
+                <div class="flex items-center gap-2 bg-blue-50/80 dark:bg-blue-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-blue-200/50 dark:border-blue-700/40 hover:bg-blue-100/80 dark:hover:bg-blue-900/30 transition-all group cursor-pointer flex-shrink-0"
+                    onclick="showChangeTimerForm();">
+                    <i class="fas fa-clock text-blue-500 text-xs sm:text-sm"></i>
+                    <div class="hidden sm:block">
+                        <p class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Interval</p>
+                        <span
+                            class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_interval; ?>s</span>
+                    </div>
+                    <button onclick="showChangeTimerForm(); event.stopPropagation();"
+                        class="ml-1 p-1 rounded hover:bg-blue-200/50 dark:hover:bg-blue-800/40 transition-all opacity-0 group-hover:opacity-100"
+                        title="Change Timer">
+                        <i class="fas fa-edit text-blue-600 dark:text-blue-400 text-[10px] sm:text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Compact Ping History -->
+                <div class="flex items-center gap-2 bg-purple-50/80 dark:bg-purple-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-purple-200/50 dark:border-purple-700/40 hover:bg-purple-100/80 dark:hover:bg-purple-900/30 transition-all group cursor-pointer flex-shrink-0"
+                    onclick="showChangePingAttemptsForm();">
+                    <i class="fas fa-history text-purple-500 text-xs sm:text-sm"></i>
+                    <div class="hidden sm:block">
+                        <p class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">History</p>
+                        <span
+                            class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_attempts; ?>
+                            pings</span>
+                    </div>
+                    <button onclick="showChangePingAttemptsForm(); event.stopPropagation();"
+                        class="ml-1 p-1 rounded hover:bg-purple-200/50 dark:hover:bg-purple-800/40 transition-all opacity-0 group-hover:opacity-100"
+                        title="Change History">
+                        <i class="fas fa-edit text-purple-600 dark:text-purple-400 text-[10px] sm:text-xs"></i>
+                    </button>
+                </div>
+
+
+
+                <!-- El temporizador a la derecha -->
+                <div class="flex-1 flex justify-end min-w-0">
+                    <div
+                        class="flex items-center gap-2 sm:gap-4 bg-white dark:bg-gray-800 rounded-2xl p-2 sm:p-4 shadow-xl border-2 border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-all relative overflow-hidden group min-w-0">
+                        <!-- Subtle animated background -->
+                        <div
+                            class="absolute inset-0 bg-gradient-to-r from-gray-50/0 via-gray-100/30 to-gray-50/0 dark:from-gray-700/0 dark:via-gray-600/30 dark:to-gray-700/0 group-hover:via-gray-100/50 dark:group-hover:via-gray-600/50 transition-all duration-1000">
+                        </div>
+
+                        <div class="relative z-10 flex-1 min-w-0">
+                            <p
+                                class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">
+                                Next Ping</p>
+                            <div id="nextPingBlock" class="flex items-baseline gap-2">
+                                <span
+                                    class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100 font-mono tracking-tight"
+                                    id="countdown"><?php echo $ping_interval; ?></span>
+                                <span
+                                    class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300">sec</span>
+                            </div>
+                            <div id="stoppedMsg" style="display:none;"
+                                class="relative z-10 flex items-center gap-2 rounded-xl  ">
+                                <i class="fas fa-pause-circle text-orange-600 dark:text-orange-400"></i>
+                                <span class="text-sm font-bold text-orange-700 dark:text-orange-300">Paused</span>
+                            </div>
+                        </div>
+
+                        <div
+                            class="relative z-10 flex items-center gap-1 sm:gap-2 ml-2 sm:ml-3 pl-2 sm:pl-3 border-l border-gray-200 dark:border-gray-700 flex-shrink-0">
+                            <button id="checkNowBtn" onclick="reloadPage();"
+                                class="btn bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs transition-all shadow-md hover:shadow-lg font-semibold">
+                                <i class="fas fa-redo-alt mr-1 hidden sm:inline"></i>Check
+                            </button>
+                            <button id="stopPingBtn" onclick="stopPing();"
+                                class="btn bg-gray-500 hover:bg-gray-600 text-white px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-lg text-xs transition-all shadow-md hover:shadow-lg">
+                                <i class="fas fa-pause"></i>
+                            </button>
+                            <button id="resumePingBtn" onclick="startPing();" style="display:none;"
+                                class="btn bg-green-500 hover:bg-green-600 text-white px-1.5 sm:px-2.5 py-1.5 sm:py-2 rounded-lg text-xs transition-all shadow-md hover:shadow-lg">
+                                <i class="fas fa-play"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
             </div>
-        </div>
         </div> <!-- Close horizontal scroll wrapper -->
     </div>
 </div>
@@ -325,6 +326,23 @@
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
+            </div>
+
+            <div class="px-4 pb-4">
+                <label for="new_category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type
+                    (Optional)</label>
+                <input type="text" id="new_category" name="new_category" list="category_list"
+                    placeholder="e.g. Servers, IoT, Cameras"
+                    class="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                <datalist id="category_list">
+                    <?php
+                    $unique_types_add = isset($ips_types) ? array_unique(array_values($ips_types)) : [];
+                    foreach ($unique_types_add as $type): ?>
+                        <?php if (!empty($type)): ?>
+                            <option value="<?php echo htmlspecialchars($type, ENT_QUOTES, 'UTF-8'); ?>">
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                </datalist>
             </div>
 
             <!-- New Service Creation Form (Hidden by default) -->

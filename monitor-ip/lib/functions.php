@@ -306,6 +306,10 @@ function delete_ip_from_config($ip)
         if (isset($config['ips-network'][$ip])) {
             unset($config['ips-network'][$ip]);
         }
+        // Also remove from ips-type if exists
+        if (isset($config['ips-type'][$ip])) {
+            unset($config['ips-type'][$ip]);
+        }
         $new_content = '';
         foreach ($config as $section => $values) {
             $new_content .= "[$section]\n";
@@ -340,7 +344,7 @@ function isValidHost($host)
 }
 
 // Función para agregar una IP al archivo config.ini
-function add_ip_to_config($ip, $service, $method = 'icmp')
+function add_ip_to_config($ip, $service, $method = 'icmp', $category = '')
 {
     // Validar IP o Dominio
     if (!isValidHost($ip)) {
@@ -371,6 +375,13 @@ function add_ip_to_config($ip, $service, $method = 'icmp')
     global $is_local_network;
     $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
     $config[$ips_section][$clean_ip] = $clean_service;
+
+    if (!empty($category)) {
+        if (!isset($config['ips-categories'])) {
+            $config['ips-categories'] = [];
+        }
+        $config['ips-categories'][$clean_ip] = htmlspecialchars($category, ENT_QUOTES, 'UTF-8');
+    }
 
     // Store monitoring method for the service in services-methods
     if (!isset($config['services-methods'])) {
@@ -491,7 +502,7 @@ function save_config_file($config, $file_path)
 }
 
 // Función para actualizar el servicio de una IP específica
-function update_ip_service($ip, $new_service)
+function update_ip_service($ip, $new_service, $category = '')
 {
     global $config_path;
     $config = parse_ini_file($config_path, true);
@@ -507,11 +518,21 @@ function update_ip_service($ip, $new_service)
 
     $config[$ips_section][$clean_ip] = $clean_service;
 
+    if (!isset($config['ips-categories'])) {
+        $config['ips-categories'] = [];
+    }
+    
+    if (!empty($category)) {
+        $config['ips-categories'][$clean_ip] = htmlspecialchars($category, ENT_QUOTES, 'UTF-8');
+    } else if (isset($config['ips-categories'][$clean_ip])) {
+        unset($config['ips-categories'][$clean_ip]);
+    }
+
     return save_config_file($config, $config_path);
 }
 
 // Función para actualizar el host y la red de una IP local
-function update_local_ip_config($ip, $new_name, $new_network)
+function update_local_ip_config($ip, $new_name, $new_network, $new_type = '')
 {
     global $config_path;
     $config = parse_ini_file($config_path, true);
@@ -521,6 +542,7 @@ function update_local_ip_config($ip, $new_name, $new_network)
 
     $clean_ip = htmlspecialchars($ip, ENT_QUOTES, 'UTF-8');
     $clean_name = htmlspecialchars($new_name, ENT_QUOTES, 'UTF-8');
+    $clean_type = htmlspecialchars($new_type, ENT_QUOTES, 'UTF-8');
     $clean_network = htmlspecialchars($new_network, ENT_QUOTES, 'UTF-8');
 
     // Update or Create sections if they don't exist
@@ -528,9 +550,12 @@ function update_local_ip_config($ip, $new_name, $new_network)
         $config['ips-host'] = [];
     if (!isset($config['ips-network']))
         $config['ips-network'] = [];
+    if (!isset($config['ips-type']))
+        $config['ips-type'] = [];
 
     $config['ips-host'][$clean_ip] = $clean_name;
     $config['ips-network'][$clean_ip] = $clean_network;
+    $config['ips-type'][$clean_ip] = $clean_type;
 
     // Guardar configuración
     $new_content = '';

@@ -33,6 +33,7 @@ if ($is_local_network) {
 }
 
 $services_methods = $config['services-methods'] ?? [];
+$ips_types = $config['ips-type'] ?? [];
 $ping_attempts = $config['settings']['ping_attempts'] ?? 5;
 $ping_interval = $config['settings']['ping_interval'] ?? 300;
 
@@ -334,6 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
     $new_ip = trim($_POST['new_ip']);
     $new_service = trim($_POST['new_service']);
     $new_method = trim($_POST['new_method'] ?? 'icmp'); // Default to ICMP
+    $new_category = trim($_POST['new_category'] ?? '');
 
     // Validar IP o Dominio
     if (!isValidHost($new_ip)) {
@@ -404,7 +406,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
     }
 
     // Añadir la IP
-    if (add_ip_to_config($validated_ip, $new_service, $new_method)) {
+    if (add_ip_to_config($validated_ip, $new_service, $new_method, $new_category)) {
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=added" . $network_param);
         exit;
     } else {
@@ -572,16 +574,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_update_ip_ser
         }
     }
 
+    $edit_category = trim($_POST['edit_category'] ?? '');
+
     if ($is_local_network) {
         $new_name = trim($_POST['new_device_name'] ?? '');
+        $new_type = trim($_POST['new_device_type'] ?? '');
         $new_network = trim($_POST['new_network_type'] ?? '');
 
-        if (update_local_ip_config($ip, $new_name, $new_network)) {
+        if (update_local_ip_config($ip, $new_name, $new_network, $new_type)) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_updated" . $network_param);
             exit;
         }
     } else {
-        if (update_ip_service($ip, $new_service)) {
+        if (update_ip_service($ip, $new_service, $edit_category)) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_updated" . $network_param);
             exit;
         }

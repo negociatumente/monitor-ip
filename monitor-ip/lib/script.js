@@ -847,9 +847,9 @@ function createPaginationHtml(ip, currentPage, totalPages) {
  * Filters the monitoring table based on search input, service, and status.
  */
 function filterTable() {
-    const searchInput = document.getElementById('searchFilter').value.toLowerCase();
-    const serviceFilter = document.getElementById('serviceFilter').value.toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+    const searchInput = document.getElementById('searchFilter') ? document.getElementById('searchFilter').value.toLowerCase() : '';
+    const statusFilter = document.getElementById('statusFilter') ? document.getElementById('statusFilter').value.toLowerCase() : '';
+    const typeFilter = document.getElementById('typeFilter') ? document.getElementById('typeFilter').value.toLowerCase() : '';
     const tableBody = document.getElementById('monitoringTableBody');
     const rows = tableBody.getElementsByTagName('tr');
 
@@ -858,21 +858,26 @@ function filterTable() {
         // Skip if it's the "No IPs" row (usually has colspan)
         if (row.cells.length < 4) continue;
 
-        const serviceCell = row.cells[0];
-        const ipCell = row.cells[1];
-        const statusCell = row.cells[3]; // Status column is at index 3 in both views
+        const hostCell = row.cells[0];
+        const typeCell = row.cells[1];
+        const ipCell = row.cells[2];
+        
+        // Status column is at index 4 for local network, 3 for external
+        const isLocal = document.body.contains(document.getElementById('scanNetworkModal')); // Simple check
+        const statusCell = isLocal ? row.cells[4] : row.cells[3];
 
-        if (!serviceCell || !ipCell || !statusCell) continue;
+        if (!hostCell || !typeCell || !ipCell || !statusCell) continue;
 
-        const serviceText = serviceCell.textContent.trim().toLowerCase();
+        const hostText = hostCell.textContent.trim().toLowerCase();
+        const typeText = typeCell.textContent.trim().toLowerCase();
         const ipText = ipCell.textContent.trim().toLowerCase();
         const statusText = statusCell.textContent.trim().toLowerCase();
 
-        const matchesSearch = ipText.includes(searchInput) || serviceText.includes(searchInput);
-        const matchesService = serviceFilter === '' || serviceText.includes(serviceFilter);
-        const matchesStatus = statusFilter === '' || statusText.includes(statusFilter);
+        const matchesSearch = ipText.includes(searchInput) || hostText.includes(searchInput) || typeText.includes(searchInput);
+        const matchesType = typeFilter === '' || typeText.includes(typeFilter);
+        const matchesStatus = statusFilter === '' || statusText === statusFilter;
 
-        if (matchesSearch && matchesService && matchesStatus) {
+        if (matchesSearch && matchesType && matchesStatus) {
             row.style.display = '';
         } else {
             row.style.display = 'none';
@@ -884,9 +889,9 @@ function filterTable() {
  * Resets all filters to default values.
  */
 function resetFilters() {
-    document.getElementById('searchFilter').value = '';
-    document.getElementById('serviceFilter').value = '';
-    document.getElementById('statusFilter').value = '';
+    if (document.getElementById('searchFilter')) document.getElementById('searchFilter').value = '';
+    if (document.getElementById('statusFilter')) document.getElementById('statusFilter').value = '';
+    if (document.getElementById('typeFilter')) document.getElementById('typeFilter').value = '';
     filterTable();
 }
 
@@ -1044,38 +1049,8 @@ window.saveIpService = saveIpService;
 /**
  * Handles the logic when a special device checkbox (Gateway/Repeater) is toggled.
  */
-window.handleSpecialDeviceCheck = function (type) {
-    const nameInput = document.getElementById('new_device_name');
-    const gatewayCheck = document.getElementById('check_is_gateway');
-    const repeaterCheck = document.getElementById('check_is_repeater');
-    const networkSelect = document.getElementById('new_network_type');
-
-    if (!nameInput || !gatewayCheck || !repeaterCheck) return;
-
-    if (type === 'gateway') {
-        if (gatewayCheck.checked) {
-            repeaterCheck.checked = false;
-            nameInput.value = 'Gateway';
-            nameInput.readOnly = true;
-            nameInput.classList.add('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
-        } else {
-            nameInput.readOnly = false;
-            nameInput.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
-        }
-    } else if (type === 'repeater') {
-        if (repeaterCheck.checked) {
-            gatewayCheck.checked = false;
-            nameInput.value = 'AP/Mesh';
-            nameInput.readOnly = true;
-            nameInput.classList.add('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
-            // Auto-select Repeater network type
-            if (networkSelect) networkSelect.value = 'AP/Mesh';
-        } else {
-            nameInput.readOnly = false;
-            nameInput.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
-        }
-    }
-};
+// handleSpecialDeviceCheck removed as it's replaced by a select menu
+window.handleSpecialDeviceCheck = function (type) { };
 
 window.toggleServiceEdit = toggleServiceEdit;
 window.saveIpService = saveIpService;
@@ -1086,17 +1061,27 @@ window.showChangeIpServiceModal = function (ip, currentService, isLocal = false,
     document.getElementById('change_service_ip').value = ip;
     document.getElementById('change_service_ip_display').value = ip;
 
+    // Set current category
+    const editCategoryInput = document.getElementById('edit_category');
+    if (editCategoryInput && window.ipDetails && window.ipDetails[ip]) {
+        editCategoryInput.value = window.ipDetails[ip].category || '';
+    }
+
     if (isLocal) {
+        const typeInput = document.getElementById('new_device_type');
         const nameInput = document.getElementById('new_device_name');
-        const gatewayCheck = document.getElementById('check_is_gateway');
-        const repeaterCheck = document.getElementById('check_is_repeater');
         const networkSelect = document.getElementById('new_network_type');
 
-        nameInput.value = currentService;
+        if (typeInput && window.ipDetails && window.ipDetails[ip]) {
+            const validTypes = ['Gateway', 'AP/Mesh', 'Cámara', 'Móvil', 'Ordenador', 'Impresora', 'Otro'];
+            const currentType = window.ipDetails[ip].type || '';
+            typeInput.value = validTypes.includes(currentType) ? currentType : 'Otro';
+        }
+        if (nameInput) {
+            nameInput.value = currentService; // currentService is ips-host (Name)
+        }
 
-        // Reset check states
-        if (gatewayCheck) gatewayCheck.checked = (currentService === 'Gateway');
-        if (repeaterCheck) repeaterCheck.checked = (currentService === 'AP/Mesh' || currentService === 'Repeater');
+        // Reset check states (checks removed from UI)
 
         // Dynamically populate Network Connection dropdown
         if (networkSelect) {
@@ -1126,14 +1111,8 @@ window.showChangeIpServiceModal = function (ip, currentService, isLocal = false,
             networkSelect.value = currentNetwork || 'Ethernet';
         }
 
-        // Apply readOnly if needed
-        if (gatewayCheck && gatewayCheck.checked) {
-            nameInput.readOnly = true;
-            nameInput.classList.add('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
-        } else if (repeaterCheck && repeaterCheck.checked) {
-            nameInput.readOnly = true;
-            nameInput.classList.add('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
-        } else {
+        // Apply readOnly if needed (logic removed as checkboxes are gone)
+        if (nameInput) {
             nameInput.readOnly = false;
             nameInput.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'cursor-not-allowed', 'opacity-60');
         }
