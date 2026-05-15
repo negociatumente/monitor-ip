@@ -1,5 +1,5 @@
 /**
- * IP Monitor Dashboard - Main JavaScript
+ * IP Monitor - Main JavaScript
  */
 
 /**
@@ -861,7 +861,7 @@ function filterTable() {
         const hostCell = row.cells[0];
         const typeCell = row.cells[1];
         const ipCell = row.cells[2];
-        
+
         // Status column is at index 4 for local network, 3 for external
         const isLocal = document.body.contains(document.getElementById('scanNetworkModal')); // Simple check
         const statusCell = isLocal ? row.cells[4] : row.cells[3];

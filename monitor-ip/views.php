@@ -51,9 +51,8 @@ if (isset($_GET['imported'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="IP Monitor - Track and monitor your network devices">
-    <title>IP Monitor Dashboard</title>
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%234f46e5%22/><circle cx=%2250%22 cy=%2250%22 r=%2235%22 stroke=%22white%22 stroke-width=%226%22 fill=%22none%22/><path d=%22M50 15 A35 35 0 0 1 50 85 A35 35 0 0 1 50 15 Z%22 stroke=%22white%22 stroke-width=%226%22 fill=%22none%22/><line x1=%2215%22 y1=%2250%22 x2=%2285%22 y2=%2250%22 stroke=%22white%22 stroke-width=%226%22/></svg>">
+    <title>IP Monitor</title>
+    <link rel="icon" type="image/png" href="favicon.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -171,8 +170,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         <i class="fas fa-bars text-lg sm:text-xl leading-none"></i>
                     </button>
                     <div
-                        class="bg-white bg-opacity-20 p-2 sm:p-3 rounded-full group-hover:bg-opacity-30 transition-all duration-300">
-                        <i class="fas <?php echo $header_icon; ?> text-lg sm:text-2xl text-white"></i>
+                        class="bg-white p-1 sm:p-1 rounded-xl group-hover:scale-110 transition-all duration-300 shadow-lg">
+                        <img src="logo.png" alt="Logo" class="w-8 h-8 sm:w-14 sm:h-14 object-contain">
                     </div>
                     <div>
                         <h1 class="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight">
@@ -1232,7 +1231,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
             <!-- Bottom bar -->
             <div class="border-t border-gray-700 mt-8 pt-6 text-center">
                 <p class="text-gray-400 text-xs">
-                    IP Monitor Dashboard • Open Source Network Monitoring Tool • Version
+                    IP Monitor • Open Source Network Monitoring Tool • Version
                     <?php echo isset($config['settings']['version']) ? htmlspecialchars($config['settings']['version'], ENT_QUOTES, 'UTF-8') : '1.0'; ?>
                 </p>
             </div>
