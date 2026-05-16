@@ -51,12 +51,12 @@
         ?>
 
         <!-- Horizontal scroll wrapper for mobile/tablet -->
-        <div class="overflow-x-auto w-full pb-4 custom-scrollbar">
+        <div class="overflow-x-auto w-full pb-2 custom-scrollbar rounded-2xl">
             <!-- Single Row Layout - Responsive -->
             <div class="flex items-center gap-2 sm:gap-4 flex-nowrap min-w-max pr-4">
                 <!-- Health Circle - Enhanced -->
                 <div
-                    class="flex items-center gap-2 sm:gap-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-2 sm:p-3 shadow-2xl border-2 border-gray-300/50 dark:border-gray-600/50 hover:shadow-3xl transition-all flex-shrink-0">
+                    class="flex items-center gap-2 sm:gap-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-2 sm:p-3 shadow-xl border-2 border-gray-300/50 dark:border-gray-600/50 hover:shadow-3xl transition-all flex-shrink-0">
                     <div class="relative w-16 sm:w-20 h-16 sm:h-20 flex items-center justify-center flex-shrink-0">
                         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 80 80">
                             <defs>
@@ -128,7 +128,6 @@
                                 class="text-xs sm:text-base text-gray-500 dark:text-gray-400 font-semibold"><?php echo ($stats['average_ping'] !== 'N/A' ? 'ms' : 'N/A'); ?></span>
                         </div>
                     </div>
-
                 </div>
 
                 <!-- Compact Timer Interval -->

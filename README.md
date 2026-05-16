@@ -17,6 +17,12 @@ Este proyecto permite **monitorear la conectividad** a servidores desde tu red l
 **¿Necesitas más información?**  
 👉 **[ACCEDE A LA GUÍA: Aprende a Monitorizar Servicios en Internet](https://negociatumente.com/guia-redes)** 👈
 
+## 💼 ¿Necesitas una versión personalizada para tu empresa?
+Si buscas una solución personalizada para tu empresa ofrezco versiones **Enterprise**:
+- 🛠️ **Personalización completa** (Logo, colores y funciones específicas).
+
+👉 **[Ponte en contacto para una consultoría](https://negociatumente.com/#contacto)**
+
 
 ![IP Monitor](assets/monitor-v1.0.png)
 

@@ -188,28 +188,46 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                     </div>
                 </div>
 
-                <!-- Navigation links - Hidden on mobile, visible on sm+ -->
-                <div class="hidden sm:flex flex-wrap justify-center lg:justify-end gap-2 items-center">
-                    <!--<a href="https://nordvpn.com/es/pricing/" target="_blank"
-                        class="bg-green-400 hover:bg-green-500 text-blue-900 font-bold px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm shadow-lg transform hover:scale-105">
-                        <i class="fas fa-shield-alt"></i>
-                        <span class="hidden sm:inline">Get Secure VPN</span>
-                    </a>-->
-                    <a href="https://negociatumente.com" target="_blank"
-                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm backdrop-blur-sm">
-                        <i class="fas fa-globe"></i>
-                        <span class="hidden md:inline">Web</span>
-                    </a>
-                    <a href="https://github.com/negociatumente/monitor-ip" target="_blank"
-                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm backdrop-blur-sm">
-                        <i class="fab fa-github"></i>
-                        <span class="hidden md:inline">GitHub</span>
-                    </a>
-                    <a href="https://negociatumente.com/guia-redes/" target="_blank"
-                        class="bg-white bg-opacity-10 hover:bg-opacity-20 px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm backdrop-blur-sm">
-                        <i class="fas fa-book"></i>
-                        <span class="hidden md:inline">Learn More</span>
-                    </a>
+                <!-- Navigation links -->
+                <div class="hidden sm:flex flex-1 justify-end items-center ml-4">
+                    <!-- Left Group: External Links (Hidden on small/medium screens) -->
+                    <div class="hidden lg:flex flex-wrap gap-2 mr-6">
+                        <a href="https://negociatumente.com" target="_blank"
+                            class="bg-white bg-opacity-10 hover:bg-opacity-20 px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm backdrop-blur-sm">
+                            <i class="fas fa-globe"></i>
+                            <span class="hidden md:inline">Web</span>
+                        </a>
+                        <a href="https://github.com/negociatumente/monitor-ip" target="_blank"
+                            class="bg-white bg-opacity-10 hover:bg-opacity-20 px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm backdrop-blur-sm">
+                            <i class="fab fa-github"></i>
+                            <span class="hidden md:inline">GitHub</span>
+                        </a>
+                        <a href="https://negociatumente.com/guia-redes/" target="_blank"
+                            class="bg-white bg-opacity-10 hover:bg-opacity-20 px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm backdrop-blur-sm">
+                            <i class="fas fa-book"></i>
+                            <span class="hidden md:inline">Learn More</span>
+                        </a>
+                    </div>
+
+                    <!-- Right Group: User & Logout (Smaller) -->
+                    <?php if ($login_enabled): ?>
+                        <div
+                            class="flex items-center gap-3 bg-black/10 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/5">
+                            <?php if (isset($_SESSION['username'])): ?>
+                                <div class="flex items-center gap-1.5 text-[10px] sm:text-xs opacity-90">
+                                    <i class="fas fa-user text-blue-300"></i>
+                                    <span
+                                        class="font-bold tracking-tight"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                                </div>
+                                <div class="w-px h-3 bg-white/20"></div>
+                            <?php endif; ?>
+                            <a href="logout.php"
+                                class="text-[10px] sm:text-xs text-red-200 hover:text-white transition-colors font-bold uppercase tracking-widest flex items-center gap-1">
+                                <i class="fas fa-power-off"></i>
+                                <span>Salir</span>
+                            </a>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

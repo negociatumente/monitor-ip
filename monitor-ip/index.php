@@ -1,4 +1,15 @@
 <?php
+session_start();
+
+// Cargar config para verificar si el login está habilitado
+$config_main = parse_ini_file(__DIR__ . '/conf/config.ini', true);
+$login_enabled = filter_var($config_main['security']['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+if ($login_enabled && !isset($_SESSION['authenticated'])) {
+    header('Location: login.php');
+    exit;
+}
+
 // Determine which network type to load
 $network_type = isset($_GET['network']) ? $_GET['network'] : 'external';
 $is_local_network = ($network_type === 'local');
