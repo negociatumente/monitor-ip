@@ -467,25 +467,40 @@
     </div>
 </div>
 <!-- Modal: Change Timer Interval -->
-<div id="changeTimerForm" class="modal">
-    <div class="modal-content max-w-3xl">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-clock text-blue-500 mr-2"></i> Change Timer Interval
-            </h2>
-            <button type="button" onclick="hideChangeTimerForm();"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
+<div id="changeTimerForm" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+        <div
+            class="bg-white dark:bg-gray-900 w-full max-w-3xl rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
 
-        <form method="POST" action="">
-            <div class="mb-6">
-                <div class="mb-6">
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Choose how often the system should check IP
-                        status</p>
+          <div class="p-5 bg-gradient-to-br from-blue-600 to-indigo-700 text-white relative overflow-hidden">
+                <!-- Decorative background elements -->
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i class="fas fa-globe-americas text-9xl"></i>
                 </div>
 
+                <div class="flex justify-between items-start relative z-10">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
+                            <i class="fas fa-globe text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold tracking-tight">Change Timer Interval</h3>
+                            <p class="text-blue-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
+                                Choose how often the system should check IP status
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="hideChangeTimerForm()"
+                        class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+        <form method="POST" action="">
+            <div class="mb-6 p-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    Select the frequency at which the system will check the status of IP addresses.
+                </p>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <!-- Critical Services - 30 seconds -->
                     <div class="group">
@@ -572,7 +587,7 @@
                 </div>
             </div>
             <input type="hidden" id="new_timer_value" name="new_timer_value" value="<?php echo $ping_interval; ?>">
-            <div class="flex justify-end gap-3 mt-6">
+            <div class="flex justify-end gap-3 mt-0 p-4">
                 <button type="button" onclick="hideChangeTimerForm();"
                     class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
                     <i class="fas fa-times mr-2"></i> Cancel
@@ -586,27 +601,39 @@
     </div>
 </div>
 <!-- Modal: Change Ping History -->
-<div id="changePingAttemptsForm" class="modal">
-    <div class="modal-content max-w-4xl">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-history text-blue-500 mr-2"></i> Change Ping History
-            </h2>
-            <button type="button" onclick="hideChangePingAttemptsForm();"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <i class="fas fa-times text-xl"></i>
-            </button>
+<div id="changePingAttemptsForm" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+    <div
+        class="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
+
+        <div class="p-5 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden">
+            <!-- Decorative background elements -->
+            <div class="absolute top-0 right-0 p-4 opacity-10">
+                <i class="fas fa-history text-9xl"></i>
+            </div>
+
+            <div class="flex justify-between items-start relative z-10">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
+                        <i class="fas fa-history text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold tracking-tight">Change Ping History</h3>
+                        <p class="text-purple-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
+                            Historical Data Length
+                        </p>
+                    </div>
+                </div>
+                <button type="button" onclick="hideChangePingAttemptsForm();"
+                    class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
         </div>
 
         <form method="POST" action="">
-            <div class="mb-6">
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        Select History Length
-                    </h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Choose how many ping results to keep for trend
-                        analysis</p>
-                </div>
+            <div class="mb-6 p-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Choose how many ping results to keep for trend
+                    analysis</p>
 
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                     <!-- Quick Analysis - 5 pings -->
@@ -696,15 +723,20 @@
                     value="<?php echo $ping_attempts; ?>">
             </div>
 
-            <div class="flex justify-end gap-3 mt-6">
-                <button type="button" onclick="hideChangePingAttemptsForm();"
-                    class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                    <i class="fas fa-times mr-2"></i> Cancel
-                </button>
-                <button type="submit" name="change_ping_attempts"
-                    class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                    <i class="fas fa-save mr-2"></i> Update
-                </button>
+            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex justify-between gap-3">
+                <p class="text-[10px] text-gray-400 text-center flex-1">
+                    More ping results provide better trend analysis, but require more storage and memory.
+                </p>
+                <div class="flex gap-3 flex-shrink-0">
+                    <button type="button" onclick="hideChangePingAttemptsForm();"
+                        class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                        <i class="fas fa-times mr-2"></i> Cancel
+                    </button>
+                    <button type="submit" name="change_ping_attempts"
+                        class="btn px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
+                        <i class="fas fa-save mr-2"></i> Update
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -1235,47 +1267,143 @@
 </div>
 
 <!-- Modal: Configure Network Speed -->
-<div id="setNetworkSpeedModal" class="modal" style="display: none; z-index: 1000;">
-    <div class="modal-content max-w-md">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-tachometer-alt text-indigo-500 mr-2"></i> Configure Network Speed
-            </h2>
-            <button type="button" onclick="hideSetNetworkSpeedModal();"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
+<div id="setNetworkSpeedModal"
+    class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+    <div
+        class="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
 
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 font-medium">
-            Please enter your contracted network speed (in Mbps). This value is required for the Network Health Analysis
-            to calculate performance efficiency.
-        </p>
+        <div class="p-5 bg-gradient-to-br from-indigo-600 to-purple-700 text-white relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10">
+                <i class="fas fa-tachometer-alt text-9xl"></i>
+            </div>
 
-        <div class="mb-6">
-            <label for="network_speed_input"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contracted Speed (Mbps)</label>
-            <div class="flex items-center gap-3">
-                <div class="relative flex-1">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-bolt text-indigo-400"></i>
+            <div class="flex justify-between items-start relative z-10">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
+                        <i class="fas fa-tachometer-alt text-2xl"></i>
                     </div>
-                    <input type="number" id="network_speed_input" placeholder="300, 600, 1000"
-                        class="w-full pl-10 p-4 bg-gray-50 border border-gray-300 text-gray-900 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white font-black text-2xl transition-all">
+                    <div>
+                        <h3 class="text-xl font-bold tracking-tight">Configure Network Speed</h3>
+                        <p class="text-indigo-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
+                            Contracted bandwidth for health analysis
+                        </p>
+                    </div>
                 </div>
-                <span class="text-gray-400 font-black text-sm uppercase tracking-widest">Mbps</span>
+                <button type="button" onclick="hideSetNetworkSpeedModal();"
+                    class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
             </div>
         </div>
 
-        <div class="flex justify-end pt-2">
-            <button onclick="saveNetworkSpeed()"
-                class="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/20 transition-all active:scale-95 flex items-center justify-center gap-2">
-                <span>SAVE CONFIGURATION</span>
-                <i class="fas fa-arrow-right text-xs"></i>
+        <div class="p-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                Please enter your contracted network speed (in Mbps). This value is required for the Network Health
+                Analysis to calculate performance efficiency.
+            </p>
+
+            <div class="mb-2">
+                <label for="network_speed_input"
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contracted Speed (Mbps)</label>
+                <div class="flex items-center gap-3">
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-bolt text-indigo-400"></i>
+                        </div>
+                        <input type="number" id="network_speed_input" placeholder="300, 600, 1000"
+                            class="w-full pl-10 p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white font-bold text-xl transition-all">
+                    </div>
+                    <span class="text-gray-400 font-bold text-sm uppercase tracking-wider">Mbps</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
+            <button type="button" onclick="hideSetNetworkSpeedModal();"
+                class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                <i class="fas fa-times mr-2"></i> Cancel
+            </button>
+            <button type="button" id="saveNetworkSpeedBtn" onclick="saveNetworkSpeed()"
+                class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                <i class="fas fa-save mr-2"></i> Save
             </button>
         </div>
     </div>
 </div>
+
+<?php if (!empty($login_enabled)): ?>
+<!-- Modal: Change Password -->
+<div id="changePasswordModal"
+    class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+    <div
+        class="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
+
+        <div class="p-5 bg-gradient-to-br from-amber-500 to-orange-600 text-white relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10">
+                <i class="fas fa-key text-9xl"></i>
+            </div>
+
+            <div class="flex justify-between items-start relative z-10">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
+                        <i class="fas fa-key text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold tracking-tight">Cambiar Contraseña</h3>
+                        <p class="text-amber-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
+                            Actualiza las credenciales del panel
+                        </p>
+                    </div>
+                </div>
+                <button type="button" onclick="hideChangePasswordModal();"
+                    class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <form method="POST" action="">
+            <div class="p-4 space-y-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Introduce tu contraseña actual y la nueva. Permanecerás conectado tras guardar.
+                </p>
+
+                <div>
+                    <label for="current_password"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contraseña actual</label>
+                    <input type="password" id="current_password" name="current_password" required autocomplete="current-password"
+                        class="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+
+                <div>
+                    <label for="new_password"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nueva contraseña</label>
+                    <input type="password" id="new_password" name="new_password" required autocomplete="new-password"
+                        class="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+
+                <div>
+                    <label for="confirm_password"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirmar nueva contraseña</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password"
+                        class="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
+                <button type="button" onclick="hideChangePasswordModal();"
+                    class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                <i class="fas fa-times mr-2"></i> Cancelar
+            </button>
+            <button type="submit" name="change_password"
+                class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                <i class="fas fa-save mr-2"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Public IP Modal -->
 <div id="publicIPModal" class="modal">

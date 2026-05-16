@@ -103,6 +103,9 @@ const modalFunctions = {
         document.getElementById('configModal').style.display = 'none';
         document.body.style.overflow = 'auto';
     },
+
+    showChangePasswordModal: function () { this.showModal('changePasswordModal'); },
+    hideChangePasswordModal: function () { this.hideModal('changePasswordModal'); },
 };
 
 /**
@@ -129,7 +132,7 @@ function reloadPage() {
     const url = new URL(window.location.href);
     const paramsToClear = [
         'page', 'action', 'msg', 'delete_ip', 'add_ip',
-        'update_ip_service', 'change_timer', 'change_ping_attempts',
+        'update_ip_service', 'change_timer', 'change_ping_attempts', 'change_password',
         'clear_data', 'delete_service', 'export_config', 'import_config', 'no_ping'
     ];
 
@@ -278,6 +281,47 @@ window.showClearDataConfirmation = function () { modalFunctions.showClearDataCon
 window.hideClearDataConfirmation = function () { modalFunctions.hideClearDataConfirmation(); };
 window.showConfigModal = function () { modalFunctions.showConfigModal(); };
 window.hideConfigModal = function () { modalFunctions.hideConfigModal(); };
+window.showChangePasswordModal = function () { modalFunctions.showChangePasswordModal(); };
+window.hideChangePasswordModal = function () { modalFunctions.hideChangePasswordModal(); };
+
+/**
+ * User account dropdown in the header.
+ */
+function toggleUserMenu(event) {
+    if (event) event.stopPropagation();
+    const dropdown = document.getElementById('userMenuDropdown');
+    const btn = document.getElementById('userMenuBtn');
+    const chevron = document.getElementById('userMenuChevron');
+    if (!dropdown) return;
+
+    const willOpen = dropdown.classList.contains('hidden');
+    closeUserMenu();
+
+    if (willOpen) {
+        dropdown.classList.remove('hidden');
+        chevron?.classList.add('rotate-180');
+        btn?.setAttribute('aria-expanded', 'true');
+    }
+}
+
+function closeUserMenu() {
+    const dropdown = document.getElementById('userMenuDropdown');
+    const btn = document.getElementById('userMenuBtn');
+    const chevron = document.getElementById('userMenuChevron');
+    dropdown?.classList.add('hidden');
+    chevron?.classList.remove('rotate-180');
+    btn?.setAttribute('aria-expanded', 'false');
+}
+
+document.addEventListener('click', function (event) {
+    const container = document.getElementById('userMenuContainer');
+    if (container && !container.contains(event.target)) {
+        closeUserMenu();
+    }
+});
+
+window.toggleUserMenu = toggleUserMenu;
+window.closeUserMenu = closeUserMenu;
 window.confirmDelete = function (ip) { modalFunctions.confirmDelete(ip); };
 window.hideDeleteIpForm = function () { modalFunctions.hideDeleteIpForm(); };
 window.showClearServiceForm = function () { modalFunctions.showModal('clearServiceForm'); };

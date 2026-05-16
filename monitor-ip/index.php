@@ -608,6 +608,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_update_ip_ser
 }
 
 
+// Cambiar contraseña del usuario
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
+    if (!$login_enabled) {
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?action=error&msg=password_change_disabled' . $network_param);
+        exit;
+    }
+
+    $result = change_user_password(
+        $_POST['current_password'] ?? '',
+        $_POST['new_password'] ?? '',
+        $_POST['confirm_password'] ?? ''
+    );
+
+    if ($result['success']) {
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?action=password_updated' . $network_param);
+    } else {
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?action=error&msg=' . urlencode($result['error']) . $network_param);
+    }
+    exit;
+}
+
 // Manejar la eliminación de servicio
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {
     $service_to_delete = trim($_POST['service_name']);
@@ -665,6 +686,7 @@ $notifications = [
     'timer_updated' => ['type' => 'success', 'icon' => 'fas fa-clock', 'message' => 'Intervalo de ping actualizado exitosamente.'],
     'ping_attempts_updated' => ['type' => 'success', 'icon' => 'fas fa-network-wired', 'message' => 'Número de intentos de ping actualizado exitosamente.'],
     'data_cleared' => ['type' => 'success', 'icon' => 'fas fa-broom', 'message' => 'Datos de ping eliminados exitosamente.'],
+    'password_updated' => ['type' => 'success', 'icon' => 'fas fa-key', 'message' => 'Contraseña actualizada correctamente.'],
     'error' => ['type' => 'error', 'icon' => 'fas fa-exclamation-circle', 'message' => 'Error: Por favor, verifica los datos ingresados.']
 ];
 
@@ -681,7 +703,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'error' && isset($_GET['msg'])
         'add_ip_failed' => 'Error: No se pudo agregar la IP al sistema.',
         'service_update_failed' => 'Error: No se pudo actualizar el servicio.',
         'service_clear_failed' => 'Error: No se pudo eliminar el servicio.',
-        'invalid_service_name' => 'Error: Nombre de servicio inválido.'
+        'invalid_service_name' => 'Error: Nombre de servicio inválido.',
+        'wrong_current_password' => 'Error: La contraseña actual no es correcta.',
+        'password_mismatch' => 'Error: Las contraseñas nuevas no coinciden.',
+        'empty_password' => 'Error: Las contraseñas no pueden estar vacías.',
+        'same_password' => 'Error: La nueva contraseña debe ser distinta a la actual.',
+        'login_not_configured' => 'Error: El acceso con contraseña no está configurado.',
+        'password_change_disabled' => 'Error: El inicio de sesión no está habilitado.'
     ];
 
     $error_msg = $_GET['msg'];

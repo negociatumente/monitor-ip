@@ -487,6 +487,47 @@ function delete_service_from_config($service_name)
 }
 
 /**
+ * Change the dashboard login password (stored in config.ini [security]).
+ *
+ * @return array{success: bool, error?: string}
+ */
+function change_user_password($current_password, $new_password, $confirm_password)
+{
+    $config_path = __DIR__ . '/../conf/config.ini';
+    $config = parse_ini_file($config_path, true);
+
+    if (!$config || empty($config['security']['password'])) {
+        return ['success' => false, 'error' => 'login_not_configured'];
+    }
+
+    $stored_hash = $config['security']['password'];
+
+    if ($current_password === '' || $new_password === '') {
+        return ['success' => false, 'error' => 'empty_password'];
+    }
+
+    if (hash('sha512', $current_password) !== $stored_hash) {
+        return ['success' => false, 'error' => 'wrong_current_password'];
+    }
+
+    if ($new_password !== $confirm_password) {
+        return ['success' => false, 'error' => 'password_mismatch'];
+    }
+
+    if (hash('sha512', $new_password) === $stored_hash) {
+        return ['success' => false, 'error' => 'same_password'];
+    }
+
+    $config['security']['password'] = hash('sha512', $new_password);
+
+    if (!save_config_file($config, $config_path)) {
+        return ['success' => false, 'error' => 'config_write_error'];
+    }
+
+    return ['success' => true];
+}
+
+/**
  * Save configuration to an INI file
  */
 function save_config_file($config, $file_path)
@@ -579,6 +620,7 @@ function getNotificationData($action, $msg = null)
         'timer_updated' => ['type' => 'success', 'icon' => 'fas fa-clock', 'message' => 'Intervalo de ping actualizado exitosamente.'],
         'ping_attempts_updated' => ['type' => 'success', 'icon' => 'fas fa-network-wired', 'message' => 'Número de intentos de ping actualizado exitosamente.'],
         'data_cleared' => ['type' => 'success', 'icon' => 'fas fa-broom', 'message' => 'Datos de ping eliminados exitosamente.'],
+        'password_updated' => ['type' => 'success', 'icon' => 'fas fa-key', 'message' => 'Contraseña actualizada correctamente.'],
         'error' => ['type' => 'error', 'icon' => 'fas fa-exclamation-circle', 'message' => 'Error: Por favor, verifica los datos ingresados.']
     ];
 
@@ -593,7 +635,13 @@ function getNotificationData($action, $msg = null)
         'add_ip_failed' => 'Error: No se pudo agregar la IP al sistema.',
         'scan_failed' => 'Error: Falló el escaneo de red local (nmap).',
         'speedtest_failed' => 'Error: Falló la prueba de velocidad (SpeedTest).',
-        'traceroute_failed' => 'Error: Falló el comando tracert en Windows.'
+        'traceroute_failed' => 'Error: Falló el comando tracert en Windows.',
+        'wrong_current_password' => 'Error: La contraseña actual no es correcta.',
+        'password_mismatch' => 'Error: Las contraseñas nuevas no coinciden.',
+        'empty_password' => 'Error: Las contraseñas no pueden estar vacías.',
+        'same_password' => 'Error: La nueva contraseña debe ser distinta a la actual.',
+        'login_not_configured' => 'Error: El acceso con contraseña no está configurado.',
+        'password_change_disabled' => 'Error: El inicio de sesión no está habilitado.'
     ];
 
     if ($action === 'error' && $msg && array_key_exists($msg, $error_messages)) {

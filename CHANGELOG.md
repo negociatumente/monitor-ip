@@ -1,5 +1,11 @@
 # Historial de Cambios - Monitor IP
 
+## [1.0.4] - 2026-05-16
+- **Menú de usuario**: Menú desplegable en la cabecera con las opciones *Cambiar contraseña* y *Cerrar sesión*, sustituyendo los botones sueltos.
+- **Modales de análisis**: Cabeceras actualizadas para mantener coherencia visual con los demás modales.
+- **Botón modo oscuro**: Corregido botón modo oscuro en menú lateral
+---
+
 ## [1.0.3] - 2026-05-16
 - **Seguridad**: Mejoras en la seguridad, solicitando un usuario y contraseña al primer acceso.
 - **Interfaz de Usuario (UI)**: Visualización del nombre de usuario autenticado en la cabecera.

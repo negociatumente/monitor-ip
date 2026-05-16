@@ -1741,7 +1741,7 @@ function showSetNetworkSpeedModal() {
     if (input && currentNetworkSpeed > 0) {
         input.value = currentNetworkSpeed;
     }
-    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
 
@@ -1750,7 +1750,7 @@ function showSetNetworkSpeedModal() {
  */
 function hideSetNetworkSpeedModal() {
     const modal = document.getElementById('setNetworkSpeedModal');
-    modal.style.display = 'none';
+    modal.classList.add('hidden');
     document.body.style.overflow = 'auto';
 }
 
@@ -1766,10 +1766,10 @@ async function saveNetworkSpeed() {
         return;
     }
 
-    const btn = document.querySelector('#setNetworkSpeedModal button');
+    const btn = document.getElementById('saveNetworkSpeedBtn');
     const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> SAVING...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
 
     try {
         const response = await fetch(`?action=save_network_speed&network=${currentNetworkType}`, {

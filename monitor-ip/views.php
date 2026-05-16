@@ -150,9 +150,9 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <!-- Header/Navigation Bar -->
-    <header class="bg-gradient-to-r <?php echo $header_bg; ?> text-white shadow-2xl relative overflow-hidden">
+    <header class="bg-gradient-to-r <?php echo $header_bg; ?> text-white shadow-2xl relative z-50 overflow-visible">
         <!-- Background pattern -->
-        <div class="absolute inset-0 opacity-10">
+        <div class="absolute inset-0 opacity-10 overflow-hidden pointer-events-none">
             <div
                 class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-transparent via-white to-transparent transform rotate-12">
             </div>
@@ -189,7 +189,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                 </div>
 
                 <!-- Navigation links -->
-                <div class="hidden sm:flex flex-1 justify-end items-center ml-4">
+                <div class="hidden sm:flex flex-1 justify-end items-center ml-4 relative z-[60]">
                     <!-- Left Group: External Links (Hidden on small/medium screens) -->
                     <div class="hidden lg:flex flex-wrap gap-2 mr-6">
                         <a href="https://negociatumente.com" target="_blank"
@@ -209,23 +209,44 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         </a>
                     </div>
 
-                    <!-- Right Group: User & Logout (Smaller) -->
+                    <!-- Right Group: User menu -->
                     <?php if ($login_enabled): ?>
-                        <div
-                            class="flex items-center gap-3 bg-black/10 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/5">
+                        <div class="relative z-[110]" id="userMenuContainer">
                             <?php if (isset($_SESSION['username'])): ?>
-                                <div class="flex items-center gap-1.5 text-[10px] sm:text-xs opacity-90">
-                                    <i class="fas fa-user text-blue-300"></i>
+                                <button type="button" id="userMenuBtn" onclick="toggleUserMenu(event)"
+                                    class="flex items-center gap-2 bg-black/10 hover:bg-black/20 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/5 transition-all text-[10px] sm:text-xs text-white"
+                                    aria-expanded="false" aria-haspopup="true" aria-controls="userMenuDropdown">
                                     <span
-                                        class="font-bold tracking-tight"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                                        class="flex items-center justify-center w-6 h-6 rounded-full bg-white/15 text-blue-200">
+                                        <i class="fas fa-user text-[10px]"></i>
+                                    </span>
+                                    <span
+                                        class="capitalize font-bold tracking-tight max-w-[100px] sm:max-w-[140px] truncate"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                                    <i class="fas fa-chevron-down text-[9px] opacity-70 transition-transform duration-200"
+                                        id="userMenuChevron"></i>
+                                </button>
+                                <div id="userMenuDropdown"
+                                    class="hidden absolute right-0 top-full mt-2 w-52 rounded-xl bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 py-1 z-[120] overflow-hidden"
+                                    role="menu">
+                                    <button type="button" role="menuitem" onclick="closeUserMenu(); showChangePasswordModal();"
+                                        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
+                                        <i class="fas fa-key w-4 text-amber-500"></i>
+                                        <span>Cambiar contraseña</span>
+                                    </button>
+                                    <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                                    <a href="logout.php" role="menuitem"
+                                        class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                        <i class="fas fa-power-off w-4"></i>
+                                        <span>Cerrar sesión</span>
+                                    </a>
                                 </div>
-                                <div class="w-px h-3 bg-white/20"></div>
+                            <?php else: ?>
+                                <a href="logout.php"
+                                    class="flex items-center gap-2 bg-black/10 hover:bg-black/20 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/5 text-[10px] sm:text-xs text-red-200 hover:text-white transition-colors font-bold">
+                                    <i class="fas fa-power-off"></i>
+                                    <span>Cerrar sesión</span>
+                                </a>
                             <?php endif; ?>
-                            <a href="logout.php"
-                                class="text-[10px] sm:text-xs text-red-200 hover:text-white transition-colors font-bold uppercase tracking-widest flex items-center gap-1">
-                                <i class="fas fa-power-off"></i>
-                                <span>Salir</span>
-                            </a>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -255,7 +276,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                     </button>
                     <!-- Theme Toggle -->
                     <button onclick="toggleTheme()" id="sidebarThemeToggleBtn"
-                        class="p-2 lg:p-2.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all ml-auto"
+                        class=" rounded-lg text-gray-700 dark:text-gray-300 transition-all ml-auto"
                         title="Toggle Dark/Light Mode">
                         <i class="fas fa-moon hidden dark:inline text-lg w-5 text-center"></i>
                         <i class="fas fa-sun inline dark:hidden text-yellow-500 text-lg w-5 text-center"></i>
@@ -775,14 +796,14 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
                                                     <button type='button'
                                                         onclick="event.stopPropagation(); showChangeIpServiceModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>', '<?php echo htmlspecialchars($service, ENT_QUOTES, 'UTF-8'); ?>', <?php echo $is_local_network ? 'true' : 'false'; ?>, '<?php echo $is_local_network ? htmlspecialchars($ips_network[$ip] ?? '', ENT_QUOTES, 'UTF-8') : ''; ?>')"
-                                                        class='btn text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-800/50 p-2 rounded-md transition-all'
+                                                        class='btn px-2 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600'
                                                         title="<?php echo isset($is_local_network) && $is_local_network ? 'Change Host' : 'Change Service'; ?>">
                                                         <i class='fas fa-edit text-sm'></i>
                                                     </button>
 
                                                     <button type='button'
                                                         onclick="event.stopPropagation();confirmDelete('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')"
-                                                        class='btn  text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-800/50 p-2 rounded-md transition-all'
+                                                        class='btn px-2 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600'
                                                         title='Delete IP'>
                                                         <i class='fas fa-trash-alt text-sm'></i>
                                                     </button>
@@ -912,9 +933,9 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                 <h3 class="text-lg sm:text-xl font-bold tracking-tight truncate" id="modalIpTitle">Host
                                     Detail</h3>
                             </div>
-                            <button onclick="closeIpModal()"
-                                class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all flex-shrink-0">
-                                <i class="fas fa-times text-lg sm:text-xl"></i>
+                            <button type="button" onclick="closeIpModal()"
+                                class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-times text-sm"></i>
                             </button>
                         </div>
 
@@ -999,9 +1020,9 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             class="hidden min-h-[200px] max-h-[350px] m-0 p-3 sm:p-6 bg-black text-green-400 font-mono text-[10px] sm:text-xs overflow-auto rounded-2xl whitespace-pre-wrap leading-relaxed opacity-90">-- Raw output --</pre>
 
                                         <div class="mt-3 sm:mt-4">
-                                            <button id="btnRunDetailTraceroute" onclick="runDetailTraceroute()"
-                                                class="w-full py-2 sm:py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm sm:text-base rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
-                                                <i class="fas fa-route"></i> <span class="hidden sm:inline">Run
+                                            <button type="button" id="btnRunDetailTraceroute" onclick="runDetailTraceroute()"
+                                                class="btn w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                                <i class="fas fa-route mr-2"></i> <span class="hidden sm:inline">Run
                                                     Traceroute</span><span class="sm:hidden">Traceroute</span>
                                             </button>
                                         </div>
@@ -1015,10 +1036,10 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                     class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
                                     <h4 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-500">AI
                                         Diagnostic Report</h4>
-                                    <button onclick="copyAIReportDetail()"
-                                        class="px-2 sm:px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] sm:text-xs font-bold rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 whitespace-nowrap">
-                                        <i class="fas fa-copy"></i> <span class="hidden sm:inline">COPY
-                                            REPORT</span><span class="sm:hidden">COPY</span>
+                                    <button type="button" onclick="copyAIReportDetail()"
+                                        class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 whitespace-nowrap">
+                                        <i class="fas fa-copy mr-2"></i> <span class="hidden sm:inline">Copy
+                                            Report</span><span class="sm:hidden">Copy</span>
                                     </button>
                                 </div>
                                 <div
@@ -1034,14 +1055,14 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
                         <!-- Modal Footer -->
                         <div
-                            class="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
+                            class="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 items-center shrink-0">
                             <button type="button" onclick="closeIpModal()"
-                                class="px-6 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hober:bg-gray-100 dark:hover:bg-gray-600 font-bold transition-all shadow-sm">
-                                Close
+                                class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                                <i class="fas fa-times mr-2"></i> Close
                             </button>
                             <button type="button" onclick="showDeleteConfirmFromDetail()"
-                                class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-all shadow-lg shadow-red-500/20 flex items-center gap-2">
-                                <i class="fas fa-trash-alt"></i> Delete IP
+                                class="btn px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                                <i class="fas fa-trash-alt mr-2"></i> Delete IP
                             </button>
                         </div>
                     </div>
@@ -1178,11 +1199,11 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" onclick="closeChangeIpServiceModal()"
-                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                            Cancel
+                            class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                            <i class="fas fa-times mr-2"></i> Cancel
                         </button>
                         <button type="submit" name="confirm_update_ip_service"
-                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 shadow-md transition-all active:scale-95">
+                            class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                             <i class="fas fa-save mr-2"></i> Save Changes
                         </button>
                     </div>
@@ -1259,27 +1280,31 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
     <!-- Modal: Network Health Analysis -->
     <div id="networkHealthModal"
-        class="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+        class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
         <div
             class="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden">
 
-            <div class="p-4 bg-indigo-500 text-white relative">
+            <div class="p-6 bg-gradient-to-br from-blue-600 to-blue-700 text-white relative overflow-hidden">
+                <!-- Decorative background elements -->
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i class="fas fa-heartbeat text-9xl"></i>
+                </div>
+
                 <div class="flex justify-between items-start relative z-10">
                     <div class="flex items-center gap-4">
-                        <div class="p-4 bg-white/20 rounded-2xl backdrop-blur-xl shadow-inner">
-                            <i class="fas fa-heartbeat text-4xl"></i>
+                        <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
+                            <i class="fas fa-heartbeat text-2xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-3xl font-extrabold tracking-tight">Network Health</h3>
-                            <p class="text-blue-100/80 text-sm mt-1 flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                            <h3 class="text-xl font-bold tracking-tight">Network Health</h3>
+                            <p class="text-green-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
                                 Network Performance Analysis
                             </p>
                         </div>
                     </div>
-                    <button onclick="closeNetworkHealthModal()"
-                        class="text-white/50 hover:text-white transition-colors">
-                        <i class="fas fa-times text-2xl"></i>
+                    <button type="button" onclick="closeNetworkHealthModal()"
+                        class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
+                        <i class="fas fa-times text-sm"></i>
                     </button>
                 </div>
             </div>
@@ -1313,26 +1338,31 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
     <!-- Modal: Network Topology Map (Wide) -->
     <div id="topologyModal"
-        class="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+        class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
         <div
             class="bg-white dark:bg-gray-900 w-[95%] max-w-[1400px] h-[85vh] rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col">
 
-            <div class="p-6 bg-purple-600 text-white flex justify-between items-center shadow-lg">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md">
+            <div class="p-6 bg-gradient-to-br from-violet-600 to-purple-700 text-white relative overflow-hidden shadow-lg flex justify-between items-start">
+                <!-- Decorative background elements -->
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i class="fas fa-sitemap text-9xl"></i>
+                </div>
+
+                <div class="flex items-center gap-4 relative z-10">
+                    <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
                         <i class="fas fa-sitemap text-2xl"></i>
                     </div>
                     <div>
-                        <h3 class="text-xl font-extrabold tracking-tight">Interactive Network Topology</h3>
-                        <p class="text-indigo-100/70 text-[10px] uppercase font-bold tracking-widest mt-0.5">
-                            Automated
-                            Infrastructure Logic</p>
+                        <h3 class="text-xl font-bold tracking-tight">Interactive Network Topology</h3>
+                        <p class="text-purple-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
+                            Automated Infrastructure Logic
+                        </p>
                     </div>
                 </div>
-                <div class="flex items-center gap-4">
 
+                <div class="flex items-center gap-4 relative z-10">
                     <!-- Zoom Controls -->
-                    <div class="flex bg-black/20 p-1 rounded-xl mr-4">
+                    <div class="flex bg-black/20 p-1 rounded-xl">
                         <button onclick="resetTopologyLayout()"
                             class="px-3 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors text-xs font-bold gap-2 text-white border-r border-white/20 mr-1 pr-4"
                             title="Reset Layout">
@@ -1355,9 +1385,9 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         </button>
                     </div>
 
-                    <button onclick="closeTopologyModal()"
-                        class="bg-black/20 hover:bg-black/40 w-10 h-10 rounded-full flex items-center justify-center transition-all">
-                        <i class="fas fa-times"></i>
+                    <button type="button" onclick="closeTopologyModal()"
+                        class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
+                        <i class="fas fa-times text-sm"></i>
                     </button>
                 </div>
             </div>
