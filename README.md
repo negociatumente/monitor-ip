@@ -202,3 +202,121 @@ config.ini
 ### 5️⃣ Resultados
 **🔹Finalmente, abre en tu navegador la siguiente url:**    
 http://localhost/monitor-ip
+
+
+
+# 🚨 Configurar Alertas Telegram (Opcional)
+## 1️⃣ Crear un bot de Telegram
+Abrir:
+[https://t.me/BotFather](https://t.me/BotFather)
+Enviar:
+```text
+/newbot
+```
+
+BotFather pedirá:
+* Nombre del bot
+* Username del bot (debe terminar en `bot`)
+
+Ejemplo:
+```text
+IP Monitor Alerts
+ip_monitor_alerts_bot
+```
+
+---
+## 2️⃣ Obtener el BOT TOKEN
+Después de crear el bot, BotFather mostrará algo parecido a:
+
+```text
+123456789:AAxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Ese valor es el BOT TOKEN.
+⚠️ No compartas este token.
+
+---
+## 3️⃣ Iniciar conversación con el bot
+
+Abrir el bot creado y pulsar:
+```text
+/start
+```
+
+⚠️ Este paso es obligatorio para recibir mensajes privados del bot.
+
+---
+## 4️⃣ Obtener tu Telegram User ID
+
+Abrir:
+[https://t.me/userinfobot](https://t.me/userinfobot)
+
+Enviar:
+```text
+/start
+```
+
+El bot responderá con algo parecido a:
+```text
+Id: 123456789
+```
+
+Ese número es tu Telegram User ID.
+---
+## 5️⃣ Obtener el Chat ID de un grupo (Opcional)
+
+Si quieres recibir alertas en un grupo:
+
+1. Crear grupo
+2. Añadir el bot
+3. Dar permisos para enviar mensajes
+
+Enviar cualquier mensaje en el grupo.
+
+Abrir:
+```text
+https://api.telegram.org/botTU_TOKEN/getUpdates
+```
+
+Buscar:
+```json
+"chat": {
+  "id": -1001234567890
+}
+```
+Ese valor es el Group Chat ID.
+
+---
+## 6️⃣ Configurar Telegram en el panel de IP Monitor
+
+Abrir el panel de configuración e introducir:
+
+| Campo                    | Valor                        |
+| ------------------------ | ---------------------------- |
+| Bot Token                | Token generado por BotFather |
+| User/Group ID            | Tu ID personal o del grupo   |
+
+Ejemplo:
+
+| Campo         | Ejemplo                    |
+| ------------- | -------------------------- |
+| Bot Token     | `123456789:AAxxxxxxxxxxxx` |
+| User ID       | `123456789`                |
+| Group ID      | `-1001234567890`           |
+
+---
+
+## 7️⃣ Probar las alertas
+
+Guardar configuración.
+
+Usar:
+```text
+Probar conexión
+```
+
+Deberías recibir algo parecido a:
+
+```text
+Monitor-IP: prueba de alertas Telegram OK
+```
