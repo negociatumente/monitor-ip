@@ -37,27 +37,36 @@ Si buscas una solución personalizada para tu empresa ofrezco versiones **Enterp
 ✅ **Trazabilidad de Red**: Analiza los saltos de la red para identificar problemas.  
 ✅ **Detección de CGNAT**: Identifica si estás detrás de una NAT compartida.  
 ✅ **Reporte de Red**: Genera un reporte de la calidad de tu red.  
+✅ **Alertas de Conectividad**: Recibe notificaciones en tiempo real sobre problemas de red.  
 
 ## 📁 Estructura del proyecto
 ```
 monitor-ip/
-├── index.php                       # Página principal y lógica de backend
-├── menu.php                        # Menú de navegación y acciones rápidas
-├── views.php                       # Vista principal del dashboard
-├── conf/                           # Archivos de configuración y resultados
-│   ├── config.ini                  # Configuración de IPs y servicios remotos
-│   ├── config_local.ini            # Configuración de IPs locales
-├── results/                        # Resultados de los pings y speedtests
-│   ├── ping_results.json           # Resultados de los pings remotos
-│   ├── ping_results_local.json     # Resultados de los pings locales
-│   ├── speedtest_results.json      # Resultados de los speedtests
-└── lib/                            # Librerías y recursos del proyecto
-	├── Speedtest++/                # Librería speedtest++ para tests de velocidad
-	│	└── Speedtest               # Script speedtest para tests de velocidad
-	├── functions.php               # Funciones PHP reutilizables
-    ├── script.js                   # Scripts JavaScript principales
-    ├── network_scan.js             # Lógica de escaneo de red y speedtest
-    └── styles.css                  # Estilos CSS personalizados
+├── index.php                         # Página principal y lógica de backend
+├── menu.php                          # Menú de navegación y acciones rápidas
+├── views.php                         # Vista principal del dashboard
+├── assets/                           # Archivos de configuración y resultados
+│   ├── favicon.png                   # Icono del proyecto
+│   ├── logo.png                      # Logo del proyecto
+│   └── monitor-v1.0.png              # Captura de pantalla del proyecto
+├── auth/                             # Archivos de configuración y resultados
+│   ├── login.php                     # Página de login y autenticación
+│   └── logout.php                    # Página de cierre de sesión
+├── conf/                             # Archivos de configuración y resultados
+│   ├── config.ini                    # Configuración de IPs y servicios remotos
+│   └── config_local.ini              # Configuración de IPs locales
+├── results/                          # Resultados de los pings y speedtests
+│   ├── ping_results.json             # Resultados de los pings remotos
+│   ├── ping_results_local.json       # Resultados de los pings locales
+│   ├── speedtest_results.json        # Resultados de los speedtests
+│   └── telegram_alert_history.json   # Historial de alertas de Telegram
+└── lib/                              # Librerías y recursos del proyecto
+	├── Speedtest++/                    # Librería speedtest++ para tests de velocidad
+	│	└── Speedtest                     # Script speedtest para tests de velocidad
+	└── functions.php                   # Funciones PHP reutilizables
+    ├── network_scan.js               # Lógica de escaneo de red y speedtest
+    ├── script.js                     # Scripts JavaScript principales
+    └── styles.css                    # Estilos CSS personalizados
 ```
 ## 🔧 Tabla de funcionalidades y compatibilidad de herramientas de red
 
@@ -70,10 +79,12 @@ monitor-ip/
 | Obtener IP del Gateway/Router | `iproute2` | `ip route` | `ipconfig` | ✔️ | ✔️ | ✔️ | ✔️ |
 | Test de velocidad | `Speedtest++` | `speedtest` | `speedtest.exe` | ✔️ | ✔️* | ✔️ | ✔️ |
 | Escaneo de dispositivos de la red | `nmap` | `nmap` | `nmap` | ✔️* | ✔️* | ✔️ | ❌ |
+| Alertas de Conectividad | `Telegram` | `Telegram` | `Telegram` | ✔️* | ✔️* | ✔️* | ✔️* |
+
 
 **Leyenda:**
 - ✔️ = Funciona
-- ✔️* = Requiere instalación manual
+- ✔️* = Requiere instalación/configuración manual
 - ❌ = No disponible (el contenedor en Windows está aislado en una subnet)						
 
 
