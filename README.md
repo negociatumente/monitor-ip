@@ -99,6 +99,8 @@ monitor-ip/
 https://docs.docker.com/get-docker/  
 
 ### 3️⃣ Configuración
+**🔹Se necesita indicar la versión que quiera instalar al ejecutar los siguientes comandos "monitor-ip:version". Si se quiere usar la última versión, se puede omitir el tag de la versión o indicar "monitor-ip:latest"**  
+
 **🔹Clona el repositorio:**
 ```bash
 docker pull ghcr.io/negociatumente/monitor-ip:1.0.5

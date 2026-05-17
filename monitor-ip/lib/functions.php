@@ -1023,18 +1023,37 @@ function renderNotification($action, $msg = null)
 
 function getContrastColor($hexcolor)
 {
-    // Remove # if present
-    $hexcolor = ltrim($hexcolor, '#');
+    $hexcolor = trim((string) $hexcolor);
+    if ($hexcolor === '') {
+        return '#000000';
+    }
 
-    // Convert to RGB
-    $r = hexdec(substr($hexcolor, 0, 2));
-    $g = hexdec(substr($hexcolor, 2, 2));
-    $b = hexdec(substr($hexcolor, 4, 2));
+    // RGB notation support (rgb(...) or rgba(...))
+    if (preg_match('/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i', $hexcolor, $matches)) {
+        $r = min(255, max(0, (int) $matches[1]));
+        $g = min(255, max(0, (int) $matches[2]));
+        $b = min(255, max(0, (int) $matches[3]));
+    } else {
+        // Remove # if present
+        $hexcolor = ltrim($hexcolor, '#');
+
+        // Support 3-digit and 8-digit hex values
+        if (preg_match('/^[0-9a-fA-F]{3}$/', $hexcolor)) {
+            $hexcolor = $hexcolor[0] . $hexcolor[0] . $hexcolor[1] . $hexcolor[1] . $hexcolor[2] . $hexcolor[2];
+        }
+
+        if (preg_match('/^[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/', $hexcolor)) {
+            $r = hexdec(substr($hexcolor, 0, 2));
+            $g = hexdec(substr($hexcolor, 2, 2));
+            $b = hexdec(substr($hexcolor, 4, 2));
+        } else {
+            return '#000000';
+        }
+    }
 
     // Calculate brightness (YIQ formula)
     $yiq = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
 
-    // Return black or white based on brightness
     return ($yiq >= 128) ? '#000000' : '#ffffff';
 }
 
