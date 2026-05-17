@@ -779,7 +779,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'error' && isset($_GET['msg'])
 $config = parse_ini_file($config_path, true);
 
 if ($is_local_network) {
-    $ips_to_monitor = $config['ips-type'] ?? [];
+    $ips_to_monitor = $config['ips-host'] ?? [];
     $ips_network = $config['ips-network'] ?? [];
     $host_color = $config['settings']['host_color'] ?? '#6B7280';
     $network_color = $config['settings']['network_color'] ?? '#f59e0b';
