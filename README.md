@@ -24,7 +24,7 @@ Si buscas una solución personalizada para tu empresa ofrezco versiones **Enterp
 👉 **[Ponte en contacto para una consultoría](https://negociatumente.com/#contacto)**
 
 
-![IP Monitor](assets/monitor-v1.0.png)
+![IP Monitor](monitor-ip/assets/monitor-v1.0.png)
 
 ## ⚠️ Aviso  
 - Este proyecto es solo para **uso personal y diagnóstico de red**.  
