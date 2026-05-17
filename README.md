@@ -259,7 +259,7 @@ Abrir el bot creado y pulsar:
 ---
 ## 4️⃣ Obtener tu Telegram User ID
 
-Abrir:
+Abrir este bot de Telegram:
 [https://t.me/userinfobot](https://t.me/userinfobot)
 
 Enviar:
@@ -283,17 +283,9 @@ Si quieres recibir alertas en un grupo:
 3. Dar permisos para enviar mensajes
 
 Enviar cualquier mensaje en el grupo.
-
-Abrir:
-```text
-https://api.telegram.org/botTU_TOKEN/getUpdates
+En la url del navegador, el Group Chat ID aparecerá después de `https://web.telegram.org/k/#-` y tendrá un formato parecido a:
 ```
-
-Buscar:
-```json
-"chat": {
-  "id": -1001234567890
-}
+-1001234567890
 ```
 Ese valor es el Group Chat ID.
 
