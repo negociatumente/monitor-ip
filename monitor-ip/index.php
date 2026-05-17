@@ -608,12 +608,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_service'])) {
 
 // Manejar la actualización de servicio para una IP específica
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_update_ip_service'])) {
-    $ip = $_POST['update_ip_service'];
-    $new_service = trim($_POST['new_service_name']);
+    $ip = trim($_POST['update_ip_service'] ?? '');
+    $new_service = trim($_POST['new_service_name'] ?? '');
 
     if ($new_service === 'create_new') {
-        $new_service = trim($_POST['new_service_inline_name']);
-        $new_color = trim($_POST['new_service_inline_color']);
+        $new_service = trim($_POST['new_service_inline_name'] ?? '');
+        $new_color = trim($_POST['new_service_inline_color'] ?? '');
 
         if (empty($new_service) || empty($new_color)) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=empty_service_name" . $network_param);
@@ -642,6 +642,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_update_ip_ser
 
     $edit_type = trim($_POST['edit_type'] ?? '');
     $new_type = trim($_POST['new_device_type'] ?? '');
+
+    if (empty($ip)) {
+        header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=invalid_ip" . $network_param);
+        exit;
+    }
 
     if ($is_local_network) {
         $new_name = trim($_POST['new_device_name'] ?? '');
