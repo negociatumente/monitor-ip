@@ -37,6 +37,8 @@ const modalFunctions = {
         const alertMessage = document.getElementById('alertMessage');
         const alertHeader = document.getElementById('alertHeader');
 
+        alertModal.style.zIndex = '300';
+
         // Set icon and colors based on type
         if (type === 'error') {
             alertIcon.className = 'fas fa-exclamation-circle text-red-500 text-2xl';
@@ -106,6 +108,12 @@ const modalFunctions = {
 
     showChangePasswordModal: function () { this.showModal('changePasswordModal'); },
     hideChangePasswordModal: function () { this.hideModal('changePasswordModal'); },
+
+    showTelegramConfigModal: function () {
+        applyTelegramConfigToForm(window.telegramConfig);
+        this.showModal('telegramConfigModal');
+    },
+    hideTelegramConfigModal: function () { this.hideModal('telegramConfigModal'); },
 };
 
 /**
@@ -283,6 +291,8 @@ window.showConfigModal = function () { modalFunctions.showConfigModal(); };
 window.hideConfigModal = function () { modalFunctions.hideConfigModal(); };
 window.showChangePasswordModal = function () { modalFunctions.showChangePasswordModal(); };
 window.hideChangePasswordModal = function () { modalFunctions.hideChangePasswordModal(); };
+window.showTelegramConfigModal = function () { modalFunctions.showTelegramConfigModal(); };
+window.hideTelegramConfigModal = function () { modalFunctions.hideTelegramConfigModal(); };
 
 /**
  * User account dropdown in the header.
@@ -361,6 +371,27 @@ window.confirmClearService = function () {
         'Eliminar Servicio'
     );
 };
+
+/**
+ * Toggles password visibility for input fields
+ */
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.nextElementSibling;
+    const icon = button.querySelector('i');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+window.togglePasswordVisibility = togglePasswordVisibility;
 
 /**
  * Auto-hides the notification after 5 seconds.
@@ -1105,22 +1136,20 @@ window.showChangeIpServiceModal = function (ip, currentService, isLocal = false,
     document.getElementById('change_service_ip').value = ip;
     document.getElementById('change_service_ip_display').value = ip;
 
-    // Set current category
-    const editCategoryInput = document.getElementById('edit_category');
-    if (editCategoryInput && window.ipDetails && window.ipDetails[ip]) {
-        editCategoryInput.value = window.ipDetails[ip].category || '';
+    // Set current type
+    const editTypeInput = document.getElementById('edit_type');
+    if (editTypeInput && window.ipDetails && window.ipDetails[ip]) {
+        editTypeInput.value = window.ipDetails[ip].type || '';
     }
-
-    if (isLocal) {
-        const typeInput = document.getElementById('new_device_type');
-        const nameInput = document.getElementById('new_device_name');
-        const networkSelect = document.getElementById('new_network_type');
-
-        if (typeInput && window.ipDetails && window.ipDetails[ip]) {
+    const typeInput = document.getElementById('new_device_type');
+    if (typeInput && window.ipDetails && window.ipDetails[ip]) {
             const validTypes = ['Gateway', 'AP/Mesh', 'Cámara', 'Móvil', 'Ordenador', 'Impresora', 'Otro'];
             const currentType = window.ipDetails[ip].type || '';
             typeInput.value = validTypes.includes(currentType) ? currentType : 'Otro';
-        }
+    }
+    if (isLocal) {
+        const nameInput = document.getElementById('new_device_name');
+        const networkSelect = document.getElementById('new_network_type');
         if (nameInput) {
             nameInput.value = currentService; // currentService is ips-host (Name)
         }
@@ -1342,3 +1371,70 @@ window.addEventListener('resize', function () {
         if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
     }
 });
+
+function setTelegramFieldValue(id, value) {
+    const field = document.getElementById(id);
+    if (field) {
+        field.value = value ?? '';
+    }
+}
+
+function setTelegramCheckboxValue(id, value) {
+    const field = document.getElementById(id);
+    if (field) {
+        field.checked = Boolean(value);
+    }
+}
+
+function applyTelegramConfigToForm(telegram) {
+    if (!telegram) return;
+
+    setTelegramCheckboxValue('enabled', telegram.enabled);
+    setTelegramFieldValue('bot_token', telegram.bot_token);
+    setTelegramFieldValue('chat_id', telegram.chat_id);
+    setTelegramCheckboxValue('notify_on_up', telegram.notify_on_up);
+    setTelegramCheckboxValue('notify_on_down', telegram.notify_on_down);
+    setTelegramFieldValue('frequency', telegram.frequency);
+    setTelegramFieldValue('message_template', telegram.message_template);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    applyTelegramConfigToForm(window.telegramConfig);
+});
+
+function testTelegramConnection() {
+    const form = document.getElementById('telegramConfigForm');
+    const formData = new FormData(form);
+    const url = new URL(window.location.href);
+    url.searchParams.set('action', 'test_telegram');
+
+    const testButton = document.activeElement && document.activeElement.tagName === 'BUTTON'
+        ? document.activeElement
+        : null;
+    const originalHtml = testButton?.innerHTML;
+    if (testButton) {
+        testButton.disabled = true;
+        testButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Probando';
+    }
+
+    fetch(url.toString(), {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        modalFunctions.showAlert(data.message, data.success ? 'success' : 'error');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        modalFunctions.showAlert('Error al probar la conexión con Telegram.', 'error');
+    })
+    .finally(() => {
+        if (testButton) {
+            testButton.disabled = false;
+            testButton.innerHTML = originalHtml;
+        }
+    });
+}
+
+window.testTelegramConnection = testTelegramConnection;

@@ -20,7 +20,7 @@ $config_path = __DIR__ . '/conf/' . ($is_local_network ? 'config_local.ini' : 'c
 
 // Create config_local.ini if it doesn't exist
 if ($is_local_network && !file_exists($config_path)) {
-    $default_local_config = "[settings]\nversion = \"0.7.0\"\nping_attempts = \"5\"\nping_interval = \"300\"\n[services-colors]\nDEFAULT = \"#6B7280\"\n\"Private Network\" = \"#10B981\"\n[services-methods]\nDEFAULT = \"icmp\"\n\"Private Network\" = \"icmp\"\n[ips-host]\n";
+    $default_local_config = "[settings]\nversion = \"0.7.0\"\nping_attempts = \"5\"\nping_interval = \"300\"\n[services-colors]\nDEFAULT = \"#6B7280\"\n\"Private Network\" = \"#10B981\"\n[services-methods]\nDEFAULT = \"icmp\"\n\"Private Network\" = \"icmp\"\n[ips-host]\n[telegram]\nenabled = \"false\"\nbot_token = \"\"\nchat_id = \"\"\nnotify_on_up = \"true\"\nnotify_on_down = \"true\"\nfrequency = \"300\"\nmessage_template = \"Dispositivo: {service} ({ip}) ha cambiado a estado {status}\"\n";
     file_put_contents($config_path, $default_local_config);
 }
 
@@ -329,6 +329,59 @@ if (isset($_GET['action'])) {
         }
         exit;
     }
+
+    if ($_GET['action'] === 'save_telegram_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $config = parse_ini_file($config_path, true);
+        $frequency = max(60, (int) ($_POST['frequency'] ?? 300));
+        $message_template = trim($_POST['message_template'] ?? '');
+
+        $config['telegram'] = [
+            'enabled' => isset($_POST['enabled']) ? 'true' : 'false',
+            'bot_token' => trim($_POST['bot_token'] ?? ''),
+            'chat_id' => trim($_POST['chat_id'] ?? ''),
+            'notify_on_up' => isset($_POST['notify_on_up']) ? 'true' : 'false',
+            'notify_on_down' => isset($_POST['notify_on_down']) ? 'true' : 'false',
+            'frequency' => (string) $frequency,
+            'message_template' => $message_template !== ''
+                ? $message_template
+                : "{status_icon} IP {ip} ({service}) is {status} at {timestamp}"
+        ];
+
+        if (save_config_file($config, $config_path)) {
+            header('Location: ' . $_SERVER['PHP_SELF'] . '?action=telegram_updated' . $network_param);
+        } else {
+            header('Location: ' . $_SERVER['PHP_SELF'] . '?action=error&msg=telegram_config_error' . $network_param);
+        }
+        exit;
+    }
+
+    if ($_GET['action'] === 'test_telegram' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+        $config = parse_ini_file($config_path, true);
+        $telegram_cfg = get_telegram_config($config);
+        $telegram_cfg['enabled'] = true;
+        $telegram_cfg['bot_token'] = trim($_POST['bot_token'] ?? $telegram_cfg['bot_token']);
+        $telegram_cfg['chat_id'] = trim($_POST['chat_id'] ?? $telegram_cfg['chat_id']);
+
+        $bot_id = strtok($telegram_cfg['bot_token'], ':');
+        if ($bot_id !== false && $telegram_cfg['chat_id'] === $bot_id) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'El Chat ID no puede ser el ID del bot. Abre el bot con tu usuario, pulsa Start y usa tu Chat ID de usuario o grupo.'
+            ]);
+            exit;
+        }
+
+        $message = "Monitor-IP: prueba de alertas Telegram OK";
+        $success = send_telegram_message($message, $telegram_cfg);
+        echo json_encode([
+            'success' => $success,
+            'message' => $success
+                ? 'Conexión con Telegram verificada.'
+                : 'No se pudo enviar el mensaje. Revisa el token, chat ID y la salida a internet.'
+        ]);
+        exit;
+    }
 }
 
 // Check if speed_connection_mbps is set for local network
@@ -346,7 +399,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
     $new_ip = trim($_POST['new_ip']);
     $new_service = trim($_POST['new_service']);
     $new_method = trim($_POST['new_method'] ?? 'icmp'); // Default to ICMP
-    $new_category = trim($_POST['new_category'] ?? '');
+    $new_type = trim($_POST['new_type'] ?? '');
 
     // Validar IP o Dominio
     if (!isValidHost($new_ip)) {
@@ -417,7 +470,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
     }
 
     // Añadir la IP
-    if (add_ip_to_config($validated_ip, $new_service, $new_method, $new_category)) {
+    if (add_ip_to_config($validated_ip, $new_service, $new_method, $new_type)) {
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=added" . $network_param);
         exit;
     } else {
@@ -498,25 +551,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_data'])) {
         file_put_contents($ping_file, json_encode([])); // Vaciar el archivo
     }
 
+    $config = ensure_config_structure(parse_ini_file($config_path, true), $is_local_network);
+
     // Verificar si se deben borrar también las IPs
     if (isset($_POST['delete_ips'])) {
-        $config = parse_ini_file($config_path, true);
-        $section_to_delete = $is_local_network ? 'ips-host' : 'ips-services';
-        $config[$section_to_delete] = []; // Vaciar la sección de IPs
         if ($is_local_network) {
+            $config['ips-host'] = [];
+            $config['ips-type'] = [];
+            $config['ips-services'] = [];
+            $config['services-colors'] = ['DEFAULT' => '#6b7280'];
+            $config['services-methods'] = ['DEFAULT' => "icmp"];
+        } else {
+            $config['ips-host'] = [];
             $config['ips-network'] = [];
+            $config['ips-type'] = [];
+            $config['ips-services'] = [];
+            $config['services-colors'] = ['DEFAULT' => '#6b7280'];
+            $config['services-methods'] = ['DEFAULT' => "icmp"];
         }
-
-        // Reconstruir el contenido del archivo ini
-        $new_content = '';
-        foreach ($config as $section => $values) {
-            $new_content .= "[$section]\n";
-            foreach ($values as $key => $value) {
-                $new_content .= "$key = \"$value\"\n";
-            }
-        }
-        file_put_contents($config_path, $new_content);
     }
+
+    save_config_file($config, $config_path);
 
     // Redirigir para evitar reenvío del formulario
     header("Location: " . $_SERVER['PHP_SELF'] . "?action=data_cleared" . $network_param);
@@ -585,11 +640,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_update_ip_ser
         }
     }
 
-    $edit_category = trim($_POST['edit_category'] ?? '');
+    $edit_type = trim($_POST['edit_type'] ?? '');
+    $new_type = trim($_POST['new_device_type'] ?? '');
 
     if ($is_local_network) {
         $new_name = trim($_POST['new_device_name'] ?? '');
-        $new_type = trim($_POST['new_device_type'] ?? '');
         $new_network = trim($_POST['new_network_type'] ?? '');
 
         if (update_local_ip_config($ip, $new_name, $new_network, $new_type)) {
@@ -597,7 +652,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_update_ip_ser
             exit;
         }
     } else {
-        if (update_ip_service($ip, $new_service, $edit_category)) {
+        if (update_ip_service($ip, $new_service, $new_type)) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?action=service_updated" . $network_param);
             exit;
         }
@@ -687,6 +742,7 @@ $notifications = [
     'ping_attempts_updated' => ['type' => 'success', 'icon' => 'fas fa-network-wired', 'message' => 'Número de intentos de ping actualizado exitosamente.'],
     'data_cleared' => ['type' => 'success', 'icon' => 'fas fa-broom', 'message' => 'Datos de ping eliminados exitosamente.'],
     'password_updated' => ['type' => 'success', 'icon' => 'fas fa-key', 'message' => 'Contraseña actualizada correctamente.'],
+    'telegram_updated' => ['type' => 'success', 'icon' => 'fab fa-telegram-plane', 'message' => 'Alertas de Telegram actualizadas correctamente.'],
     'error' => ['type' => 'error', 'icon' => 'fas fa-exclamation-circle', 'message' => 'Error: Por favor, verifica los datos ingresados.']
 ];
 
@@ -709,7 +765,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'error' && isset($_GET['msg'])
         'empty_password' => 'Error: Las contraseñas no pueden estar vacías.',
         'same_password' => 'Error: La nueva contraseña debe ser distinta a la actual.',
         'login_not_configured' => 'Error: El acceso con contraseña no está configurado.',
-        'password_change_disabled' => 'Error: El inicio de sesión no está habilitado.'
+        'password_change_disabled' => 'Error: El inicio de sesión no está habilitado.',
+        'telegram_config_error' => 'Error: No se pudo guardar la configuración de Telegram.'
     ];
 
     $error_msg = $_GET['msg'];
@@ -722,7 +779,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'error' && isset($_GET['msg'])
 $config = parse_ini_file($config_path, true);
 
 if ($is_local_network) {
-    $ips_to_monitor = $config['ips-host'] ?? [];
+    $ips_to_monitor = $config['ips-type'] ?? [];
     $ips_network = $config['ips-network'] ?? [];
     $host_color = $config['settings']['host_color'] ?? '#6B7280';
     $network_color = $config['settings']['network_color'] ?? '#f59e0b';
@@ -739,6 +796,18 @@ if ($is_local_network) {
 
 $ping_attempts = $config['settings']['ping_attempts'] ?? 5;
 $ping_interval = $config['settings']['ping_interval'] ?? 300;
+$telegram_config = get_telegram_config($config);
+$telegram_alert_history = get_telegram_alert_history(25);
+$telegram_config_json = json_encode([
+    'enabled' => $telegram_config['enabled'],
+    'bot_token' => $telegram_config['bot_token'],
+    'chat_id' => $telegram_config['chat_id'],
+    'notify_on_up' => $telegram_config['notify_on_up'],
+    'notify_on_down' => $telegram_config['notify_on_down'],
+    'frequency' => $telegram_config['frequency'],
+    'message_template' => $telegram_config['message_template'],
+], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+$telegram_alert_history_json = json_encode($telegram_alert_history, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
 
 // Cargar la vista al final, con los datos actualizados
 require_once __DIR__ . '/views.php';

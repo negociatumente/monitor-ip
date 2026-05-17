@@ -1,9 +1,16 @@
 # Historial de Cambios - Monitor IP
 
+## [1.0.5] - 2026-05-17
+- **Añadidas alertas de Telegram**: Notificaciones automáticas en Telegram para eventos de caída y recuperación de IPs, con detalles específicos de cada evento.
+- **Corregidos errores de configuración**: Ajustes en la configuración para mejorar la estabilidad y el rendimiento del sistema.
+
+---
+
 ## [1.0.4] - 2026-05-16
 - **Menú de usuario**: Menú desplegable en la cabecera con las opciones *Cambiar contraseña* y *Cerrar sesión*, sustituyendo los botones sueltos.
 - **Modales de análisis**: Cabeceras actualizadas para mantener coherencia visual con los demás modales.
 - **Botón modo oscuro**: Corregido botón modo oscuro en menú lateral
+
 ---
 
 ## [1.0.3] - 2026-05-16

@@ -108,6 +108,8 @@ function update_ping_results_parallel($ips)
     $processes = [];
     $pipes = [];
     $results = [];
+    $telegram_events = [];
+    $telegram_cfg = get_telegram_config($config);
 
     foreach ($ips as $ip) {
         // Determine method based on service
@@ -237,6 +239,21 @@ function update_ping_results_parallel($ips)
             $ping_data[$ip] = [];
         }
 
+        $previous_status = $ping_data[$ip][0]['status'] ?? null;
+        if ($previous_status !== null && $previous_status !== $ping_status) {
+            $service = $ips_services[$ip] ?? 'DEFAULT';
+            if (should_notify_telegram($previous_status, $ping_status, $telegram_cfg)) {
+                $telegram_events[] = [
+                    'ip' => $ip,
+                    'service' => $service,
+                    'old_status' => $previous_status,
+                    'new_status' => $ping_status,
+                    'timestamp' => $timestamp,
+                    'response_time' => $response_time,
+                ];
+            }
+        }
+
         array_unshift($ping_data[$ip], [
             "status" => $ping_status,
             "timestamp" => $timestamp,
@@ -244,6 +261,23 @@ function update_ping_results_parallel($ips)
         ]);
         if (count($ping_data[$ip]) > $ping_attempts) {
             array_pop($ping_data[$ip]);
+        }
+    }
+
+    if (!empty($telegram_events)) {
+        $message = format_telegram_status_summary_message($telegram_events);
+        if ($message !== '' && send_telegram_message($message, $telegram_cfg)) {
+            foreach ($telegram_events as $event) {
+                record_telegram_alert(
+                    $event['ip'],
+                    $event['old_status'],
+                    $event['new_status'],
+                    $event['service'],
+                    $message,
+                    $event['timestamp'],
+                    $event['response_time']
+                );
+            }
         }
     }
 }
@@ -344,7 +378,7 @@ function isValidHost($host)
 }
 
 // Función para agregar una IP al archivo config.ini
-function add_ip_to_config($ip, $service, $method = 'icmp', $category = '')
+function add_ip_to_config($ip, $service, $method = 'icmp', $type = '')
 {
     // Validar IP o Dominio
     if (!isValidHost($ip)) {
@@ -376,11 +410,11 @@ function add_ip_to_config($ip, $service, $method = 'icmp', $category = '')
     $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
     $config[$ips_section][$clean_ip] = $clean_service;
 
-    if (!empty($category)) {
-        if (!isset($config['ips-categories'])) {
-            $config['ips-categories'] = [];
+    if (!empty($type)) {
+        if (!isset($config['ips-type'])) {
+            $config['ips-type'] = [];
         }
-        $config['ips-categories'][$clean_ip] = htmlspecialchars($category, ENT_QUOTES, 'UTF-8');
+        $config['ips-type'][$clean_ip] = htmlspecialchars($type, ENT_QUOTES, 'UTF-8');
     }
 
     // Store monitoring method for the service in services-methods
@@ -534,16 +568,324 @@ function save_config_file($config, $file_path)
 {
     $new_content = '';
     foreach ($config as $section => $values) {
+        if (!is_array($values)) {
+            continue;
+        }
+
         $new_content .= "[$section]\n";
         foreach ($values as $key => $value) {
+            if (is_bool($value)) {
+                $value = $value ? 'true' : 'false';
+            }
+            $value = str_replace(["\r\n", "\r", "\n"], '\n', (string) $value);
+            $value = str_replace('"', '\"', $value);
             $new_content .= "$key = \"$value\"\n";
         }
     }
     return file_put_contents($file_path, $new_content) !== false;
 }
 
+function ensure_config_structure($config, $is_local_network = false)
+{
+    if (!is_array($config)) {
+        $config = [];
+    }
+
+    $config['settings'] = array_merge([
+        'version' => '1.0.5',
+        'ping_attempts' => '5',
+        'ping_interval' => '300',
+    ], $config['settings'] ?? []);
+
+    $config['services-colors'] = array_merge([
+        'DEFAULT' => '#6B7280',
+    ], $config['services-colors'] ?? []);
+
+    $config['services-methods'] = array_merge([
+        'DEFAULT' => 'icmp',
+    ], $config['services-methods'] ?? []);
+
+    if ($is_local_network) {
+        $config['ips-host'] = $config['ips-host'] ?? [];
+        $config['ips-network'] = $config['ips-network'] ?? [];
+        $config['ips-type'] = $config['ips-type'] ?? [];
+    } else {
+        $config['ips-services'] = $config['ips-services'] ?? [];
+        $config['ips-type'] = $config['ips-type'] ?? [];
+    }
+
+    $telegram = get_telegram_config($config);
+    $config['telegram'] = [
+        'enabled' => $telegram['enabled'] ? 'true' : 'false',
+        'bot_token' => $telegram['bot_token'],
+        'chat_id' => $telegram['chat_id'],
+        'notify_on_up' => $telegram['notify_on_up'] ? 'true' : 'false',
+        'notify_on_down' => $telegram['notify_on_down'] ? 'true' : 'false',
+        'frequency' => (string) $telegram['frequency'],
+        'message_template' => $telegram['message_template'],
+    ];
+
+    if (!isset($config['security'])) {
+        $config['security'] = [
+            'enabled' => 'false',
+            'username' => 'admin',
+            'password' => '',
+        ];
+    }
+
+    return $config;
+}
+
+function get_telegram_config($config)
+{
+    $defaults = [
+        'enabled' => 'false',
+        'bot_token' => '',
+        'chat_id' => '',
+        'notify_on_up' => 'true',
+        'notify_on_down' => 'true',
+        'frequency' => '300',
+        'message_template' => 'Dispositivo: {service} ({ip}) ha cambiado a estado {status}',
+    ];
+
+    $telegram = array_merge($defaults, $config['telegram'] ?? []);
+    $message_template = str_replace('\n', "\n", (string) $telegram['message_template']);
+
+    return [
+        'enabled' => filter_var($telegram['enabled'], FILTER_VALIDATE_BOOLEAN),
+        'bot_token' => trim((string) $telegram['bot_token']),
+        'chat_id' => trim((string) $telegram['chat_id']),
+        'notify_on_up' => filter_var($telegram['notify_on_up'], FILTER_VALIDATE_BOOLEAN),
+        'notify_on_down' => filter_var($telegram['notify_on_down'], FILTER_VALIDATE_BOOLEAN),
+        'frequency' => max(0, (int) $telegram['frequency']),
+        'message_template' => trim($message_template) !== ''
+            ? $message_template
+            : $defaults['message_template'],
+    ];
+}
+
+function send_telegram_message($text, $telegram_cfg)
+{
+    $token = trim($telegram_cfg['bot_token'] ?? '');
+    $chat_id = trim((string) ($telegram_cfg['chat_id'] ?? ''));
+
+    if ($token === '' || $chat_id === '') {
+        error_log('Telegram alert skipped: missing bot token or chat ID.');
+        return false;
+    }
+
+    if (!preg_match('/^\d+:[A-Za-z0-9_-]+$/', $token)) {
+        error_log('Telegram alert skipped: invalid bot token format.');
+        return false;
+    }
+
+    $bot_id = strtok($token, ':');
+    if ($chat_id === $bot_id) {
+        error_log('Telegram alert skipped: chat ID points to the bot itself.');
+        return false;
+    }
+
+    $url = 'https://api.telegram.org/bot' . $token . '/sendMessage';
+    $payload = http_build_query([
+        'chat_id' => $chat_id,
+        'text' => $text,
+        'disable_web_page_preview' => 'true',
+    ]);
+
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
+        ]);
+        $response = curl_exec($ch);
+        $error = curl_error($ch);
+        $status_code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+
+        if ($response === false || $status_code < 200 || $status_code >= 300) {
+            error_log('Telegram alert failed: ' . ($error ?: 'HTTP ' . $status_code . ' ' . (string) $response));
+            return false;
+        }
+
+        $decoded = json_decode($response, true);
+        return (bool) ($decoded['ok'] ?? false);
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+            'content' => $payload,
+            'timeout' => 8,
+        ],
+    ]);
+
+    $response = @file_get_contents($url, false, $context);
+    if ($response === false) {
+        error_log('Telegram alert failed: HTTP request could not be completed.');
+        return false;
+    }
+
+    $decoded = json_decode($response, true);
+    if (!($decoded['ok'] ?? false)) {
+        error_log('Telegram alert failed: ' . $response);
+        return false;
+    }
+
+    return true;
+}
+
+function format_telegram_message($template, $ip, $service, $status, $timestamp = null, $response_time = null)
+{
+    $template = trim((string) $template);
+    $values = [
+        'service' => (string) $service,
+        'ip' => (string) $ip,
+        'status' => (string) $status,
+        'status_icon' => $status === 'UP' ? '✅' : '🚨',
+        'timestamp' => (string) ($timestamp ?? date('Y-m-d H:i:s')),
+        'response_time' => (string) ($response_time ?? 'N/A'),
+    ];
+
+    if ($template === '') {
+        $template = 'Dispositivo: {service} ({ip}) ha cambiado a estado {status}';
+    }
+
+    $placeholder_pattern = '/\{\s*(service|ip|status|status_icon|timestamp|response_time)\s*\}/i';
+    $has_placeholders = preg_match($placeholder_pattern, $template) === 1;
+    $message = preg_replace_callback($placeholder_pattern, function ($matches) use ($values) {
+        return $values[strtolower($matches[1])];
+    }, $template);
+
+    if (!$has_placeholders) {
+        $message .= "\n\nServicio: {$values['service']}\nIP: {$values['ip']}\nEstado: {$values['status']}";
+    }
+
+    return $message;
+}
+
+function should_notify_telegram($old_status, $new_status, $cfg)
+{
+    if (!in_array($old_status, ['UP', 'DOWN'], true) || !in_array($new_status, ['UP', 'DOWN'], true)) {
+        return false;
+    }
+
+    if (empty($cfg['enabled']) || $old_status === $new_status) {
+        return false;
+    }
+
+    if ($new_status === 'UP') {
+        return !empty($cfg['notify_on_up']);
+    }
+
+    if ($new_status === 'DOWN') {
+        return !empty($cfg['notify_on_down']);
+    }
+
+    return false;
+}
+
+function format_telegram_status_summary_message(array $events)
+{
+    if (empty($events)) {
+        return '';
+    }
+
+    $down_events = [];
+    $up_events = [];
+    foreach ($events as $event) {
+        $display_name = !empty($event['ip']) ? $event['ip'] : $event['service'];
+        if ($event['new_status'] === 'DOWN') {
+            $down_events[] = "• {$display_name} → DOWN";
+        } elseif ($event['new_status'] === 'UP') {
+            $up_events[] = "• {$display_name} → UP";
+        }
+    }
+
+    $message_parts = [];
+    if (!empty($down_events)) {
+        //$time_label = format_telegram_event_time_label($events[0]['timestamp']);
+        $message_parts[] = "🚨 Incidencia detectada\n\n" . count($down_events) . " IPs caídas:\n\n" . implode("\n", $down_events);
+    }
+
+    if (!empty($up_events)) {
+        //$time_label = format_telegram_event_time_label($events[0]['timestamp']);
+        $message_parts[] = "✅ Recuperación detectada\n\n" . count($up_events) . " IPs recuperadas:\n\n" . implode("\n", $up_events);
+    }
+
+    return implode("\n\n", $message_parts);
+}
+
+function format_telegram_event_time_label($timestamp)
+{
+    try {
+        $date = new DateTime($timestamp, new DateTimeZone(date_default_timezone_get()));
+        $date->setTimezone(new DateTimeZone('UTC'));
+        return $date->format('H:i');
+    } catch (Exception $e) {
+        return date('H:i');
+    }
+}
+
+function get_telegram_alert_history_file()
+{
+    return __DIR__ . '/../results/telegram_alert_history.json';
+}
+
+function get_telegram_alert_history($limit = 25)
+{
+    $file = get_telegram_alert_history_file();
+    $history = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
+
+    if (!is_array($history)) {
+        return [];
+    }
+
+    return array_slice($history, 0, max(1, (int) $limit));
+}
+
+function record_telegram_alert($ip, $old_status, $new_status, $service, $message, $timestamp = null, $response_time = null)
+{
+    $file = get_telegram_alert_history_file();
+    $history = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
+
+    if (!is_array($history)) {
+        $history = [];
+    }
+
+    array_unshift($history, [
+        'timestamp' => (string) ($timestamp ?? date('Y-m-d H:i:s')),
+        'service' => (string) $service,
+        'ip' => (string) $ip,
+        'old_status' => (string) $old_status,
+        'new_status' => (string) $new_status,
+        'response_time' => (string) ($response_time ?? 'N/A'),
+        'message' => (string) $message,
+    ]);
+
+    $history = array_slice($history, 0, 100);
+    file_put_contents($file, json_encode($history, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+}
+
+function notify_telegram_status_change($ip, $old_status, $new_status, $service, $telegram_cfg, $timestamp = null, $response_time = null)
+{
+    if (!should_notify_telegram($old_status, $new_status, $telegram_cfg)) {
+        return;
+    }
+
+    $message = format_telegram_message($telegram_cfg['message_template'], $ip, $service, $new_status, $timestamp, $response_time);
+    if (send_telegram_message($message, $telegram_cfg)) {
+        record_telegram_alert($ip, $old_status, $new_status, $service, $message, $timestamp, $response_time);
+    }
+}
+
 // Función para actualizar el servicio de una IP específica
-function update_ip_service($ip, $new_service, $category = '')
+function update_ip_service($ip, $new_service, $type = '')
 {
     global $config_path;
     $config = parse_ini_file($config_path, true);
@@ -559,14 +901,14 @@ function update_ip_service($ip, $new_service, $category = '')
 
     $config[$ips_section][$clean_ip] = $clean_service;
 
-    if (!isset($config['ips-categories'])) {
-        $config['ips-categories'] = [];
+    if (!isset($config['ips-type'])) {
+        $config['ips-type'] = [];
     }
     
-    if (!empty($category)) {
-        $config['ips-categories'][$clean_ip] = htmlspecialchars($category, ENT_QUOTES, 'UTF-8');
-    } else if (isset($config['ips-categories'][$clean_ip])) {
-        unset($config['ips-categories'][$clean_ip]);
+    if (!empty($type)) {
+        $config['ips-type'][$clean_ip] = htmlspecialchars($type, ENT_QUOTES, 'UTF-8');
+    } else if (isset($config['ips-type'][$clean_ip])) {
+        unset($config['ips-type'][$clean_ip]);
     }
 
     return save_config_file($config, $config_path);
@@ -621,6 +963,7 @@ function getNotificationData($action, $msg = null)
         'ping_attempts_updated' => ['type' => 'success', 'icon' => 'fas fa-network-wired', 'message' => 'Número de intentos de ping actualizado exitosamente.'],
         'data_cleared' => ['type' => 'success', 'icon' => 'fas fa-broom', 'message' => 'Datos de ping eliminados exitosamente.'],
         'password_updated' => ['type' => 'success', 'icon' => 'fas fa-key', 'message' => 'Contraseña actualizada correctamente.'],
+        'telegram_updated' => ['type' => 'success', 'icon' => 'fab fa-telegram-plane', 'message' => 'Alertas de Telegram actualizadas correctamente.'],
         'error' => ['type' => 'error', 'icon' => 'fas fa-exclamation-circle', 'message' => 'Error: Por favor, verifica los datos ingresados.']
     ];
 
@@ -641,7 +984,8 @@ function getNotificationData($action, $msg = null)
         'empty_password' => 'Error: Las contraseñas no pueden estar vacías.',
         'same_password' => 'Error: La nueva contraseña debe ser distinta a la actual.',
         'login_not_configured' => 'Error: El acceso con contraseña no está configurado.',
-        'password_change_disabled' => 'Error: El inicio de sesión no está habilitado.'
+        'password_change_disabled' => 'Error: El inicio de sesión no está habilitado.',
+        'telegram_config_error' => 'Error: No se pudo guardar la configuración de Telegram.'
     ];
 
     if ($action === 'error' && $msg && array_key_exists($msg, $error_messages)) {
