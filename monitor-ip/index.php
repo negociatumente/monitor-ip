@@ -6,7 +6,7 @@ $config_main = parse_ini_file(__DIR__ . '/conf/config.ini', true);
 $login_enabled = filter_var($config_main['security']['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
 if ($login_enabled && !isset($_SESSION['authenticated'])) {
-    header('Location: login.php');
+    header('Location: ../auth/login.php');
     exit;
 }
 

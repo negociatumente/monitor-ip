@@ -1,12 +1,12 @@
 <?php
 session_start();
-require_once __DIR__ . '/lib/functions.php';
+require_once __DIR__ . '/../lib/functions.php';
 
-$config = parse_ini_file(__DIR__ . '/conf/config.ini', true);
+$config = parse_ini_file(__DIR__ . '/../conf/config.ini', true);
 $login_enabled = filter_var($config['security']['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
 if (!$login_enabled) {
-    header('Location: index.php');
+    header('Location: ../index.php');
     exit;
 }
 
@@ -31,10 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Save new user and password
             $config['security']['username'] = $new_username;
             $config['security']['password'] = hash('sha512', $new_password);
-            save_config_file($config, __DIR__ . '/conf/config.ini');
+            save_config_file($config, __DIR__ . '/../conf/config.ini');
             $_SESSION['authenticated'] = true;
             $_SESSION['username'] = $new_username;
-            header('Location: index.php');
+            header('Location: ../index.php');
             exit;
         }
     } else {
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($username === $correct_username && hash('sha512', $password) === $correct_password) {
             $_SESSION['authenticated'] = true;
             $_SESSION['username'] = $username;
-            header('Location: index.php');
+            header('Location: ../index.php');
             exit;
         } else {
             $error = 'Usuario o contraseña incorrectos';
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body class="bg-gray-900 flex items-center justify-center min-h-screen p-4">
     <div class="max-w-md w-full bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-700">
         <div class="text-center mb-8">
-            <img src="logo.png" class="w-20 h-20 mx-auto mb-4 rounded-xl shadow-lg">
+            <img src="../assets/logo.png" class="w-20 h-20 mx-auto mb-4 rounded-xl shadow-lg">
             <h2 class="text-2xl font-bold text-white">
                 <?php echo $is_setup ? 'Configuración Inicial' : 'Acceso Restringido'; ?>
             </h2>

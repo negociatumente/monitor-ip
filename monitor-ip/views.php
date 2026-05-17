@@ -52,7 +52,7 @@ if (isset($_GET['imported'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="IP Monitor - Track and monitor your network devices">
     <title>IP Monitor</title>
-    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -171,7 +171,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                     </button>
                     <div
                         class="bg-white p-1 sm:p-1 rounded-xl group-hover:scale-110 transition-all duration-300 shadow-lg">
-                        <img src="logo.png" alt="Logo" class="w-8 h-8 sm:w-14 sm:h-14 object-contain">
+                        <img src="assets/logo.png" alt="Logo" class="w-8 h-8 sm:w-14 sm:h-14 object-contain">
                     </div>
                     <div>
                         <h1 class="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight">
@@ -191,7 +191,12 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                 <!-- Navigation links -->
                 <div class="hidden sm:flex flex-1 justify-end items-center ml-4 relative z-[60]">
                     <!-- Left Group: External Links (Hidden on small/medium screens) -->
-                    <div class="hidden lg:flex flex-wrap gap-2 mr-6">
+                    <!--<a href="https://nordvpn.com/es/pricing/" target="_blank"
+                        class="bg-green-400 hover:bg-green-500 text-blue-900 font-bold px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm shadow-lg transform hover:scale-105">
+                        <i class="fas fa-shield-alt"></i>
+                        <span class="hidden sm:inline">Get Secure VPN</span>
+                    </a>-->
+                    <div class="hidden lg:flex flex-wrap gap-2 ml-2">
                         <a href="https://negociatumente.com" target="_blank"
                             class="bg-white bg-opacity-10 hover:bg-opacity-20 px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-xs sm:text-sm backdrop-blur-sm">
                             <i class="fas fa-globe"></i>
@@ -211,7 +216,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
 
                     <!-- Right Group: User menu -->
                     <?php if ($login_enabled): ?>
-                        <div class="relative z-[110]" id="userMenuContainer">
+                        <div class="relative z-[110] ml-2" id="userMenuContainer">
                             <?php if (isset($_SESSION['username'])): ?>
                                 <button type="button" id="userMenuBtn" onclick="toggleUserMenu(event)"
                                     class="flex items-center gap-2 bg-black/10 hover:bg-black/20 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/5 transition-all text-[10px] sm:text-xs text-white"
@@ -234,14 +239,14 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         <span>Cambiar contraseña</span>
                                     </button>
                                     <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
-                                    <a href="logout.php" role="menuitem"
+                                    <a href="auth/logout.php" role="menuitem"
                                         class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                                         <i class="fas fa-power-off w-4"></i>
                                         <span>Cerrar sesión</span>
                                     </a>
                                 </div>
                             <?php else: ?>
-                                <a href="logout.php"
+                                <a href="auth/logout.php"
                                     class="flex items-center gap-2 bg-black/10 hover:bg-black/20 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/5 text-[10px] sm:text-xs text-red-200 hover:text-white transition-colors font-bold">
                                     <i class="fas fa-power-off"></i>
                                     <span>Cerrar sesión</span>
