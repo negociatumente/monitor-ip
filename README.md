@@ -101,12 +101,12 @@ https://docs.docker.com/get-docker/
 ### 3️⃣ Configuración
 **🔹Clona el repositorio:**
 ```bash
-docker pull ghcr.io/negociatumente/monitor-ip:1.0.1
+docker pull ghcr.io/negociatumente/monitor-ip:1.0.5
 ```
 
 **🔹Ejecuta el contenedor:**
 ```bash
-docker run --name monitor-ip --network host -p 80 ghcr.io/negociatumente/monitor-ip:1.0.1
+docker run --name monitor-ip --network host -p 80 ghcr.io/negociatumente/monitor-ip:1.0.5
 ``` 
 
 ### 4️⃣ Resultados
