@@ -57,61 +57,97 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $is_setup ? 'Configurar Acceso' : 'Login'; ?> - IP Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
 </head>
 
-<body class="bg-gray-900 flex items-center justify-center min-h-screen p-4">
-    <div class="max-w-md w-full bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-700">
+<body class="bg-gray-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-gray-950 to-black flex items-center justify-center min-h-screen p-4 sm:p-6">
+    <div class="max-w-md w-full bg-gray-900/60 backdrop-blur-xl rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-800/80 transition-all duration-300">
         <div class="text-center mb-8">
-            <img src="../assets/logo.png" class="w-20 h-20 mx-auto mb-4 rounded-xl shadow-lg">
-            <h2 class="text-2xl font-bold text-white">
+            <img src="../assets/logo.png" class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-2xl shadow-lg border border-gray-800/60 bg-gray-950/40 p-1">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-200 to-white tracking-tight">
                 <?php echo $is_setup ? 'Configuración Inicial' : 'Acceso Restringido'; ?>
             </h2>
-            <p class="text-gray-400 text-sm mt-2">
+            <p class="text-gray-400 text-xs sm:text-sm mt-2 font-medium">
                 <?php echo $is_setup ? 'Establece tus credenciales para proteger tu panel' : 'Introduce tus credenciales para continuar'; ?>
             </p>
         </div>
 
-        <form method="POST" class="space-y-4">
+        <form method="POST" class="space-y-4 sm:space-y-5">
             <?php if ($is_setup): ?>
                 <div>
-                    <label class="block text-gray-400 text-xs mb-1 ml-1">Nombre de Usuario</label>
-                    <input type="text" name="new_username" required autofocus
-                        class="w-full p-4 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                        placeholder="username">
+                    <label class="block text-gray-400 text-[11px] uppercase tracking-wider font-semibold mb-1.5 ml-1">Nombre de Usuario</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-400 transition-colors">
+                            <i class="fas fa-user text-sm"></i>
+                        </div>
+                        <input type="text" name="new_username" required autofocus
+                            class="w-full pl-11 pr-4 py-3 rounded-xl bg-gray-950/40 border border-gray-800 text-white placeholder-gray-500 focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 text-sm"
+                            placeholder="username">
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-gray-400 text-xs mb-1 ml-1">Nueva Contraseña</label>
-                    <input type="password" name="new_password" required
-                        class="w-full p-4 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                        placeholder="Contraseña robusta">
+                    <label class="block text-gray-400 text-[11px] uppercase tracking-wider font-semibold mb-1.5 ml-1">Nueva Contraseña</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-400 transition-colors">
+                            <i class="fas fa-lock text-sm"></i>
+                        </div>
+                        <input type="password" name="new_password" required
+                            class="w-full pl-11 pr-4 py-3 rounded-xl bg-gray-950/40 border border-gray-800 text-white placeholder-gray-500 focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 text-sm"
+                            placeholder="Contraseña robusta">
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-gray-400 text-xs mb-1 ml-1">Confirmar Contraseña</label>
-                    <input type="password" name="confirm_password" required
-                        class="w-full p-4 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                        placeholder="Repite la contraseña">
+                    <label class="block text-gray-400 text-[11px] uppercase tracking-wider font-semibold mb-1.5 ml-1">Confirmar Contraseña</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-400 transition-colors">
+                            <i class="fas fa-shield-halved text-sm"></i>
+                        </div>
+                        <input type="password" name="confirm_password" required
+                            class="w-full pl-11 pr-4 py-3 rounded-xl bg-gray-950/40 border border-gray-800 text-white placeholder-gray-500 focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 text-sm"
+                            placeholder="Repite la contraseña">
+                    </div>
                 </div>
             <?php else: ?>
                 <div>
-                    <input type="text" name="username" required autofocus
-                        class="w-full p-4 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                        placeholder="Usuario">
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-400 transition-colors">
+                            <i class="fas fa-user text-sm"></i>
+                        </div>
+                        <input type="text" name="username" required autofocus
+                            class="w-full pl-11 pr-4 py-3 rounded-xl bg-gray-950/40 border border-gray-800 text-white placeholder-gray-500 focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 text-sm"
+                            placeholder="Usuario">
+                    </div>
                 </div>
                 <div>
-                    <input type="password" name="password" required
-                        class="w-full p-4 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                        placeholder="Contraseña">
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-400 transition-colors">
+                            <i class="fas fa-lock text-sm"></i>
+                        </div>
+                        <input type="password" name="password" required
+                            class="w-full pl-11 pr-4 py-3 rounded-xl bg-gray-950/40 border border-gray-800 text-white placeholder-gray-500 focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 text-sm"
+                            placeholder="Contraseña">
+                    </div>
                 </div>
             <?php endif; ?>
 
             <?php if ($error): ?>
-                <p class="text-red-500 text-xs text-center font-semibold italic"><?php echo $error; ?></p>
+                <div class="p-3 rounded-xl bg-red-950/30 border border-red-900/50 text-red-400 text-xs text-center font-medium flex items-center justify-center gap-2">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    <span><?php echo $error; ?></span>
+                </div>
             <?php endif; ?>
 
             <button type="submit"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all">
+                class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 hover:shadow-blue-500/25 transform active:scale-[0.98] transition-all duration-200 text-sm mt-2">
                 <?php echo $is_setup ? 'Guardar y Continuar' : 'Entrar al Dashboard'; ?>
             </button>
         </form>

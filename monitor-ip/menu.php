@@ -136,8 +136,8 @@
                 <div class="flex items-center gap-2 bg-yellow-50/80 dark:bg-yellow-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-yellow-200/50 dark:border-yellow-700/40 hover:bg-yellow-100/80 dark:hover:bg-yellow-900/30 transition-all group cursor-pointer flex-shrink-0"
                     onclick="showChangeTimerForm();">
                     <i class="fas fa-clock text-yellow-500 text-xs sm:text-sm"></i>
-                    <div class="hidden sm:block">
-                        <p class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Interval</p>
+                    <div>
+                        <p class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">Interval</p>
                         <span
                             class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_interval; ?>s</span>
                     </div>
@@ -152,11 +152,10 @@
                 <div class="flex items-center gap-2 bg-purple-50/80 dark:bg-purple-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-purple-200/50 dark:border-purple-700/40 hover:bg-purple-100/80 dark:hover:bg-purple-900/30 transition-all group cursor-pointer flex-shrink-0"
                     onclick="showChangePingAttemptsForm();">
                     <i class="fas fa-history text-purple-500 text-xs sm:text-sm"></i>
-                    <div class="hidden sm:block">
-                        <p class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">History</p>
+                    <div>
+                        <p class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">History</p>
                         <span
-                            class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_attempts; ?>
-                            pings</span>
+                            class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_attempts; ?> pings</span>
                     </div>
                     <button onclick="showChangePingAttemptsForm(); event.stopPropagation();"
                         class="ml-1 p-1 rounded hover:bg-purple-200/50 dark:hover:bg-purple-800/40 transition-all opacity-0 group-hover:opacity-100"
@@ -170,10 +169,9 @@
                 <div class="flex items-center gap-2 bg-blue-50/80 dark:bg-blue-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-blue-200/50 dark:border-blue-700/40 hover:bg-blue-100/80 dark:hover:bg-blue-900/30 transition-all group cursor-pointer flex-shrink-0"
                     onclick="showTelegramConfigModal();">
                     <i class="fab fa-telegram-plane text-blue-500 text-xs sm:text-sm"></i>
-                    <div class="hidden sm:block">
-                        <p class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Alertas</p>
-                        <span
-                            class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200">Telegram</span>
+                    <div>
+                        <p class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">Alertas</p>
+                        <span class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200">Telegram</span>
                     </div>
                     <button onclick="showTelegramConfigModal(); event.stopPropagation();"
                         class="ml-1 p-1 rounded hover:bg-blue-200/50 dark:hover:bg-blue-800/40 transition-all opacity-0 group-hover:opacity-100"
@@ -181,7 +179,7 @@
                         <i class="fas fa-edit text-blue-600 dark:text-blue-400 text-[10px] sm:text-xs"></i>
                     </button>
                 </div>
-                            
+
                 <!-- El temporizador a la derecha -->
                 <div class="flex-1 flex justify-end min-w-0">
                     <div
@@ -346,24 +344,24 @@
 
             <div class="px-4 pb-4">
                 <label for="new_device_type"
-                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Device Type</label>
-                                    <div class="relative">
-                                        <select id="new_type" name="new_type"
-                                            class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
-                                            required>
-                                            <option value="Gateway">🌐 Gateway</option>
-                                            <option value="AP/Mesh">🛜 AP/Mesh</option>
-                                            <option value="Cámara">📹 Cámara</option>
-                                            <option value="Móvil">📱 Móvil</option>
-                                            <option value="Ordenador">💻 Ordenador</option>
-                                            <option value="Impresora">🖨️ Impresora</option>
-                                            <option value="Otro">💡 Otro</option>
-                                        </select>
-                                        <div
-                                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                                            <i class="fas fa-chevron-down"></i>
-                                        </div>
-                                    </div>
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Device Type</label>
+                <div class="relative">
+                    <select id="new_type" name="new_type"
+                        class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                        required>
+                        <option value="Gateway">🌐 Gateway</option>
+                        <option value="AP/Mesh">🛜 AP/Mesh</option>
+                        <option value="Cámara">📹 Cámara</option>
+                        <option value="Móvil">📱 Móvil</option>
+                        <option value="Ordenador">💻 Ordenador</option>
+                        <option value="Impresora">🖨️ Impresora</option>
+                        <option value="Otro">💡 Otro</option>
+                    </select>
+                    <div
+                        class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
             </div>
 
             <!-- New Service Creation Form (Hidden by default) -->
@@ -489,37 +487,38 @@
     </div>
 </div>
 <!-- Modal: Change Timer Interval -->
-<div id="changeTimerForm" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
-        <div
-            class="bg-white dark:bg-gray-900 w-full max-w-3xl rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
+<div id="changeTimerForm"
+    class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+    <div
+        class="bg-white dark:bg-gray-900 w-[92%] max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transform scale-100">
 
-          <div class="p-5 bg-gradient-to-br from-yellow-600 to-yellow-700 text-white relative overflow-hidden">
-                <!-- Decorative background elements -->
-                <div class="absolute top-0 right-0 p-4 opacity-10">
-                    <i class="fas fa-globe-americas text-9xl"></i>
-                </div>
-
-                <div class="flex justify-between items-start relative z-10">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
-                            <i class="fas fa-globe text-2xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold tracking-tight">Change Timer Interval</h3>
-                            <p class="text-blue-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
-                                Choose how often the system should check IP status
-                            </p>
-                        </div>
-                    </div>
-                    <button onclick="hideChangeTimerForm()"
-                        class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
-                        <i class="fas fa-times text-sm"></i>
-                    </button>
-                </div>
+        <div class="p-5 bg-gradient-to-br from-yellow-600 to-yellow-700 text-white relative overflow-hidden flex-shrink-0">
+            <!-- Decorative background elements -->
+            <div class="absolute top-0 right-0 p-4 opacity-10">
+                <i class="fas fa-globe-americas text-9xl"></i>
             </div>
 
-        <form method="POST" action="">
-            <div class="mb-6 p-4">
+            <div class="flex justify-between items-start relative z-10 w-full">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
+                        <i class="fas fa-globe text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold tracking-tight">Change Timer Interval</h3>
+                        <p class="text-blue-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
+                            Choose how often the system should check IP status
+                        </p>
+                    </div>
+                </div>
+                <button onclick="hideChangeTimerForm()"
+                    class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <form method="POST" action="" class="flex-1 flex flex-col min-h-0">
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
                     Select the frequency at which the system will check the status of IP addresses.
                 </p>
@@ -586,13 +585,11 @@
                             <i class="fas fa-lightbulb text-yellow-500 text-xl"></i>
                         </div>
                         <div class="ml-3">
-                            <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2">Monitoring Guidelines
-                            </h4>
+                            <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2">Monitoring Guidelines</h4>
                             <div class="text-sm text-yellow-700 dark:text-yellow-200 space-y-1">
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-red-500 text-xs mr-2"></i>
-                                    <span><strong>30 seconds:</strong> Critical infrastructure, databases, core
-                                        services</span>
+                                    <span><strong>30 seconds:</strong> Critical infrastructure, databases, core services</span>
                                 </div>
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-blue-500 text-xs mr-2"></i>
@@ -600,8 +597,7 @@
                                 </div>
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-green-500 text-xs mr-2"></i>
-                                    <span><strong>5 minutes:</strong> Background services, development
-                                        environments</span>
+                                    <span><strong>5 minutes:</strong> Background services, development environments</span>
                                 </div>
                             </div>
                         </div>
@@ -609,7 +605,7 @@
                 </div>
             </div>
             <input type="hidden" id="new_timer_value" name="new_timer_value" value="<?php echo $ping_interval; ?>">
-            <div class="flex justify-end gap-3 mt-0 p-4">
+            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 flex-shrink-0">
                 <button type="button" onclick="hideChangeTimerForm();"
                     class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
                     <i class="fas fa-times mr-2"></i> Cancel
@@ -623,17 +619,18 @@
     </div>
 </div>
 <!-- Modal: Change Ping History -->
-<div id="changePingAttemptsForm" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+<div id="changePingAttemptsForm"
+    class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
     <div
-        class="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
+        class="bg-white dark:bg-gray-900 w-[92%] max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transform scale-100">
 
-        <div class="p-5 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden">
+        <div class="p-5 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden flex-shrink-0">
             <!-- Decorative background elements -->
             <div class="absolute top-0 right-0 p-4 opacity-10">
                 <i class="fas fa-history text-9xl"></i>
             </div>
 
-            <div class="flex justify-between items-start relative z-10">
+            <div class="flex justify-between items-start relative z-10 w-full">
                 <div class="flex items-center gap-4">
                     <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
                         <i class="fas fa-history text-2xl"></i>
@@ -646,18 +643,17 @@
                     </div>
                 </div>
                 <button type="button" onclick="hideChangePingAttemptsForm();"
-                    class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
+                    class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
                     <i class="fas fa-times text-sm"></i>
                 </button>
             </div>
         </div>
 
-        <form method="POST" action="">
-            <div class="mb-6 p-4">
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Choose how many ping results to keep for trend
-                    analysis</p>
+        <form method="POST" action="" class="flex-1 flex flex-col min-h-0">
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Choose how many ping results to keep for trend analysis</p>
 
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <!-- Quick Analysis - 5 pings -->
                     <div class="group">
                         <button type="button" id="btn-5"
@@ -720,8 +716,7 @@
                             <i class="fas fa-info-circle text-blue-500 text-xl"></i>
                         </div>
                         <div class="ml-3">
-                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">History Guidelines
-                            </h4>
+                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">History Guidelines</h4>
                             <div class="text-sm text-blue-700 dark:text-blue-200 space-y-1">
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-purple-500 text-xs mr-2"></i>
@@ -733,8 +728,7 @@
                                 </div>
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-orange-500 text-xs mr-2"></i>
-                                    <span><strong>25 pings:</strong> Detailed trend analysis for important
-                                        services</span>
+                                    <span><strong>25 pings:</strong> Detailed trend analysis for important services</span>
                                 </div>
                             </div>
                         </div>
@@ -745,8 +739,9 @@
                     value="<?php echo $ping_attempts; ?>">
             </div>
 
-            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex justify-between gap-3">
-                <p class="text-[10px] text-gray-400 text-center flex-1">
+            <div
+                class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-3 flex-shrink-0">
+                <p class="text-[10px] text-gray-400 text-center sm:text-left flex-1">
                     More ping results provide better trend analysis, but require more storage and memory.
                 </p>
                 <div class="flex gap-3 flex-shrink-0">
@@ -1326,7 +1321,8 @@
 
             <div class="mb-2">
                 <label for="network_speed_input"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contracted Speed (Mbps)</label>
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contracted Speed
+                    (Mbps)</label>
                 <div class="flex items-center gap-3">
                     <div class="relative flex-1">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1354,77 +1350,81 @@
 </div>
 
 <?php if (!empty($login_enabled)): ?>
-<!-- Modal: Change Password -->
-<div id="changePasswordModal"
-    class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
-    <div
-        class="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
+    <!-- Modal: Change Password -->
+    <div id="changePasswordModal"
+        class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+        <div
+            class="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
 
-        <div class="p-5 bg-gradient-to-br from-amber-500 to-orange-600 text-white relative overflow-hidden">
-            <div class="absolute top-0 right-0 p-4 opacity-10">
-                <i class="fas fa-key text-9xl"></i>
+            <div class="p-5 bg-gradient-to-br from-amber-500 to-orange-600 text-white relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i class="fas fa-key text-9xl"></i>
+                </div>
+
+                <div class="flex justify-between items-start relative z-10">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
+                            <i class="fas fa-key text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold tracking-tight">Cambiar Contraseña</h3>
+                            <p class="text-amber-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
+                                Actualiza las credenciales del panel
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="hideChangePasswordModal();"
+                        class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
             </div>
 
-            <div class="flex justify-between items-start relative z-10">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
-                        <i class="fas fa-key text-2xl"></i>
-                    </div>
+            <form method="POST" action="">
+                <div class="p-4 space-y-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Introduce tu contraseña actual y la nueva. Permanecerás conectado tras guardar.
+                    </p>
+
                     <div>
-                        <h3 class="text-xl font-bold tracking-tight">Cambiar Contraseña</h3>
-                        <p class="text-amber-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
-                            Actualiza las credenciales del panel
-                        </p>
+                        <label for="current_password"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contraseña
+                            actual</label>
+                        <input type="password" id="current_password" name="current_password" required
+                            autocomplete="current-password"
+                            class="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+
+                    <div>
+                        <label for="new_password"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nueva contraseña</label>
+                        <input type="password" id="new_password" name="new_password" required autocomplete="new-password"
+                            class="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+
+                    <div>
+                        <label for="confirm_password"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirmar nueva
+                            contraseña</label>
+                        <input type="password" id="confirm_password" name="confirm_password" required
+                            autocomplete="new-password"
+                            class="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                     </div>
                 </div>
-                <button type="button" onclick="hideChangePasswordModal();"
-                    class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
-                    <i class="fas fa-times text-sm"></i>
-                </button>
-            </div>
+
+                <div class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
+                    <button type="button" onclick="hideChangePasswordModal();"
+                        class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                        <i class="fas fa-times mr-2"></i> Cancelar
+                    </button>
+                    <button type="submit" name="change_password"
+                        class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                        <i class="fas fa-save mr-2"></i> Guardar
+                    </button>
+                </div>
+            </form>
         </div>
-
-        <form method="POST" action="">
-            <div class="p-4 space-y-4">
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                    Introduce tu contraseña actual y la nueva. Permanecerás conectado tras guardar.
-                </p>
-
-                <div>
-                    <label for="current_password"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contraseña actual</label>
-                    <input type="password" id="current_password" name="current_password" required autocomplete="current-password"
-                        class="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                </div>
-
-                <div>
-                    <label for="new_password"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nueva contraseña</label>
-                    <input type="password" id="new_password" name="new_password" required autocomplete="new-password"
-                        class="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                </div>
-
-                <div>
-                    <label for="confirm_password"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirmar nueva contraseña</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password"
-                        class="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-800">
-                <button type="button" onclick="hideChangePasswordModal();"
-                    class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                <i class="fas fa-times mr-2"></i> Cancelar
-            </button>
-            <button type="submit" name="change_password"
-                class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                <i class="fas fa-save mr-2"></i> Guardar
-                </button>
-            </div>
-        </form>
     </div>
-</div>
 <?php endif; ?>
 
 <!-- Public IP Modal -->
@@ -1482,17 +1482,21 @@
         <form id="telegramConfigForm" method="POST" action="?action=save_telegram_config<?php echo $network_param; ?>"
             class="bg-gray-50 dark:bg-gray-900 rounded-b-2xl">
             <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="md:col-span-2 flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div
+                    class="md:col-span-2 flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div>
                         <div class="flex items-center gap-2">
                             <i class="fas fa-bell text-blue-500 text-sm"></i>
                             <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Activar alertas</span>
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Solo envía mensajes cuando un host cambia de estado.</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Solo envía mensajes cuando un host
+                            cambia de estado.</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
                         <input type="checkbox" id="enabled" name="enabled" class="sr-only peer" <?php echo $telegram_config['enabled'] ? 'checked' : ''; ?>>
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        <div
+                            class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600">
+                        </div>
                     </label>
                 </div>
 
@@ -1534,25 +1538,31 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div
+                    class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div class="flex items-center gap-2">
                         <i class="fas fa-arrow-up text-green-500 text-xs"></i>
                         <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar al recuperar</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="notify_on_up" name="notify_on_up" class="sr-only peer" <?php echo $telegram_config['notify_on_up'] ? 'checked' : ''; ?>>
-                        <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                        <div
+                            class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-green-600">
+                        </div>
                     </label>
                 </div>
 
-                <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div
+                    class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div class="flex items-center gap-2">
                         <i class="fas fa-arrow-down text-red-500 text-xs"></i>
                         <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar al caer</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="notify_on_down" name="notify_on_down" class="sr-only peer" <?php echo $telegram_config['notify_on_down'] ? 'checked' : ''; ?>>
-                        <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
+                        <div
+                            class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-red-600">
+                        </div>
                     </label>
                 </div>
 
@@ -1567,16 +1577,20 @@
                 </div>
                 -->
 
-                <div class="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-                    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <div
+                    class="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                    <div
+                        class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <div>
                             <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                 <i class="fas fa-clock-rotate-left text-blue-500"></i>
                                 Histórico de alertas
                             </h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Últimas alertas enviadas correctamente a Telegram.</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Últimas alertas enviadas
+                                correctamente a Telegram.</p>
                         </div>
-                        <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                        <span
+                            class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
                             <?php echo count($telegram_alert_history); ?> registros
                         </span>
                     </div>
@@ -1617,7 +1631,8 @@
                                                 <?php echo htmlspecialchars($alert['ip'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>
                                             </td>
                                             <td class="px-3 py-2 whitespace-nowrap">
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded font-bold <?php echo $status_class; ?>">
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded font-bold <?php echo $status_class; ?>">
                                                     <?php echo htmlspecialchars(($alert['old_status'] ?? '-') . ' → ' . $new_status, ENT_QUOTES, 'UTF-8'); ?>
                                                 </span>
                                             </td>
@@ -1634,7 +1649,8 @@
 
             </div>
 
-            <div class="px-5 py-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:justify-end gap-2 rounded-b-2xl">
+            <div
+                class="px-5 py-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:justify-end gap-2 rounded-b-2xl">
                 <button type="button" onclick="testTelegramConnection();"
                     class="btn px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold">
                     <i class="fas fa-paper-plane"></i> Probar conexión

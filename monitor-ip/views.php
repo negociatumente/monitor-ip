@@ -162,30 +162,74 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
             <!-- Top row with logo and actions -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                 <!-- Logo and title -->
-                <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-                    <!-- Hamburger - only shows on mobile to open sidebar -->
-                    <button id="mobileMenuBtn" onclick="toggleSidebar()"
-                        class="lg:hidden flex-shrink-0 bg-white/15 hover:bg-white/25 active:bg-white/30 p-2 sm:p-2.5 rounded-lg transition-all duration-200"
-                        aria-label="Open navigation menu">
-                        <i class="fas fa-bars text-lg sm:text-xl leading-none"></i>
-                    </button>
-                    <div
-                        class="bg-white p-1 sm:p-1 rounded-xl group-hover:scale-110 transition-all duration-300 shadow-lg">
-                        <img src="assets/logo.png" alt="Logo" class="w-8 h-8 sm:w-14 sm:h-14 object-contain">
+                <div class="flex items-center justify-between gap-2 sm:gap-4 w-full sm:w-auto flex-shrink-0">
+                    <div class="flex items-center gap-2 sm:gap-4">
+                        <!-- Hamburger - only shows on mobile to open sidebar -->
+                        <button id="mobileMenuBtn" onclick="toggleSidebar()"
+                            class="lg:hidden flex-shrink-0 bg-white/15 hover:bg-white/25 active:bg-white/30 p-2 sm:p-2.5 rounded-lg transition-all duration-200"
+                            aria-label="Open navigation menu">
+                            <i class="fas fa-bars text-lg sm:text-xl leading-none"></i>
+                        </button>
+                        <div
+                            class="bg-white p-1 sm:p-1 rounded-xl group-hover:scale-110 transition-all duration-300 shadow-lg">
+                            <img src="assets/logo.png" alt="Logo" class="w-8 h-8 sm:w-14 sm:h-14 object-contain">
+                        </div>
+                        <div>
+                            <h1 class="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight">
+                                IP Monitor <span
+                                    class="hidden sm:inline text-sm sm:text-base lg:text-lg font-normal opacity-90 border-l border-white/30 pl-2 sm:pl-3 ml-2"><?php echo $network_label; ?></span>
+                                <?php if (isset($config['settings']['version'])): ?>
+                                    <span
+                                        class="hidden sm:inline text-xs sm:text-sm font-normal bg-white bg-opacity-20 px-2 py-1 rounded-full ml-1 sm:ml-2">
+                                        v<?php echo htmlspecialchars($config['settings']['version'], ENT_QUOTES, 'UTF-8'); ?>
+                                    </span>
+                                <?php endif; ?>
+                            </h1>
+                            <p class="text-blue-100 text-xs sm:text-sm mt-0.5">Real-time monitoring & analytics</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 class="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight">
-                            IP Monitor <span
-                                class="hidden sm:inline text-sm sm:text-base lg:text-lg font-normal opacity-90 border-l border-white/30 pl-2 sm:pl-3 ml-2"><?php echo $network_label; ?></span>
-                            <?php if (isset($config['settings']['version'])): ?>
-                                <span
-                                    class="hidden sm:inline text-xs sm:text-sm font-normal bg-white bg-opacity-20 px-2 py-1 rounded-full ml-1 sm:ml-2">
-                                    v<?php echo htmlspecialchars($config['settings']['version'], ENT_QUOTES, 'UTF-8'); ?>
-                                </span>
+
+                    <!-- Mobile User Menu Button (Only visible on mobile vertical/portrait) -->
+                    <?php if ($login_enabled): ?>
+                        <div class="sm:hidden relative z-[110]" id="mobileUserMenuContainer">
+                            <?php if (isset($_SESSION['username'])): ?>
+                                <button type="button" id="mobileUserMenuBtn" onclick="toggleMobileUserMenu(event)"
+                                    class="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded-xl backdrop-blur-sm border border-white/10 transition-all text-xs text-white"
+                                    aria-expanded="false" aria-haspopup="true" aria-controls="mobileUserMenuDropdown">
+                                    <span
+                                        class="flex items-center justify-center w-5 h-5 rounded-full bg-white/20 text-blue-200">
+                                        <i class="fas fa-user text-[10px]"></i>
+                                    </span>
+                                    <span
+                                        class="capitalize font-bold tracking-tight max-w-[80px] truncate"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                                    <i class="fas fa-chevron-down text-[8px] opacity-70 transition-transform duration-200"
+                                        id="mobileUserMenuChevron"></i>
+                                </button>
+                                <div id="mobileUserMenuDropdown"
+                                    class="hidden absolute right-0 top-full mt-2 w-48 rounded-xl bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 py-1 z-[120] overflow-hidden"
+                                    role="menu">
+                                    <button type="button" role="menuitem"
+                                        onclick="closeMobileUserMenu(); showChangePasswordModal();"
+                                        class="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
+                                        <i class="fas fa-key w-4 text-amber-500 text-center"></i>
+                                        <span>Cambiar contraseña</span>
+                                    </button>
+                                    <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                                    <a href="auth/logout.php" role="menuitem"
+                                        class="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded-xl backdrop-blur-sm border border-white/10 text-xs text-red-600 hover:text-white transition-colors">
+                                        <i class="fas fa-power-off w-4 text-center"></i>
+                                        <span>Cerrar sesión</span>
+                                    </a>
+                                </div>
+                            <?php else: ?>
+                                <a href="auth/logout.php"
+                                    class="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded-xl backdrop-blur-sm border border-white/10 text-xs text-red-200 hover:text-white transition-colors font-bold">
+                                    <i class="fas fa-power-off text-[10px]"></i>
+                                    <span>Cerrar sesión</span>
+                                </a>
                             <?php endif; ?>
-                        </h1>
-                        <p class="text-blue-100 text-xs sm:text-sm mt-0.5">Real-time monitoring & analytics</p>
-                    </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Navigation links -->
@@ -480,7 +524,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                             <thead>
                                 <tr class='bg-gray-50 dark:bg-gray-700 text-left'>
                                     <?php
-                                    if($is_local_network) {
+                                    if ($is_local_network) {
                                         echo "<th class='p-3 whitespace-nowrap'>Host</th>";
                                     } else {
                                         echo "<th class='p-3 whitespace-nowrap'>Service</th>";
@@ -695,7 +739,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             onclick="showIpDetailModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')">
                                             <td class='p-3 group'>
                                                 <div class='flex items-center gap-2'>
-                                                    <span class="text-sm font-bold text-white dark:text-gray-200" style="padding: 0.25rem 0.5rem; border-radius: 9999px; background-color: <?php echo htmlspecialchars($service_styling['color'], ENT_QUOTES, 'UTF-8'); ?>;">
+                                                    <span class="text-sm font-bold text-white dark:text-gray-200"
+                                                        style="padding: 0.25rem 0.5rem; border-radius: 9999px; background-color: <?php echo htmlspecialchars($service_styling['color'], ENT_QUOTES, 'UTF-8'); ?>;">
                                                         <?php echo htmlspecialchars($service, ENT_QUOTES, 'UTF-8'); ?>
                                                     </span>
                                                 </div>
@@ -1030,7 +1075,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             class="hidden min-h-[200px] max-h-[350px] m-0 p-3 sm:p-6 bg-black text-green-400 font-mono text-[10px] sm:text-xs overflow-auto rounded-2xl whitespace-pre-wrap leading-relaxed opacity-90">-- Raw output --</pre>
 
                                         <div class="mt-3 sm:mt-4">
-                                            <button type="button" id="btnRunDetailTraceroute" onclick="runDetailTraceroute()"
+                                            <button type="button" id="btnRunDetailTraceroute"
+                                                onclick="runDetailTraceroute()"
                                                 class="btn w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                                                 <i class="fas fa-route mr-2"></i> <span class="hidden sm:inline">Run
                                                     Traceroute</span><span class="sm:hidden">Traceroute</span>
@@ -1089,7 +1135,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         <div class="flex items-center mb-6">
                             <i class="fas fa-edit text-blue-500 text-2xl mr-3"></i>
                             <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                                <?php echo 'Modify Host';?>
+                                <?php echo 'Modify Host'; ?>
                             </h3>
                         </div>
                         <form method="POST" action="">
@@ -1111,7 +1157,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                 </div>
                                 <div class="mb-5">
                                     <label for="new_device_type"
-                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Device Type</label>
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Device
+                                        Type</label>
                                     <div class="relative">
                                         <select id="new_device_type" name="new_device_type"
                                             class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
@@ -1174,27 +1221,28 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
                                             <i class="fas fa-chevron-down"></i>
                                         </div>
-                                         <!-- New Service Creation -->
+                                        <!-- New Service Creation -->
                                         <div id="newServiceForIpForm" style="display: none;"
                                             class="mb-5 mt-5 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
                                             <div class="mb-3">
                                                 <label for="new_service_inline_name"
                                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service
                                                     Name</label>
-                                                <input type="text" id="new_service_inline_name" name="new_service_inline_name"
-                                                    placeholder="e.g. Critical Server"
+                                                <input type="text" id="new_service_inline_name"
+                                                    name="new_service_inline_name" placeholder="e.g. Critical Server"
                                                     class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:text-white">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="new_service_inline_color"
                                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
                                                 <div class="flex items-center space-x-3">
-                                                    <input type="color" id="new_service_inline_color" name="new_service_inline_color"
-                                                        value="#3b82f6"
+                                                    <input type="color" id="new_service_inline_color"
+                                                        name="new_service_inline_color" value="#3b82f6"
                                                         class="h-10 w-16 rounded border border-gray-300 cursor-pointer dark:bg-gray-700 dark:border-gray-600">
                                                     <div class="flex-1">
                                                         <div class="w-full h-10 rounded shadow-sm border border-gray-200 dark:border-gray-700"
-                                                            id="new_service_inline_color_preview" style="background-color: #3b82f6">
+                                                            id="new_service_inline_color_preview"
+                                                            style="background-color: #3b82f6">
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1203,11 +1251,13 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                     </div>
                                 </div>
                                 <div class="mb-5">
-                                        <label for="new_device_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Device Type</label>
-                                        <div class="relative">
-                                            <select id="new_device_type" name="new_device_type"
-                                                class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
-                                                required>
+                                    <label for="new_device_type"
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Device
+                                        Type</label>
+                                    <div class="relative">
+                                        <select id="new_device_type" name="new_device_type"
+                                            class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                                            required>
                                             <option value="Gateway">🌐 Gateway</option>
                                             <option value="AP/Mesh">🛜 AP/Mesh</option>
                                             <option value="Cámara">📹 Cámara</option>
@@ -1215,29 +1265,29 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             <option value="Ordenador">💻 Ordenador</option>
                                             <option value="Impresora">🖨️ Impresora</option>
                                             <option value="Otro">💡 Otro</option>
-                                            </select>
-                                            <div
-                                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                                                <i class="fas fa-chevron-down"></i>
-                                            </div>
+                                        </select>
+                                        <div
+                                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                                            <i class="fas fa-chevron-down"></i>
                                         </div>
+                                    </div>
                                 </div>
-                    <?php endif; ?>
-                        <div class="flex justify-end gap-3 mt-6">
-                            <button type="button" onclick="closeChangeIpServiceModal()"
-                                class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                                <i class="fas fa-times mr-2"></i> Cancel
-                            </button>
-                            <button type="submit" name="confirm_update_ip_service"
-                                class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                                <i class="fas fa-save mr-2"></i> Save Changes
-                            </button>
-                        </div>
-                    </form>
+                            <?php endif; ?>
+                            <div class="flex justify-end gap-3 mt-6">
+                                <button type="button" onclick="closeChangeIpServiceModal()"
+                                    class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                                    <i class="fas fa-times mr-2"></i> Cancel
+                                </button>
+                                <button type="submit" name="confirm_update_ip_service"
+                                    class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                    <i class="fas fa-save mr-2"></i> Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
     </div>
 
     <!-- Footer -->
@@ -1368,7 +1418,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
         <div
             class="bg-white dark:bg-gray-900 w-[95%] max-w-[1400px] h-[85vh] rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col">
 
-            <div class="p-6 bg-gradient-to-br from-violet-600 to-purple-700 text-white relative overflow-hidden shadow-lg flex justify-between items-start">
+            <div
+                class="p-6 bg-gradient-to-br from-violet-600 to-purple-700 text-white relative overflow-hidden shadow-lg flex justify-between items-start">
                 <!-- Decorative background elements -->
                 <div class="absolute top-0 right-0 p-4 opacity-10">
                     <i class="fas fa-sitemap text-9xl"></i>
@@ -1500,13 +1551,13 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
     <div id="quickTopologyModal"
         class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
         <div
-            class="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
+            class="bg-white dark:bg-gray-900 w-[92%] sm:w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transform scale-100">
 
-            <div class="p-6 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden">
+            <div class="p-6 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden flex-shrink-0">
                 <div class="absolute top-0 right-0 p-4 opacity-10">
                     <i class="fas fa-project-diagram text-9xl"></i>
                 </div>
-                <div class="flex justify-between items-start relative z-10">
+                <div class="flex justify-between items-start relative z-10 w-full">
                     <div class="flex items-center gap-4">
                         <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
                             <i class="fas fa-network-wired text-2xl"></i>
@@ -1519,13 +1570,13 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         </div>
                     </div>
                     <button onclick="closeQuickTopologyModal()"
-                        class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center">
+                        class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
                         <i class="fas fa-times text-sm"></i>
                     </button>
                 </div>
             </div>
 
-            <div id="topology_content" class="p-8">
+            <div id="topology_content" class="p-4 sm:p-8 overflow-y-auto flex-1 custom-scrollbar">
                 <!-- Loading State -->
                 <div class="flex flex-col items-center justify-center py-12">
                     <div class="relative w-16 h-16 mb-4">
