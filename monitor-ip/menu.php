@@ -137,7 +137,9 @@
                     onclick="showChangeTimerForm();">
                     <i class="fas fa-clock text-yellow-500 text-xs sm:text-sm"></i>
                     <div>
-                        <p class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">Interval</p>
+                        <p
+                            class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">
+                            Interval</p>
                         <span
                             class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_interval; ?>s</span>
                     </div>
@@ -153,9 +155,12 @@
                     onclick="showChangePingAttemptsForm();">
                     <i class="fas fa-history text-purple-500 text-xs sm:text-sm"></i>
                     <div>
-                        <p class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">History</p>
+                        <p
+                            class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">
+                            History</p>
                         <span
-                            class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_attempts; ?> pings</span>
+                            class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_attempts; ?>
+                            pings</span>
                     </div>
                     <button onclick="showChangePingAttemptsForm(); event.stopPropagation();"
                         class="ml-1 p-1 rounded hover:bg-purple-200/50 dark:hover:bg-purple-800/40 transition-all opacity-0 group-hover:opacity-100"
@@ -170,7 +175,9 @@
                     onclick="showTelegramConfigModal();">
                     <i class="fab fa-telegram-plane text-blue-500 text-xs sm:text-sm"></i>
                     <div>
-                        <p class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">Alertas</p>
+                        <p
+                            class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">
+                            Alertas</p>
                         <span class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200">Telegram</span>
                     </div>
                     <button onclick="showTelegramConfigModal(); event.stopPropagation();"
@@ -343,19 +350,17 @@
             </div>
 
             <div class="px-4 pb-4">
-                <label for="new_device_type"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Device Type</label>
+                <label for="new_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Device
+                    Type</label>
                 <div class="relative">
                     <select id="new_type" name="new_type"
                         class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
                         required>
-                        <option value="Gateway">🌐 Gateway</option>
-                        <option value="AP/Mesh">🛜 AP/Mesh</option>
-                        <option value="Cámara">📹 Cámara</option>
-                        <option value="Móvil">📱 Móvil</option>
-                        <option value="Ordenador">💻 Ordenador</option>
-                        <option value="Impresora">🖨️ Impresora</option>
-                        <option value="Otro">💡 Otro</option>
+                        <option value="web">🌐 Web</option>
+                        <option value="servidor">🖳 Servidor</option>
+                        <option value="cdn">🔀 CDN</option>
+                        <option value="iot">📟 IoT</option>
+                        <option value="otro">📡 Otro</option>
                     </select>
                     <div
                         class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
@@ -492,7 +497,8 @@
     <div
         class="bg-white dark:bg-gray-900 w-[92%] max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transform scale-100">
 
-        <div class="p-5 bg-gradient-to-br from-yellow-600 to-yellow-700 text-white relative overflow-hidden flex-shrink-0">
+        <div
+            class="p-5 bg-gradient-to-br from-yellow-600 to-yellow-700 text-white relative overflow-hidden flex-shrink-0">
             <!-- Decorative background elements -->
             <div class="absolute top-0 right-0 p-4 opacity-10">
                 <i class="fas fa-globe-americas text-9xl"></i>
@@ -585,11 +591,13 @@
                             <i class="fas fa-lightbulb text-yellow-500 text-xl"></i>
                         </div>
                         <div class="ml-3">
-                            <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2">Monitoring Guidelines</h4>
+                            <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2">Monitoring
+                                Guidelines</h4>
                             <div class="text-sm text-yellow-700 dark:text-yellow-200 space-y-1">
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-red-500 text-xs mr-2"></i>
-                                    <span><strong>30 seconds:</strong> Critical infrastructure, databases, core services</span>
+                                    <span><strong>30 seconds:</strong> Critical infrastructure, databases, core
+                                        services</span>
                                 </div>
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-blue-500 text-xs mr-2"></i>
@@ -597,7 +605,8 @@
                                 </div>
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-green-500 text-xs mr-2"></i>
-                                    <span><strong>5 minutes:</strong> Background services, development environments</span>
+                                    <span><strong>5 minutes:</strong> Background services, development
+                                        environments</span>
                                 </div>
                             </div>
                         </div>
@@ -605,7 +614,8 @@
                 </div>
             </div>
             <input type="hidden" id="new_timer_value" name="new_timer_value" value="<?php echo $ping_interval; ?>">
-            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 flex-shrink-0">
+            <div
+                class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 flex-shrink-0">
                 <button type="button" onclick="hideChangeTimerForm();"
                     class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
                     <i class="fas fa-times mr-2"></i> Cancel
@@ -624,7 +634,8 @@
     <div
         class="bg-white dark:bg-gray-900 w-[92%] max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transform scale-100">
 
-        <div class="p-5 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden flex-shrink-0">
+        <div
+            class="p-5 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden flex-shrink-0">
             <!-- Decorative background elements -->
             <div class="absolute top-0 right-0 p-4 opacity-10">
                 <i class="fas fa-history text-9xl"></i>
@@ -651,7 +662,8 @@
 
         <form method="POST" action="" class="flex-1 flex flex-col min-h-0">
             <div class="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Choose how many ping results to keep for trend analysis</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Choose how many ping results to keep for trend
+                    analysis</p>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <!-- Quick Analysis - 5 pings -->
@@ -716,7 +728,8 @@
                             <i class="fas fa-info-circle text-blue-500 text-xl"></i>
                         </div>
                         <div class="ml-3">
-                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">History Guidelines</h4>
+                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">History Guidelines
+                            </h4>
                             <div class="text-sm text-blue-700 dark:text-blue-200 space-y-1">
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-purple-500 text-xs mr-2"></i>
@@ -728,7 +741,8 @@
                                 </div>
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-orange-500 text-xs mr-2"></i>
-                                    <span><strong>25 pings:</strong> Detailed trend analysis for important services</span>
+                                    <span><strong>25 pings:</strong> Detailed trend analysis for important
+                                        services</span>
                                 </div>
                             </div>
                         </div>

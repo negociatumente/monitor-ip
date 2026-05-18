@@ -1175,9 +1175,14 @@ window.showChangeIpServiceModal = function (ip, currentService, isLocal = false,
     }
     const typeInput = document.getElementById('new_device_type');
     if (typeInput && window.ipDetails && window.ipDetails[ip]) {
-            const validTypes = ['Gateway', 'AP/Mesh', 'Cámara', 'Móvil', 'Ordenador', 'Impresora', 'Otro'];
-            const currentType = window.ipDetails[ip].type || '';
-            typeInput.value = validTypes.includes(currentType) ? currentType : 'Otro';
+        let validTypes = []
+        if (isLocal) {
+            validTypes = ['gateway', 'ap-mesh', 'camara', 'movil', 'ordenador', 'impresora', 'otro'];
+        } else {
+            validTypes = ['web', 'servidor', 'cdn', 'iot', 'otro'];
+        }
+        const currentType = window.ipDetails[ip].type || '';
+        typeInput.value = validTypes.includes(currentType) ? currentType : 'otro';
     }
     if (isLocal) {
         const nameInput = document.getElementById('new_device_name');
@@ -1453,20 +1458,20 @@ function testTelegramConnection() {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        modalFunctions.showAlert(data.message, data.success ? 'success' : 'error');
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        modalFunctions.showAlert('Error al probar la conexión con Telegram.', 'error');
-    })
-    .finally(() => {
-        if (testButton) {
-            testButton.disabled = false;
-            testButton.innerHTML = originalHtml;
-        }
-    });
+        .then(response => response.json())
+        .then(data => {
+            modalFunctions.showAlert(data.message, data.success ? 'success' : 'error');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            modalFunctions.showAlert('Error al probar la conexión con Telegram.', 'error');
+        })
+        .finally(() => {
+            if (testButton) {
+                testButton.disabled = false;
+                testButton.innerHTML = originalHtml;
+            }
+        });
 }
 
 window.testTelegramConnection = testTelegramConnection;

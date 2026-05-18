@@ -1,5 +1,10 @@
 # Historial de Cambios - Monitor IP
 
+## [1.0.6] - 2026-05-19
+- **Correcciones varias**: Errores de configuración, tipos y versión mobile.
+
+---
+
 ## [1.0.5] - 2026-05-17
 - **Añadidas alertas de Telegram**: Notificaciones automáticas en Telegram para eventos de caída y recuperación de IPs, con detalles específicos de cada evento.
 - **Corregidos errores de configuración**: Ajustes en la configuración para mejorar la estabilidad y el rendimiento del sistema.

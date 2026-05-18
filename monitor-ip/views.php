@@ -746,12 +746,31 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                                 </div>
                                             </td>
                                             <td class='p-3'>
-                                                <?php $ip_type = trim((string) ($ips_types[$ip] ?? '')); ?>
-                                                <?php if ($ip_type !== ''): ?>
+                                                <?php 
+                                                $ip_type = trim((string) ($ips_types[$ip] ?? '')); 
+                                                if ($ip_type !== ''): 
+                                                    $normalized_type = strtolower($ip_type);
+                                                    $type_details = [
+                                                        'gateway' => ['icon' => 'globe', 'label' => 'Gateway'],
+                                                        'ap-mesh' => ['icon' => 'wifi', 'label' => 'AP/Mesh'],
+                                                        'camara' => ['icon' => 'video', 'label' => 'Cámara'],
+                                                        'movil' => ['icon' => 'mobile-alt', 'label' => 'Móvil'],
+                                                        'ordenador' => ['icon' => 'desktop', 'label' => 'Ordenador'],
+                                                        'impresora' => ['icon' => 'print', 'label' => 'Impresora'],
+                                                        'web' => ['icon' => 'globe', 'label' => 'Web'],
+                                                        'servidor' => ['icon' => 'server', 'label' => 'Servidor'],
+                                                        'cdn' => ['icon' => 'exchange-alt', 'label' => 'CDN'],
+                                                        'iot' => ['icon' => 'microchip', 'label' => 'IoT'],
+                                                        'otro' => ['icon' => 'cube', 'label' => 'Otro'],
+                                                    ];
+                                                    $type_info = $type_details[$normalized_type] ?? ['icon' => 'tag', 'label' => $ip_type];
+                                                    $type_icon = $type_info['icon'];
+                                                    $type_label = $type_info['label'];
+                                                ?>
                                                     <span
                                                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                                                        <i class="fas fa-tag mr-1 text-[10px]"></i>
-                                                        <?php echo htmlspecialchars($ip_type, ENT_QUOTES, 'UTF-8'); ?>
+                                                        <i class="fas fa-<?php echo $type_icon; ?> mr-1 text-[10px]"></i>
+                                                        <?php echo htmlspecialchars($type_label, ENT_QUOTES, 'UTF-8'); ?>
                                                     </span>
                                                 <?php else: ?>
                                                     <span class="text-gray-400 dark:text-gray-600 text-xs italic">N/A</span>
@@ -1163,13 +1182,13 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         <select id="new_device_type" name="new_device_type"
                                             class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
                                             required>
-                                            <option value="Gateway">🌐 Gateway</option>
-                                            <option value="AP/Mesh">🛜 AP/Mesh</option>
-                                            <option value="Cámara">📹 Cámara</option>
-                                            <option value="Móvil">📱 Móvil</option>
-                                            <option value="Ordenador">💻 Ordenador</option>
-                                            <option value="Impresora">🖨️ Impresora</option>
-                                            <option value="Otro">💡 Otro</option>
+                                            <option value="gateway">🌐 Gateway</option>
+                                            <option value="ap-mesh">🛜 AP/Mesh</option>
+                                            <option value="camara">📹 Cámara</option>
+                                            <option value="movil">📱 Móvil</option>
+                                            <option value="ordenador">💻 Ordenador</option>
+                                            <option value="impresora">🖨️ Impresora</option>
+                                            <option value="otro">💡 Otro</option>
                                         </select>
                                         <div
                                             class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
@@ -1258,13 +1277,11 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         <select id="new_device_type" name="new_device_type"
                                             class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
                                             required>
-                                            <option value="Gateway">🌐 Gateway</option>
-                                            <option value="AP/Mesh">🛜 AP/Mesh</option>
-                                            <option value="Cámara">📹 Cámara</option>
-                                            <option value="Móvil">📱 Móvil</option>
-                                            <option value="Ordenador">💻 Ordenador</option>
-                                            <option value="Impresora">🖨️ Impresora</option>
-                                            <option value="Otro">💡 Otro</option>
+                                            <option value="web">🌐 Web</option>
+                                            <option value="servidor">🖳 Servidor</option>
+                                            <option value="cdn">🔀 CDN</option>
+                                            <option value="IoT">📟 IoT</option>
+                                            <option value="Otro">📡 Otro</option>
                                         </select>
                                         <div
                                             class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
@@ -1553,7 +1570,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
         <div
             class="bg-white dark:bg-gray-900 w-[92%] sm:w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transform scale-100">
 
-            <div class="p-6 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden flex-shrink-0">
+            <div
+                class="p-6 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden flex-shrink-0">
                 <div class="absolute top-0 right-0 p-4 opacity-10">
                     <i class="fas fa-project-diagram text-9xl"></i>
                 </div>

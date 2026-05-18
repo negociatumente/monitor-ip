@@ -332,26 +332,19 @@ function delete_ip_from_config($ip)
     // Eliminar del archivo config.ini
     global $config_path;
     $config = parse_ini_file($config_path, true);
-    global $is_local_network;
-    $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
-    if (isset($config[$ips_section][$ip])) {
-        unset($config[$ips_section][$ip]);
-        // Also remove from ips-network if exists
-        if (isset($config['ips-network'][$ip])) {
-            unset($config['ips-network'][$ip]);
+
+    $sections = ['ips-host', 'ips-services', 'ips-network', 'ips-type'];
+    $modified = false;
+
+    foreach ($sections as $section) {
+        if (isset($config[$section][$ip])) {
+            unset($config[$section][$ip]);
+            $modified = true;
         }
-        // Also remove from ips-type if exists
-        if (isset($config['ips-type'][$ip])) {
-            unset($config['ips-type'][$ip]);
-        }
-        $new_content = '';
-        foreach ($config as $section => $values) {
-            $new_content .= "[$section]\n";
-            foreach ($values as $key => $value) {
-                $new_content .= "$key = \"$value\"\n";
-            }
-        }
-        file_put_contents($config_path, $new_content);
+    }
+
+    if ($modified) {
+        save_config_file($config, $config_path);
     }
 
     // Eliminar del archivo ping_results.json
@@ -418,23 +411,17 @@ function add_ip_to_config($ip, $service, $method = 'icmp', $type = '')
     }
 
     // Store monitoring method for the service in services-methods
-    if (!isset($config['services-methods'])) {
-        $config['services-methods'] = [];
-    }
-    // Only set method if it doesn't exist for this service (prevent overwriting existing service methods)
-    if (!isset($config['services-methods'][$clean_service])) {
-        $config['services-methods'][$clean_service] = $clean_method;
-    }
-
-    $new_content = '';
-    foreach ($config as $section => $values) {
-        $new_content .= "[$section]\n";
-        foreach ($values as $key => $value) {
-            $new_content .= "$key = \"$value\"\n";
+    if (!$is_local_network) {
+        if (!isset($config['services-methods'])) {
+            $config['services-methods'] = [];
+        }
+        // Only set method if it doesn't exist for this service (prevent overwriting existing service methods)
+        if (!isset($config['services-methods'][$clean_service])) {
+            $config['services-methods'][$clean_service] = $clean_method;
         }
     }
 
-    return file_put_contents($config_path, $new_content) !== false;
+    return save_config_file($config, $config_path);
 }
 
 // Exporta el archivo config.ini (devuelve el contenido para descarga)
@@ -504,20 +491,7 @@ function delete_service_from_config($service_name)
         unset($config['services-methods'][$service_name]);
     }
 
-    // Write the updated config back to file
-    $new_content = '';
-    foreach ($config as $section => $values) {
-        // Ensure values is an array before iterating
-        if (!is_array($values))
-            continue;
-
-        $new_content .= "[$section]\n";
-        foreach ($values as $key => $value) {
-            $new_content .= "$key = \"$value\"\n";
-        }
-    }
-
-    return file_put_contents($config_path, $new_content) !== false;
+    return save_config_file($config, $config_path);
 }
 
 /**
@@ -566,6 +540,15 @@ function change_user_password($current_password, $new_password, $confirm_passwor
  */
 function save_config_file($config, $file_path)
 {
+    global $is_local_network;
+    if ($is_local_network) {
+        unset($config['services-colors']);
+        unset($config['services-methods']);
+        unset($config['ips-services']);
+    } else {
+        unset($config['ips-network']);
+    }
+
     $new_content = '';
     foreach ($config as $section => $values) {
         if (!is_array($values)) {
@@ -597,21 +580,25 @@ function ensure_config_structure($config, $is_local_network = false)
         'ping_interval' => '300',
     ], $config['settings'] ?? []);
 
-    $config['services-colors'] = array_merge([
-        'DEFAULT' => '#6B7280',
-    ], $config['services-colors'] ?? []);
-
-    $config['services-methods'] = array_merge([
-        'DEFAULT' => 'icmp',
-    ], $config['services-methods'] ?? []);
-
     if ($is_local_network) {
         $config['ips-host'] = $config['ips-host'] ?? [];
         $config['ips-network'] = $config['ips-network'] ?? [];
         $config['ips-type'] = $config['ips-type'] ?? [];
+        unset($config['services-colors']);
+        unset($config['services-methods']);
+        unset($config['ips-services']);
     } else {
+        $config['services-colors'] = array_merge([
+            'DEFAULT' => '#6B7280',
+        ], $config['services-colors'] ?? []);
+
+        $config['services-methods'] = array_merge([
+            'DEFAULT' => 'icmp',
+        ], $config['services-methods'] ?? []);
+
         $config['ips-services'] = $config['ips-services'] ?? [];
         $config['ips-type'] = $config['ips-type'] ?? [];
+        unset($config['ips-network']);
     }
 
     $telegram = get_telegram_config($config);
@@ -624,14 +611,6 @@ function ensure_config_structure($config, $is_local_network = false)
         'frequency' => (string) $telegram['frequency'],
         'message_template' => $telegram['message_template'],
     ];
-
-    if (!isset($config['security'])) {
-        $config['security'] = [
-            'enabled' => 'false',
-            'username' => 'admin',
-            'password' => '',
-        ];
-    }
 
     return $config;
 }
@@ -904,7 +883,7 @@ function update_ip_service($ip, $new_service, $type = '')
     if (!isset($config['ips-type'])) {
         $config['ips-type'] = [];
     }
-    
+
     if (!empty($type)) {
         $config['ips-type'][$clean_ip] = htmlspecialchars($type, ENT_QUOTES, 'UTF-8');
     } else if (isset($config['ips-type'][$clean_ip])) {
@@ -940,16 +919,7 @@ function update_local_ip_config($ip, $new_name, $new_network, $new_type = '')
     $config['ips-network'][$clean_ip] = $clean_network;
     $config['ips-type'][$clean_ip] = $clean_type;
 
-    // Guardar configuración
-    $new_content = '';
-    foreach ($config as $section => $values) {
-        $new_content .= "[$section]\n";
-        foreach ($values as $key => $value) {
-            $new_content .= "$key = \"$value\"\n";
-        }
-    }
-
-    return file_put_contents($config_path, $new_content) !== false;
+    return save_config_file($config, $config_path);
 }
 
 // STYLING FUNCTIONS
@@ -1250,16 +1220,7 @@ function update_service_config($old_name, $new_name, $new_color, $new_method)
     }
     $config['services-methods'][$new_name] = $new_method;
 
-    // Guardar configuración
-    $new_content = '';
-    foreach ($config as $section => $values) {
-        $new_content .= "[$section]\n";
-        foreach ($values as $key => $value) {
-            $new_content .= "$key = \"$value\"\n";
-        }
-    }
-
-    return file_put_contents($config_path, $new_content) !== false;
+    return save_config_file($config, $config_path);
 }
 
 /**

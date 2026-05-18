@@ -20,7 +20,7 @@ $config_path = __DIR__ . '/conf/' . ($is_local_network ? 'config_local.ini' : 'c
 
 // Create config_local.ini if it doesn't exist
 if ($is_local_network && !file_exists($config_path)) {
-    $default_local_config = "[settings]\nversion = \"0.7.0\"\nping_attempts = \"5\"\nping_interval = \"300\"\n[services-colors]\nDEFAULT = \"#6B7280\"\n\"Private Network\" = \"#10B981\"\n[services-methods]\nDEFAULT = \"icmp\"\n\"Private Network\" = \"icmp\"\n[ips-host]\n[telegram]\nenabled = \"false\"\nbot_token = \"\"\nchat_id = \"\"\nnotify_on_up = \"true\"\nnotify_on_down = \"true\"\nfrequency = \"300\"\nmessage_template = \"Dispositivo: {service} ({ip}) ha cambiado a estado {status}\"\n";
+    $default_local_config = "[settings]\nversion = \"0.7.0\"\nping_attempts = \"5\"\nping_interval = \"300\"\n[ips-host]\n[ips-network]\n[ips-type]\n[telegram]\nenabled = \"false\"\nbot_token = \"\"\nchat_id = \"\"\nnotify_on_up = \"true\"\nnotify_on_down = \"true\"\nfrequency = \"300\"\nmessage_template = \"Dispositivo: {service} ({ip}) ha cambiado a estado {status}\"\n";
     file_put_contents($config_path, $default_local_config);
 }
 
@@ -437,16 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
         $new_service_color = htmlspecialchars($new_service_color, ENT_QUOTES, 'UTF-8');
         $config['services-colors'][$new_service_name] = $new_service_color;
 
-        // Guardar los cambios en config.ini
-        $new_content = '';
-        foreach ($config as $section => $values) {
-            $new_content .= "[$section]\n";
-            foreach ($values as $key => $value) {
-                $new_content .= "$key = \"$value\"\n";
-            }
-        }
-
-        if (!file_put_contents($config_path, $new_content)) {
+        if (!save_config_file($config, $config_path)) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=config_write_error" . $network_param);
             exit;
         }
@@ -498,15 +489,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_timer'])) {
         // Actualizar el valor del temporizador
         $config['settings']['ping_interval'] = $new_timer_value;
 
-        // Guardar los cambios en config.ini
-        $new_content = '';
-        foreach ($config as $section => $values) {
-            $new_content .= "[$section]\n";
-            foreach ($values as $key => $value) {
-                $new_content .= "$key = \"$value\"\n";
-            }
-        }
-        file_put_contents($config_path, $new_content);
+        save_config_file($config, $config_path);
 
         // Redirigir para evitar reenvío del formulario
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=timer_updated" . $network_param);
@@ -527,15 +510,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_ping_attempts'
         // Actualizar el valor de ping_attempts
         $config['settings']['ping_attempts'] = $new_ping_attempts;
 
-        // Guardar los cambios en config.ini
-        $new_content = '';
-        foreach ($config as $section => $values) {
-            $new_content .= "[$section]\n";
-            foreach ($values as $key => $value) {
-                $new_content .= "$key = \"$value\"\n";
-            }
-        }
-        file_put_contents($config_path, $new_content);
+        save_config_file($config, $config_path);
 
         // Redirigir para evitar reenvío del formulario
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=ping_attempts_updated" . $network_param);
@@ -557,17 +532,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_data'])) {
     if (isset($_POST['delete_ips'])) {
         if ($is_local_network) {
             $config['ips-host'] = [];
-            $config['ips-type'] = [];
-            $config['ips-services'] = [];
-            $config['services-colors'] = ['DEFAULT' => '#6b7280'];
-            $config['services-methods'] = ['DEFAULT' => "icmp"];
-        } else {
-            $config['ips-host'] = [];
             $config['ips-network'] = [];
             $config['ips-type'] = [];
+            unset($config['ips-services']);
+            unset($config['services-colors']);
+            unset($config['services-methods']);
+        } else {
+            $config['ips-host'] = [];
+            $config['ips-type'] = [];
             $config['ips-services'] = [];
             $config['services-colors'] = ['DEFAULT' => '#6b7280'];
             $config['services-methods'] = ['DEFAULT' => "icmp"];
+            unset($config['ips-network']);
         }
     }
 
@@ -628,15 +604,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_update_ip_ser
                 $config['services-methods'][$new_service] = 'icmp';
             }
 
-            // Re-save config with new service
-            $new_content_tmp = '';
-            foreach ($config as $section => $values) {
-                $new_content_tmp .= "[$section]\n";
-                foreach ($values as $key => $value) {
-                    $new_content_tmp .= "$key = \"$value\"\n";
-                }
-            }
-            file_put_contents($config_path, $new_content_tmp);
+            save_config_file($config, $config_path);
         }
     }
 

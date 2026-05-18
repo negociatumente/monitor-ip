@@ -108,7 +108,7 @@ function displayScanResults(newDevices) {
             <thead>
                 <tr class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">
                     <th class="p-3 border-b border-gray-200 dark:border-gray-700 w-10">
-                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" class="rounded">
+                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" class="rounded" checked>
                     </th>
                     <th class="p-3 border-b border-gray-200 dark:border-gray-700">IP Address</th>
                     <th class="p-3 border-b border-gray-200 dark:border-gray-700">Name</th>
@@ -151,7 +151,7 @@ function displayScanResults(newDevices) {
         html += `
             <tr class="${rowClass} transition-colors">
                 <td class="p-3">
-                    <input type="checkbox" class="device-checkbox rounded" value="${device.ip}" data-index="${index}" ${isSelf || isGateway ? 'checked' : ''}>
+                    <input type="checkbox" class="device-checkbox rounded" value="${device.ip}" data-index="${index}" checked>
                 </td>
                 <td class="p-3 font-mono text-sm">
                     ${device.ip}
@@ -1388,6 +1388,29 @@ function renderRepeaterNode(repeater, allOthers) {
     `;
 }
 
+function getTopologyDeviceIcon(ip) {
+    const ipData = window.ipDetails ? window.ipDetails[ip] : null;
+    const type = ipData && ipData.type ? ipData.type.toLowerCase() : '';
+    
+    switch (type) {
+        // Private
+        case 'gateway': return 'globe';
+        case 'ap-mesh': return 'wifi';
+        case 'camara': return 'video';
+        case 'movil': return 'mobile-alt';
+        case 'ordenador': return 'desktop';
+        case 'impresora': return 'print';
+        
+        // Public
+        case 'web': return 'globe';
+        case 'servidor': return 'server';
+        case 'cdn': return 'exchange-alt';
+        case 'iot': return 'microchip';
+        
+        default: return 'desktop'; // fallback
+    }
+}
+
 function renderDeviceSkin(dev) {
     const isUp = dev.status === 'UP';
     const statusColor = isUp ? 'bg-green-500' : 'bg-red-500';
@@ -1410,7 +1433,7 @@ function renderDeviceSkin(dev) {
                 <div class="absolute left-0 top-0 bottom-0 w-1 ${statusColor} opacity-50 group-hover/card:opacity-100 transition-opacity"></div>
                 
                 <div class="w-11 h-11 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 group-hover/card:text-indigo-500 transition-all group-hover/card:scale-110 shadow-inner">
-                    <i class="fas fa-desktop text-md"></i>
+                    <i class="fas fa-${getTopologyDeviceIcon(dev.ip)} text-md"></i>
                 </div>
                 
                 <div class="flex flex-col overflow-hidden">
