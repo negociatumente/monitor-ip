@@ -53,8 +53,9 @@ monitor-ip/
 │   ├── login.php                     # Página de login y autenticación
 │   └── logout.php                    # Página de cierre de sesión
 ├── conf/                             # Archivos de configuración y resultados
-│   ├── config.ini                    # Configuración de IPs y servicios remotos
-│   └── config_local.ini              # Configuración de IPs locales
+│   ├── config.ini                    # Configuración general
+│   ├── config_public.ini             # Configuración de IPs públicas
+│   └── config_private.ini            # Configuración de IPs privadas
 ├── results/                          # Resultados de los pings y speedtests
 │   ├── ping_results.json             # Resultados de los pings remotos
 │   ├── ping_results_local.json       # Resultados de los pings locales
@@ -103,12 +104,12 @@ https://docs.docker.com/get-docker/
 
 **🔹Clona el repositorio:**
 ```bash
-docker pull ghcr.io/negociatumente/monitor-ip:1.0.5
+docker pull ghcr.io/negociatumente/monitor-ip:1.0.6
 ```
 
 **🔹Ejecuta el contenedor:**
 ```bash
-docker run --name monitor-ip --network host -p 80 ghcr.io/negociatumente/monitor-ip:1.0.5
+docker run --name monitor-ip --network host -p 80 ghcr.io/negociatumente/monitor-ip:1.0.6
 ``` 
 
 ### 4️⃣ Resultados
@@ -157,10 +158,22 @@ sudo chmod -R 775 /var/www/html/monitor-ip/results
 ```
 
 ### 3️⃣ Configuración
-**🔹Abre el archivo config.ini y modifica las IPs según los servidores que quieras monitorizar:**
+**🔹Abre el archivo config.ini para modificar la configuración general:**
 ```bash
 cd /var/www/html/monitor-ip/conf
 nano config.ini
+```
+
+**🔹Abre el archivo config_public.ini y modifica las IPs públicas según los servidores que quieras monitorizar:**
+```bash
+cd /var/www/html/monitor-ip/conf
+nano config_public.ini
+```
+
+**🔹Abre el archivo config_private.ini y modifica las IPs privadas según los servidores que quieras monitorizar:**
+```bash
+cd /var/www/html/monitor-ip/conf
+nano config_private.ini
 ```
 
 ### 4️⃣ Ejecución
@@ -209,8 +222,23 @@ https://github.com/negociatumente/monitor-ip
 C:\xampp\htdocs\monitor-ip
 
 ### 4️⃣ Configuración
-**🔹Abre el archivo config.ini y modifica las IPs según los servidores que quieras monitorizar:**  
-config.ini
+**🔹Abre el archivo config.ini para modificar la configuración general:**
+```bash
+cd C:\xampp\htdocs\monitor-ip\conf
+nano config.ini
+```
+
+**🔹Abre el archivo config_public.ini y modifica las IPs públicas según los servidores que quieras monitorizar:**
+```bash
+cd C:\xampp\htdocs\monitor-ip\conf
+nano config_public.ini
+```
+
+**🔹Abre el archivo config_private.ini y modifica las IPs privadas según los servidores que quieras monitorizar:**
+```bash
+cd C:\xampp\htdocs\monitor-ip\conf
+nano config_private.ini
+```
 
 ### 5️⃣ Resultados
 **🔹Finalmente, abre en tu navegador la siguiente url:**    

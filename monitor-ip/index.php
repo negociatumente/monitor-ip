@@ -1,8 +1,9 @@
 <?php
 session_start();
+require_once __DIR__ . '/lib/functions.php';
 
 // Cargar config para verificar si el login está habilitado
-$config_main = parse_ini_file(__DIR__ . '/conf/config.ini', true);
+$config_main = load_config(false);
 $login_enabled = filter_var($config_main['security']['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
 if ($login_enabled && !isset($_SESSION['authenticated'])) {
@@ -16,15 +17,9 @@ $is_local_network = ($network_type === 'local');
 $network_param = isset($_GET['network']) ? '&network=' . urlencode($_GET['network']) : '';
 
 // Load configuration from appropriate config file
-$config_path = __DIR__ . '/conf/' . ($is_local_network ? 'config_local.ini' : 'config.ini');
+$config_path = __DIR__ . '/conf/' . ($is_local_network ? 'config_private.ini' : 'config_public.ini');
 
-// Create config_local.ini if it doesn't exist
-if ($is_local_network && !file_exists($config_path)) {
-    $default_local_config = "[settings]\nversion = \"0.7.0\"\nping_attempts = \"5\"\nping_interval = \"300\"\n[ips-host]\n[ips-network]\n[ips-type]\n[telegram]\nenabled = \"false\"\nbot_token = \"\"\nchat_id = \"\"\nnotify_on_up = \"true\"\nnotify_on_down = \"true\"\nfrequency = \"300\"\nmessage_template = \"Dispositivo: {service} ({ip}) ha cambiado a estado {status}\"\n";
-    file_put_contents($config_path, $default_local_config);
-}
-
-$config = parse_ini_file($config_path, true);
+$config = load_config($is_local_network);
 
 if ($is_local_network) {
     $ips_to_monitor = $config['ips-host'] ?? [];
@@ -35,7 +30,9 @@ if ($is_local_network) {
     // For compatibility with functions that expect $services
     $services = [];
     foreach ($ips_to_monitor as $ip => $host_name) {
-        $services[$host_name] = ($host_name === 'Gateway' || $host_name === 'AP/Mesh') ? $network_color : $host_color;
+        $device_type = strtolower(trim($config['ips-type'][$ip] ?? ''));
+        $is_network_category = ($device_type === 'gateway' || $device_type === 'ap-mesh' || $device_type === 'ap/mesh');
+        $services[$host_name] = $is_network_category ? $network_color : $host_color;
     }
 } else {
     $ips_to_monitor = $config['ips-services'] ?? [];
@@ -50,7 +47,6 @@ $ping_interval = $config['settings']['ping_interval'] ?? 300;
 
 // Cargar archivos
 $ping_file = __DIR__ . '/results/' . ($is_local_network ? 'ping_results_local.json' : 'ping_results.json');
-require_once __DIR__ . '/lib/functions.php';
 
 // Cargar resultados previos si existen
 if (file_exists($ping_file)) {
@@ -318,7 +314,7 @@ if (isset($_GET['action'])) {
                 throw new Exception('Invalid speed value');
             }
 
-            $config = parse_ini_file($config_path, true);
+            $config = load_config($is_local_network);
             $config['settings']['speed_connection_mbps'] = $speed;
 
             save_config_file($config, $config_path);
@@ -331,7 +327,7 @@ if (isset($_GET['action'])) {
     }
 
     if ($_GET['action'] === 'save_telegram_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        $config = parse_ini_file($config_path, true);
+        $config = load_config($is_local_network);
         $frequency = max(60, (int) ($_POST['frequency'] ?? 300));
         $message_template = trim($_POST['message_template'] ?? '');
 
@@ -357,7 +353,7 @@ if (isset($_GET['action'])) {
 
     if ($_GET['action'] === 'test_telegram' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json');
-        $config = parse_ini_file($config_path, true);
+        $config = load_config($is_local_network);
         $telegram_cfg = get_telegram_config($config);
         $telegram_cfg['enabled'] = true;
         $telegram_cfg['bot_token'] = trim($_POST['bot_token'] ?? $telegram_cfg['bot_token']);
@@ -424,7 +420,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
         }
 
         // Cargar la configuración actual
-        $config = parse_ini_file($config_path, true);
+        $config = load_config($is_local_network);
 
         // Verificar si el servicio ya existe
         if (isset($config['services-colors'][$new_service_name])) {
@@ -453,7 +449,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
     }
 
     // Verificar si la IP ya existe
-    $config = parse_ini_file($config_path, true);
+    $config = load_config($is_local_network);
     $check_ips_section = $is_local_network ? 'ips-host' : 'ips-services';
     if (isset($config[$check_ips_section][$validated_ip])) {
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=ip_exists" . $network_param);
@@ -484,7 +480,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_timer'])) {
 
     if ($new_timer_value > 0) {
         // Cargar la configuración actual
-        $config = parse_ini_file($config_path, true);
+        $config = load_config($is_local_network);
 
         // Actualizar el valor del temporizador
         $config['settings']['ping_interval'] = $new_timer_value;
@@ -505,7 +501,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_ping_attempts'
 
     if ($new_ping_attempts > 0) {
         // Cargar la configuración actual
-        $config = parse_ini_file($config_path, true);
+        $config = load_config($is_local_network);
 
         // Actualizar el valor de ping_attempts
         $config['settings']['ping_attempts'] = $new_ping_attempts;
@@ -526,7 +522,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_data'])) {
         file_put_contents($ping_file, json_encode([])); // Vaciar el archivo
     }
 
-    $config = ensure_config_structure(parse_ini_file($config_path, true), $is_local_network);
+    $config = ensure_config_structure(load_config($is_local_network), $is_local_network);
 
     // Verificar si se deben borrar también las IPs
     if (isset($_POST['delete_ips'])) {
@@ -567,7 +563,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_service'])) {
     }
 
     // Si el nombre cambió, verificar que el nuevo no exista ya (a menos que sea el mismo)
-    $config = parse_ini_file($config_path, true);
+    $config = load_config($is_local_network);
     if ($old_service_name !== $new_service_name && isset($config['services-colors'][$new_service_name])) {
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=error&msg=service_exists" . $network_param);
         exit;
@@ -597,7 +593,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_update_ip_ser
         }
 
         // Add service to config if it doesn't exist
-        $config = parse_ini_file($config_path, true);
+        $config = load_config($is_local_network);
         if (!isset($config['services-colors'][$new_service])) {
             $config['services-colors'][$new_service] = $new_color;
             if (!isset($config['services-methods'][$new_service])) {
@@ -749,7 +745,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'error' && isset($_GET['msg'])
 }
 
 // Recargar configuración después de procesar POST requests
-$config = parse_ini_file($config_path, true);
+$config = load_config($is_local_network);
 
 if ($is_local_network) {
     $ips_to_monitor = $config['ips-host'] ?? [];
@@ -759,7 +755,9 @@ if ($is_local_network) {
 
     $services = [];
     foreach ($ips_to_monitor as $ip => $host_name) {
-        $services[$host_name] = ($host_name === 'Gateway' || $host_name === 'AP/Mesh') ? $network_color : $host_color;
+        $device_type = strtolower(trim($config['ips-type'][$ip] ?? ''));
+        $is_network_category = ($device_type === 'gateway' || $device_type === 'ap-mesh' || $device_type === 'ap/mesh');
+        $services[$host_name] = $is_network_category ? $network_color : $host_color;
     }
 } else {
     $ips_to_monitor = $config['ips-services'] ?? [];

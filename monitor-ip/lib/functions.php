@@ -98,7 +98,7 @@ function update_ping_results_parallel($ips)
 
     // Load methods configuration
     // Load configuration
-    $config = parse_ini_file($config_path, true);
+    $config = get_current_config();
     $services_methods = $config['services-methods'] ?? [];
     global $is_local_network;
     $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
@@ -330,8 +330,7 @@ function delete_ip_from_config($ip)
     global $ping_data;
 
     // Eliminar del archivo config.ini
-    global $config_path;
-    $config = parse_ini_file($config_path, true);
+    $config = get_current_config();
 
     $sections = ['ips-host', 'ips-services', 'ips-network', 'ips-type'];
     $modified = false;
@@ -344,7 +343,7 @@ function delete_ip_from_config($ip)
     }
 
     if ($modified) {
-        save_config_file($config, $config_path);
+        save_config_file($config);
     }
 
     // Eliminar del archivo ping_results.json
@@ -389,8 +388,8 @@ function add_ip_to_config($ip, $service, $method = 'icmp', $type = '')
         $method = 'icmp'; // Default fallback
     }
 
-    global $config_path;
-    $config = parse_ini_file($config_path, true);
+    global $is_local_network;
+    $config = get_current_config();
 
     // Sanitizar los datos
     // For domains, we just sanitize special chars, for IPs filter_var is good but we need to handle both.
@@ -421,7 +420,7 @@ function add_ip_to_config($ip, $service, $method = 'icmp', $type = '')
         }
     }
 
-    return save_config_file($config, $config_path);
+    return save_config_file($config);
 }
 
 // Exporta el archivo config.ini (devuelve el contenido para descarga)
@@ -453,8 +452,7 @@ function import_config_ini($uploaded_file)
 // Función para eliminar un servicio y todas sus IPs asociadas
 function delete_service_from_config($service_name)
 {
-    global $config_path;
-    $config = parse_ini_file($config_path, true);
+    $config = get_current_config();
 
     if (!$config) {
         return false;
@@ -491,7 +489,7 @@ function delete_service_from_config($service_name)
         unset($config['services-methods'][$service_name]);
     }
 
-    return save_config_file($config, $config_path);
+    return save_config_file($config);
 }
 
 /**
@@ -501,8 +499,7 @@ function delete_service_from_config($service_name)
  */
 function change_user_password($current_password, $new_password, $confirm_password)
 {
-    $config_path = __DIR__ . '/../conf/config.ini';
-    $config = parse_ini_file($config_path, true);
+    $config = get_current_config();
 
     if (!$config || empty($config['security']['password'])) {
         return ['success' => false, 'error' => 'login_not_configured'];
@@ -528,7 +525,7 @@ function change_user_password($current_password, $new_password, $confirm_passwor
 
     $config['security']['password'] = hash('sha512', $new_password);
 
-    if (!save_config_file($config, $config_path)) {
+    if (!save_config_file($config)) {
         return ['success' => false, 'error' => 'config_write_error'];
     }
 
@@ -538,17 +535,8 @@ function change_user_password($current_password, $new_password, $confirm_passwor
 /**
  * Save configuration to an INI file
  */
-function save_config_file($config, $file_path)
+function write_ini_file_content($config, $file_path)
 {
-    global $is_local_network;
-    if ($is_local_network) {
-        unset($config['services-colors']);
-        unset($config['services-methods']);
-        unset($config['ips-services']);
-    } else {
-        unset($config['ips-network']);
-    }
-
     $new_content = '';
     foreach ($config as $section => $values) {
         if (!is_array($values)) {
@@ -566,6 +554,82 @@ function save_config_file($config, $file_path)
         }
     }
     return file_put_contents($file_path, $new_content) !== false;
+}
+
+function load_config($is_local_network = false)
+{
+
+    $conf_dir = __DIR__ . '/../conf';
+
+    // 1. Load general config (config.ini)
+    $general_path = $conf_dir . '/config.ini';
+    $general_config = file_exists($general_path) ? parse_ini_file($general_path, true) : [];
+    if (!is_array($general_config)) {
+        $general_config = [];
+    }
+
+    // 2. Load network specific config
+    $network_file = $is_local_network ? 'config_private.ini' : 'config_public.ini';
+    $network_path = $conf_dir . '/' . $network_file;
+    $network_config = file_exists($network_path) ? parse_ini_file($network_path, true) : [];
+    if (!is_array($network_config)) {
+        $network_config = [];
+    }
+
+    // 3. Merge them. If there are sections that overlap, merge their keys.
+    $merged = $general_config;
+    foreach ($network_config as $section => $values) {
+        if (isset($merged[$section]) && is_array($merged[$section]) && is_array($values)) {
+            $merged[$section] = array_merge($merged[$section], $values);
+        } else {
+            $merged[$section] = $values;
+        }
+    }
+
+    return ensure_config_structure($merged, $is_local_network);
+}
+
+function get_current_config()
+{
+    global $is_local_network;
+    return load_config($is_local_network);
+}
+
+/**
+ * Save configuration to INI files (general and network specific)
+ */
+function save_config_file($config, $file_path = '')
+{
+    global $is_local_network;
+    $conf_dir = __DIR__ . '/../conf';
+
+    // Ensure structure is clean
+    $config = ensure_config_structure($config, $is_local_network);
+
+    // Split into General sections and Network-specific sections
+    $general_sections = ['settings', 'telegram', 'security'];
+
+    $general_config = [];
+    $network_config = [];
+
+    foreach ($config as $section => $values) {
+        if (in_array($section, $general_sections)) {
+            $general_config[$section] = $values;
+        } else {
+            $network_config[$section] = $values;
+        }
+    }
+
+    // Save general config (config.ini)
+    $general_path = $conf_dir . '/config.ini';
+    $general_written = write_ini_file_content($general_config, $general_path);
+
+    // Save network specific config
+    $network_file = $is_local_network ? 'config_private.ini' : 'config_public.ini';
+    $network_path = $conf_dir . '/' . $network_file;
+    $network_written = write_ini_file_content($network_config, $network_path);
+
+    return $general_written && $network_written;
 }
 
 function ensure_config_structure($config, $is_local_network = false)
@@ -866,8 +930,7 @@ function notify_telegram_status_change($ip, $old_status, $new_status, $service, 
 // Función para actualizar el servicio de una IP específica
 function update_ip_service($ip, $new_service, $type = '')
 {
-    global $config_path;
-    $config = parse_ini_file($config_path, true);
+    $config = get_current_config();
 
     global $is_local_network;
     $ips_section = $is_local_network ? 'ips-host' : 'ips-services';
@@ -890,14 +953,13 @@ function update_ip_service($ip, $new_service, $type = '')
         unset($config['ips-type'][$clean_ip]);
     }
 
-    return save_config_file($config, $config_path);
+    return save_config_file($config);
 }
 
 // Función para actualizar el host y la red de una IP local
 function update_local_ip_config($ip, $new_name, $new_network, $new_type = '')
 {
-    global $config_path;
-    $config = parse_ini_file($config_path, true);
+    $config = get_current_config();
 
     if (!$config)
         return false;
@@ -919,7 +981,7 @@ function update_local_ip_config($ip, $new_name, $new_network, $new_type = '')
     $config['ips-network'][$clean_ip] = $clean_network;
     $config['ips-type'][$clean_ip] = $clean_type;
 
-    return save_config_file($config, $config_path);
+    return save_config_file($config);
 }
 
 // STYLING FUNCTIONS
@@ -1175,8 +1237,7 @@ function getResponseTimeStyling($average_response_time)
 // Función para actualizar un servicio (renombrar, cambiar color y método)
 function update_service_config($old_name, $new_name, $new_color, $new_method)
 {
-    global $config_path;
-    $config = parse_ini_file($config_path, true);
+    $config = get_current_config();
 
     if (!$config) {
         return false;
@@ -1220,7 +1281,7 @@ function update_service_config($old_name, $new_name, $new_color, $new_method)
     }
     $config['services-methods'][$new_name] = $new_method;
 
-    return save_config_file($config, $config_path);
+    return save_config_file($config);
 }
 
 /**
@@ -1338,28 +1399,15 @@ function scan_local_network()
 
 
 /**
- * Save discovered local network devices to config_local.ini
+ * Save discovered local network devices to config_private.ini
  */
 function save_local_network_scan($devices)
 {
-    $config_path = __DIR__ . '/../conf/config_local.ini';
+    global $is_local_network;
+    $is_local_network = true;
 
-    // Load existing config or create new
-    if (file_exists($config_path)) {
-        $config = parse_ini_file($config_path, true);
-    } else {
-        $config = [
-            'settings' => [
-                'version' => '0.8.0',
-                'ping_attempts' => '5',
-                'ping_interval' => '300',
-                'host_color' => '#b4ecb9ff',
-                'gateway_color' => '#f59e0b'
-            ],
-            'ips-host' => [],
-            'ips-network' => []
-        ];
-    }
+    // Load existing config explicitly for private network
+    $config = load_config(true);
 
     $ips_section = 'ips-host';
 
@@ -1386,7 +1434,7 @@ function save_local_network_scan($devices)
     }
 
     // Save config
-    return save_config_file($config, $config_path);
+    return save_config_file($config);
 }
 
 /**
@@ -1847,7 +1895,7 @@ function get_network_health()
     global $ping_file, $config_path;
 
     // Load configuration for theoretical speed
-    $config = parse_ini_file($config_path, true);
+    $config = get_current_config();
     $theoretical_speed = (float) ($config['settings']['speed_connection_mbps'] ?? 0);
 
     $isWindows = (PHP_OS_FAMILY === 'Windows');

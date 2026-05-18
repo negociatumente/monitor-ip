@@ -105,14 +105,24 @@ if (isset($_GET['imported'])) {
                 $response_styling = getResponseTimeStyling($result['average_response_time']);
 
                 // Get monitoring method
-                $config_methods = parse_ini_file($config_path, true);
+                $config_methods = load_config($is_local_network);
                 $services_methods_conf = $config_methods['services-methods'] ?? [];
                 $method = $services_methods_conf[$service] ?? ($services_methods_conf['DEFAULT'] ?? 'icmp');
 
+                if ($is_local_network) {
+                    $device_type = strtolower(trim($ips_types[$ip] ?? ''));
+                    $is_network_category = ($device_type === 'gateway' || $device_type === 'ap-mesh' || $device_type === 'ap/mesh');
+                    $service_color = $is_network_category ? $network_color : $host_color;
+                    $service_text_color = '#ffffff';
+                } else {
+                    $service_color = $service_styling['color'];
+                    $service_text_color = $service_styling['text_color'];
+                }
+
                 $ip_entries[] = "'" . addslashes($ip) . "': " . json_encode([
                     'service' => $service,
-                    'service_color' => $service_styling['color'],
-                    'service_text_color' => $service_styling['text_color'],
+                    'service_color' => $service_color,
+                    'service_text_color' => $service_text_color,
                     'method' => strtoupper($method),
                     'status' => $result['status'],
                     'status_badge' => $status_styling['badge'],
@@ -628,7 +638,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                     // Prepare all IPs with their analysis for sorting
                                     $analyzed_ips = [];
                                     // Need to get ips_network array for network sorting if needed
-                                    $parsed_config = parse_ini_file($config_path, true);
+                                    $parsed_config = load_config($is_local_network);
                                     $ips_network_map = $parsed_config['ips-network'] ?? [];
 
                                     foreach ($ips_to_monitor as $ip => $service) {
@@ -728,7 +738,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                 
 
                                         // Get monitoring method
-                                        $config = parse_ini_file($config_path, true);
+                                        $config = load_config($is_local_network);
                                         $services_methods = $config['services-methods'] ?? [];
                                         $method = $services_methods[$service] ?? ($services_methods['DEFAULT'] ?? 'icmp');
                                         $method_display = strtoupper($method);
@@ -739,8 +749,17 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             onclick="showIpDetailModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')">
                                             <td class='p-3 group'>
                                                 <div class='flex items-center gap-2'>
+                                                    <?php
+                                                    if ($is_local_network) {
+                                                        $device_type = strtolower(trim($ips_types[$ip] ?? ''));
+                                                        $is_network_category = ($device_type === 'gateway' || $device_type === 'ap-mesh' || $device_type === 'ap/mesh');
+                                                        $badge_color = $is_network_category ? ($network_color ?? '#3b82f6') : ($host_color ?? '#6b7280');
+                                                    } else {
+                                                        $badge_color = $service_styling['color'];
+                                                    }
+                                                    ?>
                                                     <span class="text-sm font-bold text-white dark:text-gray-200"
-                                                        style="padding: 0.25rem 0.5rem; border-radius: 9999px; background-color: <?php echo htmlspecialchars($service_styling['color'], ENT_QUOTES, 'UTF-8'); ?>;">
+                                                        style="padding: 0.25rem 0.5rem; border-radius: 9999px; background-color: <?php echo htmlspecialchars($badge_color, ENT_QUOTES, 'UTF-8'); ?>;">
                                                         <?php echo htmlspecialchars($service, ENT_QUOTES, 'UTF-8'); ?>
                                                     </span>
                                                 </div>
@@ -753,6 +772,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                                     $type_details = [
                                                         'gateway' => ['icon' => 'globe', 'label' => 'Gateway'],
                                                         'ap-mesh' => ['icon' => 'wifi', 'label' => 'AP/Mesh'],
+                                                        'ap/mesh' => ['icon' => 'wifi', 'label' => 'AP/Mesh'],
                                                         'camara' => ['icon' => 'video', 'label' => 'Cámara'],
                                                         'movil' => ['icon' => 'mobile-alt', 'label' => 'Móvil'],
                                                         'ordenador' => ['icon' => 'desktop', 'label' => 'Ordenador'],
@@ -779,7 +799,10 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             <td class='p-3 font-mono text-sm'>
                                                 <div class="flex items-center gap-2">
                                                     <?php echo $ip; ?>
-                                                    <?php if ($is_local_network && ($ip_type === 'Gateway' || $ip_type === 'AP/Mesh')): ?>
+                                                    <?php 
+                                                    $normalized_type = strtolower(trim((string) ($ips_types[$ip] ?? '')));
+                                                    if ($is_local_network && ($normalized_type === 'gateway' || $normalized_type === 'ap-mesh' || $normalized_type === 'ap/mesh')): 
+                                                    ?>
                                                         <a href="http://<?php echo $ip; ?>" target="_blank"
                                                             class="text-blue-500 hover:text-blue-700 transition-colors inline-flex items-center justify-center p-1 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30"
                                                             title="Configure">

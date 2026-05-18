@@ -2,7 +2,7 @@
 session_start();
 require_once __DIR__ . '/../lib/functions.php';
 
-$config = parse_ini_file(__DIR__ . '/../conf/config.ini', true);
+$config = load_config(false);
 $login_enabled = filter_var($config['security']['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
 if (!$login_enabled) {
