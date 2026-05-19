@@ -940,6 +940,7 @@ function update_ip_service($ip, $new_service, $type = '')
 
     $clean_ip = htmlspecialchars($ip, ENT_QUOTES, 'UTF-8');
     $clean_service = htmlspecialchars($new_service, ENT_QUOTES, 'UTF-8');
+    $clean_type = htmlspecialchars(strtolower(str_replace('/', '-', trim($type))), ENT_QUOTES, 'UTF-8');
 
     $config[$ips_section][$clean_ip] = $clean_service;
 
@@ -947,8 +948,8 @@ function update_ip_service($ip, $new_service, $type = '')
         $config['ips-type'] = [];
     }
 
-    if (!empty($type)) {
-        $config['ips-type'][$clean_ip] = htmlspecialchars($type, ENT_QUOTES, 'UTF-8');
+    if (!empty($clean_type)) {
+        $config['ips-type'][$clean_ip] = $clean_type;
     } else if (isset($config['ips-type'][$clean_ip])) {
         unset($config['ips-type'][$clean_ip]);
     }
@@ -966,7 +967,7 @@ function update_local_ip_config($ip, $new_name, $new_network, $new_type = '')
 
     $clean_ip = htmlspecialchars($ip, ENT_QUOTES, 'UTF-8');
     $clean_name = htmlspecialchars($new_name, ENT_QUOTES, 'UTF-8');
-    $clean_type = htmlspecialchars($new_type, ENT_QUOTES, 'UTF-8');
+    $clean_type = htmlspecialchars(strtolower(str_replace('/', '-', $new_type)), ENT_QUOTES, 'UTF-8');
     $clean_network = htmlspecialchars($new_network, ENT_QUOTES, 'UTF-8');
 
     // Update or Create sections if they don't exist
@@ -1328,8 +1329,11 @@ function scan_local_network()
                 $mac = 'UNKNOWN';
             }
             $hostname = gethostbyaddr($ip);
-            if ($hostname === $ip)
+            if ($hostname === $ip) {
                 $hostname = 'Unknown';
+            } elseif (strtolower($hostname) === '_gateway') {
+                $hostname = 'gateway';
+            }
             $discovered_devices[] = [
                 'ip' => $ip,
                 'mac' => $mac,
@@ -1370,7 +1374,7 @@ function scan_local_network()
         $gateway_found = false;
         foreach ($discovered_devices as &$device) {
             if ($device['ip'] === $gateway_ip) {
-                $device['hostname'] = 'Gateway'; // Update name if found
+                $device['type'] = 'gateway'; // Update type if found
                 if ($device['mac'] === 'SELF')
                     $device['mac'] = 'SELF/GATEWAY';
                 $gateway_found = true;
@@ -1384,7 +1388,7 @@ function scan_local_network()
             $discovered_devices[] = [
                 'ip' => $gateway_ip,
                 'mac' => 'GATEWAY',
-                'hostname' => 'Gateway'
+                'type' => 'gateway'
             ];
         }
     }
@@ -1416,9 +1420,11 @@ function save_local_network_scan($devices)
         $ip = $device['ip'];
         // Use custom name if provided, otherwise hostname or default
         $name = !empty($device['name']) ? $device['name'] : (!empty($device['hostname']) ? $device['hostname'] : 'Local Device');
+        $type = isset($device['type']) ? strtolower(str_replace('/', '-', trim($device['type']))) : '';
 
-        // Sanitize name to prevent INI format issues
+        // Sanitize values to prevent INI format issues
         $name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+        $type = htmlspecialchars($type, ENT_QUOTES, 'UTF-8');
 
         // Check if IP already exists to avoid overwriting existing names unless explicitly requested
         // But here we want to update if user provided a name
@@ -1430,6 +1436,14 @@ function save_local_network_scan($devices)
                 $config['ips-network'] = [];
             }
             $config['ips-network'][$ip] = htmlspecialchars($device['network'], ENT_QUOTES, 'UTF-8');
+        }
+
+        // Save device type if provided
+        if ($type !== '') {
+            if (!isset($config['ips-type'])) {
+                $config['ips-type'] = [];
+            }
+            $config['ips-type'][$ip] = $type;
         }
     }
 

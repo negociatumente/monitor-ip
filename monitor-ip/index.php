@@ -25,13 +25,13 @@ if ($is_local_network) {
     $ips_to_monitor = $config['ips-host'] ?? [];
     $ips_network = $config['ips-network'] ?? [];
     $host_color = $config['settings']['host_color'] ?? '#6B7280';
-    $network_color = $config['settings']['network_color'] ?? '#f59e0b';
+    $network_color = $config['settings']['network_color'] ?? '#1e40af';
 
     // For compatibility with functions that expect $services
     $services = [];
     foreach ($ips_to_monitor as $ip => $host_name) {
         $device_type = strtolower(trim($config['ips-type'][$ip] ?? ''));
-        $is_network_category = ($device_type === 'gateway' || $device_type === 'ap-mesh' || $device_type === 'ap/mesh');
+        $is_network_category = ($device_type === 'gateway' || $device_type === 'router' || $device_type === 'ap-mesh' || $device_type === 'ap/mesh');
         $services[$host_name] = $is_network_category ? $network_color : $host_color;
     }
 } else {
@@ -751,12 +751,12 @@ if ($is_local_network) {
     $ips_to_monitor = $config['ips-host'] ?? [];
     $ips_network = $config['ips-network'] ?? [];
     $host_color = $config['settings']['host_color'] ?? '#6B7280';
-    $network_color = $config['settings']['network_color'] ?? '#f59e0b';
+    $network_color = $config['settings']['network_color'] ?? '#1e40af';
 
     $services = [];
     foreach ($ips_to_monitor as $ip => $host_name) {
         $device_type = strtolower(trim($config['ips-type'][$ip] ?? ''));
-        $is_network_category = ($device_type === 'gateway' || $device_type === 'ap-mesh' || $device_type === 'ap/mesh');
+        $is_network_category = ($device_type === 'gateway' || $device_type === 'router' || $device_type === 'ap-mesh' || $device_type === 'ap/mesh');
         $services[$host_name] = $is_network_category ? $network_color : $host_color;
     }
 } else {

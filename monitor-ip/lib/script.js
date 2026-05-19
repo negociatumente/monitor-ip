@@ -1177,12 +1177,22 @@ window.showChangeIpServiceModal = function (ip, currentService, isLocal = false,
     if (typeInput && window.ipDetails && window.ipDetails[ip]) {
         let validTypes = []
         if (isLocal) {
-            validTypes = ['gateway', 'ap-mesh', 'camara', 'movil', 'ordenador', 'impresora', 'otro'];
+            validTypes = ['gateway', 'router', 'ap-mesh', 'camera', 'mobile', 'computer', 'printer', 'iot', 'other'];
         } else {
-            validTypes = ['web', 'servidor', 'cdn', 'iot', 'otro'];
+            validTypes = ['web', 'server', 'cdn', 'iot', 'other'];
         }
-        const currentType = window.ipDetails[ip].type || '';
-        typeInput.value = validTypes.includes(currentType) ? currentType : 'otro';
+        const typeMapping = {
+            'camara': 'camera',
+            'movil': 'mobile',
+            'ordenador': 'computer',
+            'impresora': 'printer',
+            'otro': 'other',
+            'servidor': 'server',
+            'iot': 'iot'
+        };
+        let currentType = (window.ipDetails[ip].type || '').toLowerCase();
+        currentType = typeMapping[currentType] || currentType;
+        typeInput.value = validTypes.includes(currentType) ? currentType : 'other';
     }
     if (isLocal) {
         const nameInput = document.getElementById('new_device_name');

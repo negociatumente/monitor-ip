@@ -112,7 +112,7 @@ function displayScanResults(newDevices) {
                     </th>
                     <th class="p-3 border-b border-gray-200 dark:border-gray-700">IP Address</th>
                     <th class="p-3 border-b border-gray-200 dark:border-gray-700">Name</th>
-                    <th class="p-3 border-b border-gray-200 dark:border-gray-700">Is AP/Mesh</th>
+                    <th class="p-3 border-b border-gray-200 dark:border-gray-700">Type</th>
                     <th class="p-3 border-b border-gray-200 dark:border-gray-700">Network Connection</th>
                 </tr>
             </thead>
@@ -130,11 +130,23 @@ function displayScanResults(newDevices) {
 
     newDevices.forEach((device, index) => {
         const isSelf = device.mac === 'SELF' || device.mac === 'SELF/GATEWAY';
-        const isGateway = device.hostname === 'Gateway' || device.mac === 'GATEWAY' || device.mac === 'SELF/GATEWAY';
+        const isGateway = device.hostname === 'Gateway' || device.hostname === 'gateway' || device.hostname === '_gateway' || device.mac === 'GATEWAY' || device.mac === 'SELF/GATEWAY';
 
         let rowClass = 'hover:bg-gray-50 dark:hover:bg-gray-700/30';
         if (isSelf) rowClass = 'bg-blue-50 dark:bg-blue-900/20';
         else if (isGateway) rowClass = 'bg-purple-50 dark:bg-purple-900/20';
+
+        // Determine default device type
+        let defaultType = 'other';
+        const normalizedDeviceType = String(device.type || '').toLowerCase().replace('/', '-');
+        const validTypes = ['gateway', 'router', 'ap-mesh', 'computer', 'mobile', 'printer', 'camera', 'iot', 'other'];
+        if (validTypes.includes(normalizedDeviceType)) {
+            defaultType = normalizedDeviceType;
+        } else if (isGateway || device.hostname === 'Gateway' || device.hostname === 'gateway' || device.hostname === '_gateway') {
+            defaultType = 'gateway';
+        } else if (isSelf) {
+            defaultType = 'computer';
+        }
 
         // Prepare connection options
         let optionsHtml = `
@@ -156,7 +168,7 @@ function displayScanResults(newDevices) {
                 <td class="p-3 font-mono text-sm">
                     ${device.ip}
                     ${isSelf ? '<span class="ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">YOU</span>' : ''}
-                    ${isGateway && !isSelf ? '<span class="ml-2 text-xs bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">GATEWAY</span>' : ''}
+                    ${isGateway && !isSelf ? '<span class="ml-2 text-xs bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">Gateway</span>' : ''}
                 </td>
                 <td class="p-3">
                     <input type="text" 
@@ -166,11 +178,18 @@ function displayScanResults(newDevices) {
                         placeholder="Enter name"
                         data-ip="${device.ip}">
                 </td>
-                <td class="p-3 text-center">
-                    <input type="checkbox" 
-                        class="scan-repeater-check w-4 h-4" 
-                        onchange="handleScanRepeaterCheck(${index})"
-                        data-ip="${device.ip}">
+                <td class="p-3">
+                    <select id="scan-type-${index}" class="device-type-input w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs p-1 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-300" data-ip="${device.ip}" onchange="handleTypeChange(${index})">
+                        <option value="gateway" ${defaultType === 'gateway' ? 'selected' : ''}>Gateway</option>
+                        <option value="router" ${defaultType === 'router' ? 'selected' : ''}>Router</option>
+                        <option value="ap-mesh" ${defaultType === 'ap-mesh' ? 'selected' : ''}>AP/Mesh</option>
+                        <option value="computer" ${defaultType === 'computer' ? 'selected' : ''}>Computer</option>
+                        <option value="mobile" ${defaultType === 'mobile' ? 'selected' : ''}>Mobile</option>
+                        <option value="printer" ${defaultType === 'printer' ? 'selected' : ''}>Printer</option>
+                        <option value="camera" ${defaultType === 'camera' ? 'selected' : ''}>Camera</option>
+                        <option value="iot" ${defaultType === 'iot' ? 'selected' : ''}>IoT</option>
+                        <option value="other" ${defaultType === 'other' ? 'selected' : ''}>Other</option>
+                    </select>
                 </td>
                 <td class="p-3">
                     <select id="scan-net-${index}" class="device-network-input w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs p-1 focus:ring-blue-500 focus:border-blue-500 dark:text-gray-300" data-ip="${device.ip}">
@@ -194,19 +213,13 @@ function displayScanResults(newDevices) {
     window.discoveredDevices = newDevices;
 }
 
-function handleScanRepeaterCheck(index) {
-    const check = document.querySelector(`.scan-repeater-check[onchange="handleScanRepeaterCheck(${index})"]`);
+function handleTypeChange(index) {
+    const typeSelect = document.getElementById(`scan-type-${index}`);
     const nameInput = document.getElementById(`scan-name-${index}`);
 
-    if (check && nameInput) {
-        if (check.checked) {
-            nameInput.value = 'AP/Mesh';
-            nameInput.readOnly = true;
-            nameInput.classList.add('bg-gray-100', 'dark:bg-gray-800', 'opacity-60', 'cursor-not-allowed');
-        } else {
-            nameInput.readOnly = false;
-            nameInput.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'opacity-60', 'cursor-not-allowed');
-        }
+    if (typeSelect && nameInput) {
+        nameInput.readOnly = false;
+        nameInput.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'opacity-60', 'cursor-not-allowed');
     }
 
     // Update all selects in the table to include/remove this new repeater
@@ -219,9 +232,9 @@ function handleScanRepeaterCheck(index) {
  */
 function updateAllScanNetworkSelects() {
     const selects = document.querySelectorAll('.device-network-input[id^="scan-net-"]');
-    const repeaterChecks = document.querySelectorAll('.scan-repeater-check');
+    const typeSelects = document.querySelectorAll('.device-type-input');
 
-    // 1. Find all active repeaters (registered + newly checked in scan)
+    // 1. Find all active repeaters (registered + newly marked as AP/Mesh in scan)
     const activeRepeaters = [];
 
     // Registered from window.ipDetails
@@ -232,10 +245,10 @@ function updateAllScanNetworkSelects() {
         }
     });
 
-    // Newly checked in scan
-    repeaterChecks.forEach(check => {
-        if (check.checked) {
-            const ip = check.getAttribute('data-ip');
+    // Newly marked as AP/Mesh in scan
+    typeSelects.forEach(typeSelect => {
+        if (typeSelect.value === 'ap-mesh') {
+            const ip = typeSelect.getAttribute('data-ip');
             // Avoid duplicates if already registered
             if (!activeRepeaters.some(r => r.ip === ip)) {
                 activeRepeaters.push({ ip: ip, service: 'AP/Mesh' });
@@ -287,6 +300,8 @@ async function saveDiscoveredDevices() {
         // Escape the IP for the selector to handle special characters if any (though IPs are usually safe)
         const nameInput = document.querySelector(`.device-name-input[data-ip="${ip}"]`);
         const name = nameInput ? nameInput.value.trim() : '';
+        const typeInput = document.querySelector(`.device-type-input[data-ip="${ip}"]`);
+        const type = typeInput ? String(typeInput.value).toLowerCase().replace('/', '-') : 'other';
         const networkInput = document.querySelector(`.device-network-input[data-ip="${ip}"]`);
         const network = networkInput ? networkInput.value : '';
 
@@ -296,6 +311,7 @@ async function saveDiscoveredDevices() {
         return {
             ip: ip,
             name: name || (originalDevice ? originalDevice.hostname : 'Unknown Device'),
+            type: type,
             mac: originalDevice ? originalDevice.mac : '',
             network: network
         };
@@ -928,7 +944,7 @@ function generateNetworkHealthAIReport() {
         // Simple check if it's likely a local IP to focus the report
         if (ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.') || ip === '127.0.0.1') {
             const netType = data.network_type ? ` [${data.network_type}]` : '';
-            report += `- ${ip}${netType}: ${data.status} | Latency: ${data.average_response_time} ms | Device: ${data.service}\n`;
+            report += `- ${ip}${netType}: ${data.status} | Tipo: ${data.device_type} | Latency: ${Math.round(data.average_response_time * 100) / 100} ms | Device: ${data.service}\n`;
         }
     });
 
@@ -1035,7 +1051,7 @@ let currentDraggedIp = null;
 function loadTopologyPositions() {
     try {
         return JSON.parse(localStorage.getItem('topologyPositions') || '{}');
-    } catch(e) { return {}; }
+    } catch (e) { return {}; }
 }
 
 function saveTopologyPositions(pos) {
@@ -1045,35 +1061,35 @@ function saveTopologyPositions(pos) {
 function startTopologyDrag(e, element, ip) {
     // Only accept left clicks or touches
     if (e.type === 'mousedown' && e.button !== 0) return;
-    
+
     isDraggingTopology = true;
     hasMovedDuringDrag = false;
     draggedElement = element;
     currentDraggedIp = ip;
-    
+
     // Bring to front
     draggedElement.style.zIndex = "1000";
-    
+
     const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
     const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-    
+
     // Get current offset
     const positions = loadTopologyPositions();
     elementStartX = positions[ip] ? (positions[ip].x || 0) : 0;
     elementStartY = positions[ip] ? (positions[ip].y || 0) : 0;
-    
+
     dragStartX = clientX;
     dragStartY = clientY;
 
     document.addEventListener('mousemove', doTopologyDrag);
-    document.addEventListener('touchmove', doTopologyDrag, {passive: false});
+    document.addEventListener('touchmove', doTopologyDrag, { passive: false });
     document.addEventListener('mouseup', endTopologyDrag);
     document.addEventListener('touchend', endTopologyDrag);
 }
 
 function doTopologyDrag(e) {
     if (!isDraggingTopology || !draggedElement) return;
-    
+
     e.preventDefault(); // Prevent scrolling while dragging
 
     const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
@@ -1100,7 +1116,7 @@ function doTopologyDrag(e) {
 function endTopologyDrag(e) {
     if (!isDraggingTopology) return;
     isDraggingTopology = false;
-    
+
     if (draggedElement && currentDraggedIp && hasMovedDuringDrag) {
         const positions = loadTopologyPositions();
         positions[currentDraggedIp] = {
@@ -1110,7 +1126,7 @@ function endTopologyDrag(e) {
         saveTopologyPositions(positions);
         draggedElement.style.transition = 'transform 0.3s ease-out'; // Restore transition
     }
-    
+
     if (draggedElement) {
         draggedElement.style.zIndex = "50";
     }
@@ -1122,7 +1138,7 @@ function endTopologyDrag(e) {
     document.removeEventListener('touchmove', doTopologyDrag);
     document.removeEventListener('mouseup', endTopologyDrag);
     document.removeEventListener('touchend', endTopologyDrag);
-    
+
     // Keep hasMovedDuringDrag true for a split second to prevent click
     setTimeout(() => {
         hasMovedDuringDrag = false;
@@ -1391,22 +1407,31 @@ function renderRepeaterNode(repeater, allOthers) {
 function getTopologyDeviceIcon(ip) {
     const ipData = window.ipDetails ? window.ipDetails[ip] : null;
     const type = ipData && ipData.type ? ipData.type.toLowerCase() : '';
-    
+
     switch (type) {
-        // Private
+        // Private (standard English & legacy Spanish)
         case 'gateway': return 'globe';
-        case 'ap-mesh': return 'wifi';
+        case 'router': return 'network-wired';
+        case 'ap-mesh':
+        case 'ap/mesh': return 'wifi';
+        case 'camera':
         case 'camara': return 'video';
+        case 'mobile':
         case 'movil': return 'mobile-alt';
+        case 'computer':
         case 'ordenador': return 'desktop';
+        case 'printer':
         case 'impresora': return 'print';
-        
-        // Public
+
+        // Public (standard English & legacy Spanish)
         case 'web': return 'globe';
+        case 'server':
         case 'servidor': return 'server';
         case 'cdn': return 'exchange-alt';
         case 'iot': return 'microchip';
-        
+        case 'other':
+        case 'otro': return 'cube';
+
         default: return 'desktop'; // fallback
     }
 }
