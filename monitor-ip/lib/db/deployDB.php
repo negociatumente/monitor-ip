@@ -1,6 +1,10 @@
 <?php
 
 $version = '1.1.0'; // Versión actual del esquema de la base de datos
+$ping_interval = 300; // Intervalo de ping en segundos (valor por defecto)
+$security_enabled = true; // Habilitar seguridad (valor por defecto)
+$security_username = ''; // Nombre de usuario para autenticación (vacío por defecto)
+$security_password = ''; // Contraseña para autenticación (vacío por defecto)
 
 if (!extension_loaded('pdo_sqlite')) {
     die("Error: La extensión pdo_sqlite de PHP no está disponible en este servidor.");
@@ -47,6 +51,10 @@ try {
     )");
 
     $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('settings', 'version', '$version')");
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('settings', 'ping_interval', '$ping_interval')");
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('security', 'enabled', '" . ($security_enabled ? '1' : '0') . "')");
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('security', 'username', '$security_username')");
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('security', 'password', '$security_password')");
 
     // 4. Crear tabla de servicios de la red pública
     $db->exec("CREATE TABLE IF NOT EXISTS services (
@@ -82,7 +90,7 @@ try {
     die("Error al conectar con SQLite: " . $e->getMessage());
 }
 
-function load_ping_data_from_db($is_local_network, $ping_attempts = 5)
+function load_ping_data_from_db($is_local_network)
 {
     global $db;
     $ping_data = [];
@@ -91,11 +99,10 @@ function load_ping_data_from_db($is_local_network, $ping_attempts = 5)
         $stmt->execute([$is_local_network ? 1 : 0]);
         $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $stmt_pings = $db->prepare("SELECT status, timestamp, latency FROM ping_results WHERE device_id = ? ORDER BY timestamp DESC LIMIT ?");
+        $stmt_pings = $db->prepare("SELECT status, timestamp, latency FROM ping_results WHERE device_id = ? ORDER BY timestamp DESC");
 
         foreach ($devices as $d) {
             $stmt_pings->bindValue(1, $d['id'], PDO::PARAM_INT);
-            $stmt_pings->bindValue(2, $ping_attempts, PDO::PARAM_INT);
             $stmt_pings->execute();
             $rows = $stmt_pings->fetchAll(PDO::FETCH_ASSOC);
 
