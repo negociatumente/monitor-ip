@@ -1,7 +1,7 @@
 # Use the official PHP image as the base image
 FROM php:8.2-apache
 
-# Instalar herramientas de escaneo de red
+# Instalar herramientas de escaneo de red y dependencias de SQLite
 RUN apt-get update \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install -y \
 		sudo \
@@ -12,6 +12,8 @@ RUN apt-get update \
 		iproute2 \
 		net-tools \
 		nmap \
+		libsqlite3-dev \
+	&& docker-php-ext-install pdo pdo_sqlite \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Permitir que www-data ejecute ping sin contraseña

@@ -48,10 +48,12 @@ $ping_interval = $config['settings']['ping_interval'] ?? 300;
 // Cargar archivos
 $ping_file = __DIR__ . '/results/' . ($is_local_network ? 'ping_results_local.json' : 'ping_results.json');
 
-// Cargar resultados previos si existen
-if (file_exists($ping_file)) {
+// Cargar resultados previos desde la base de datos (con fallback a JSON)
+$ping_data = load_ping_data_from_db($is_local_network, $ping_attempts);
+if (empty($ping_data) && file_exists($ping_file)) {
     $ping_data = json_decode(file_get_contents($ping_file), true);
-} else {
+}
+if (!is_array($ping_data)) {
     $ping_data = [];
 }
 
@@ -120,8 +122,23 @@ if (isset($_GET['action'])) {
 
     if ($_GET['action'] === 'speed_test_history' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         header('Content-Type: application/json');
-        $history_file = __DIR__ . '/results/speedtest_results.json';
-        $history = file_exists($history_file) ? json_decode(file_get_contents($history_file), true) : [];
+
+        global $db;
+        $history = [];
+        try {
+            // Obtener los últimos 5 resultados de speedtest de SQLite
+            $stmt = $db->query("SELECT timestamp, latency, download, upload, jitter, packet_loss FROM speedtest_results ORDER BY timestamp DESC LIMIT 5");
+            $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Failed to load speedtest history from SQLite: " . $e->getMessage());
+        }
+
+        // Fallback a JSON si no hay resultados en BD
+        if (empty($history)) {
+            $history_file = __DIR__ . '/results/speedtest_results.json';
+            $history = file_exists($history_file) ? json_decode(file_get_contents($history_file), true) : [];
+        }
+
         echo json_encode($history ?: []);
         exit;
     }
@@ -129,6 +146,11 @@ if (isset($_GET['action'])) {
     if ($_GET['action'] === 'clear_speed_test_history' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json');
         try {
+            // Eliminar registros de la base de datos
+            global $db;
+            $db->exec("DELETE FROM speedtest_results");
+
+            // Limpiar también archivo JSON para retrocompatibilidad
             $history_file = __DIR__ . '/results/speedtest_results.json';
             if (file_exists($history_file)) {
                 file_put_contents($history_file, json_encode([]));
@@ -457,7 +479,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
     }
 
     // Añadir la IP
-    if (add_ip_to_config($validated_ip, $new_service, $new_method, $new_type)) {
+    if (add_ip($validated_ip, $new_service, $new_method, $new_type)) {
         header("Location: " . $_SERVER['PHP_SELF'] . "?action=added" . $network_param);
         exit;
     } else {
@@ -469,7 +491,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ip'])) {
 // Manejar la eliminación de IP
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_ip'])) {
     $ip_to_delete = $_POST['delete_ip']; // No strict IP validation here to allow deleting domains
-    delete_ip_from_config($ip_to_delete);
+    delete_ip($ip_to_delete);
     header("Location: " . $_SERVER['PHP_SELF'] . "?action=deleted" . $network_param);
     exit;
 }
@@ -517,7 +539,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_ping_attempts'
 }
 // Manejar la eliminación de datos
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_data'])) {
-    // Limpiar los datos de ping
+    // Limpiar los datos de ping en la base de datos
+    global $db;
+    try {
+        if (isset($_POST['delete_ips'])) {
+            $stmt = $db->prepare("DELETE FROM devices WHERE is_local = ?");
+            $stmt->execute([$is_local_network ? 1 : 0]);
+        } else {
+            $stmt = $db->prepare("DELETE FROM ping_results WHERE device_id IN (SELECT id FROM devices WHERE is_local = ?)");
+            $stmt->execute([$is_local_network ? 1 : 0]);
+        }
+    } catch (PDOException $e) {
+        error_log("Failed to clear SQLite data: " . $e->getMessage());
+    }
+
+    // Limpiar los datos de ping en archivo JSON
     if (file_exists($ping_file)) {
         file_put_contents($ping_file, json_encode([])); // Vaciar el archivo
     }
@@ -659,7 +695,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {
     $is_ajax = true;
 
     if (!empty($service_to_delete)) {
-        $result = delete_service_from_config($service_to_delete);
+        $result = delete_service($service_to_delete);
         if ($is_ajax) {
             header('Content-Type: application/json');
             if ($result) {

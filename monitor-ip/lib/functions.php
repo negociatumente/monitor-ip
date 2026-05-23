@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/db/deployDB.php';
 /**
  * Detecta si el script se está ejecutando dentro de un contenedor Docker/Podman
  * @return bool True si está en un contenedor, false en caso contrario
@@ -88,6 +89,29 @@ function update_ping_results($ip)
     if (count($ping_data[$ip]) > $ping_attempts) {
         // Mantiene solo los últimos registros
         array_pop($ping_data[$ip]);
+    }
+
+    // Guardar en base de datos
+    global $db;
+    try {
+        $stmt_dev = $db->prepare("SELECT id FROM devices WHERE ip = ?");
+        $stmt_dev->execute([$ip]);
+        $device_id = $stmt_dev->fetchColumn();
+        if ($device_id) {
+            $clean_latency = null;
+            if ($response_time !== 'N/A' && $response_time !== '-') {
+                $clean_latency = floatval(str_replace(['ms', ' '], '', $response_time));
+            }
+            $stmt_ping_insert = $db->prepare("INSERT INTO ping_results (device_id, status, latency, timestamp) VALUES (?, ?, ?, ?)");
+            $stmt_ping_insert->execute([$device_id, $ping_status, $clean_latency, $timestamp]);
+
+            // Eliminar registros antiguos que superen los 50
+            $db->prepare("DELETE FROM ping_results WHERE device_id = ? AND id NOT IN (
+                SELECT id FROM ping_results WHERE device_id = ? ORDER BY timestamp DESC LIMIT 50
+            )")->execute([$device_id, $device_id]);
+        }
+    } catch (PDOException $e) {
+        error_log("Failed to insert single ping result: " . $e->getMessage());
     }
 }
 
@@ -262,6 +286,29 @@ function update_ping_results_parallel($ips)
         if (count($ping_data[$ip]) > $ping_attempts) {
             array_pop($ping_data[$ip]);
         }
+
+        // Guardar en base de datos
+        global $db;
+        try {
+            $stmt_dev = $db->prepare("SELECT id FROM devices WHERE ip = ?");
+            $stmt_dev->execute([$ip]);
+            $device_id = $stmt_dev->fetchColumn();
+            if ($device_id) {
+                $clean_latency = null;
+                if ($response_time !== 'N/A' && $response_time !== '-') {
+                    $clean_latency = floatval(str_replace(['ms', ' '], '', $response_time));
+                }
+                $stmt_ping_insert = $db->prepare("INSERT INTO ping_results (device_id, status, latency, timestamp) VALUES (?, ?, ?, ?)");
+                $stmt_ping_insert->execute([$device_id, $ping_status, $clean_latency, $timestamp]);
+
+                // Eliminar registros antiguos que superen los 50
+                $db->prepare("DELETE FROM ping_results WHERE device_id = ? AND id NOT IN (
+                    SELECT id FROM ping_results WHERE device_id = ? ORDER BY timestamp DESC LIMIT 50
+                )")->execute([$device_id, $device_id]);
+            }
+        } catch (PDOException $e) {
+            error_log("Failed to insert parallel ping result: " . $e->getMessage());
+        }
     }
 
     if (!empty($telegram_events)) {
@@ -302,8 +349,9 @@ function analyze_ip($ip)
             $response_time_count++;
         }
     }
-    $percentage = ($success_count / count($ping_results)) * 100;
-    $status = ($ping_results[0]['status']);
+    $count_ping_results = count($ping_results);
+    $percentage = $count_ping_results > 0 ? ($success_count / $count_ping_results) * 100 : 0;
+    $status = $count_ping_results > 0 ? ($ping_results[0]['status'] ?? "-") : "-";
 
     if ($percentage >= 80) {
         $label = "Good";
@@ -324,33 +372,24 @@ function analyze_ip($ip)
     ];
 }
 
-// Función para eliminar una IP del archivo config.ini y ping_results.json
-function delete_ip_from_config($ip)
+// Función para eliminar una IP de la base de datos
+function delete_ip($ip)
 {
-    global $ping_data;
+    global $db;
 
-    // Eliminar del archivo config.ini
-    $config = get_current_config();
+    // Eliminar de base de datos SQLite
+    if (isset($db)) {
+        try {
+            // Borrar de ping_results primero
+            $stmt = $db->prepare("DELETE FROM ping_results WHERE device_id IN (SELECT id FROM devices WHERE ip = ?)");
+            $stmt->execute([$ip]);
 
-    $sections = ['ips-host', 'ips-services', 'ips-network', 'ips-type'];
-    $modified = false;
-
-    foreach ($sections as $section) {
-        if (isset($config[$section][$ip])) {
-            unset($config[$section][$ip]);
-            $modified = true;
+            // Luego eliminar el dispositivo
+            $stmt = $db->prepare("DELETE FROM devices WHERE ip = ?");
+            $stmt->execute([$ip]);
+        } catch (PDOException $e) {
+            error_log("Error deleting IP from DB: " . $e->getMessage());
         }
-    }
-
-    if ($modified) {
-        save_config_file($config);
-    }
-
-    // Eliminar del archivo ping_results.json
-    if (isset($ping_data[$ip])) {
-        unset($ping_data[$ip]);
-        global $ping_file;
-        file_put_contents($ping_file, json_encode($ping_data));
     }
 }
 
@@ -369,8 +408,8 @@ function isValidHost($host)
         && strlen($host) <= 253;
 }
 
-// Función para agregar una IP al archivo config.ini
-function add_ip_to_config($ip, $service, $method = 'icmp', $type = '')
+// Función para agregar una IP 
+function add_ip($ip, $service, $method = 'icmp', $type = '')
 {
     // Validar IP o Dominio
     if (!isValidHost($ip)) {
@@ -423,34 +462,59 @@ function add_ip_to_config($ip, $service, $method = 'icmp', $type = '')
     return save_config_file($config);
 }
 
-// Exporta el archivo config.ini (devuelve el contenido para descarga)
-function export_config_ini()
+function get_monitor_db_path()
 {
-    global $config_path;
-    $file = $config_path;
+    return __DIR__ . '/../database/monitor.db';
+}
+
+// Exporta el archivo de base de datos SQLite actual para descarga
+function export_monitor_db()
+{
+    $file = get_monitor_db_path();
+
     if (file_exists($file)) {
-        header('Content-Type: text/plain');
-        header('Content-Disposition: attachment; filename="config.ini"');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="monitor.db"');
+        header('Content-Length: ' . filesize($file));
         readfile($file);
         exit;
     }
+
+    header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
+    echo 'Archivo de base de datos no encontrado.';
+    exit;
 }
 
-// Importa un archivo config.ini subido y lo reemplaza
-function import_config_ini($uploaded_file)
+// Importa un archivo monitor.db subido y reemplaza la base de datos actual
+function import_monitor_db($uploaded_file)
 {
-    global $config_path;
-    $destination = $config_path;
     $tmp_path = is_array($uploaded_file) ? ($uploaded_file['tmp_name'] ?? '') : $uploaded_file;
-    if ($tmp_path && is_uploaded_file($tmp_path)) {
-        move_uploaded_file($tmp_path, $destination);
-        return true;
+    $destination = get_monitor_db_path();
+    $db_dir = dirname($destination);
+
+    if (!$tmp_path || !is_uploaded_file($tmp_path)) {
+        return false;
     }
-    return false;
+
+    if (!is_dir($db_dir)) {
+        if (!mkdir($db_dir, 0775, true) && !is_dir($db_dir)) {
+            return false;
+        }
+    }
+
+    if (!move_uploaded_file($tmp_path, $destination)) {
+        return false;
+    }
+
+    if (!file_exists($destination) || filesize($destination) === 0) {
+        return false;
+    }
+
+    return true;
 }
 
 // Función para eliminar un servicio y todas sus IPs asociadas
-function delete_service_from_config($service_name)
+function delete_service($service_name)
 {
     $config = get_current_config();
 
@@ -532,61 +596,70 @@ function change_user_password($current_password, $new_password, $confirm_passwor
     return ['success' => true];
 }
 
-/**
- * Save configuration to an INI file
- */
-function write_ini_file_content($config, $file_path)
-{
-    $new_content = '';
-    foreach ($config as $section => $values) {
-        if (!is_array($values)) {
-            continue;
-        }
-
-        $new_content .= "[$section]\n";
-        foreach ($values as $key => $value) {
-            if (is_bool($value)) {
-                $value = $value ? 'true' : 'false';
-            }
-            $value = str_replace(["\r\n", "\r", "\n"], '\n', (string) $value);
-            $value = str_replace('"', '\"', $value);
-            $new_content .= "$key = \"$value\"\n";
-        }
-    }
-    return file_put_contents($file_path, $new_content) !== false;
-}
-
 function load_config($is_local_network = false)
 {
+    global $db;
+    $merged = [];
 
-    $conf_dir = __DIR__ . '/../conf';
+    // 1. Try to load general config (settings, security, telegram) from settings database table
+    try {
+        $stmt = $db->query("SELECT * FROM settings");
+        $db_settings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // 1. Load general config (config.ini)
-    $general_path = $conf_dir . '/config.ini';
-    $general_config = file_exists($general_path) ? parse_ini_file($general_path, true) : [];
-    if (!is_array($general_config)) {
-        $general_config = [];
-    }
-
-    // 2. Load network specific config
-    $network_file = $is_local_network ? 'config_private.ini' : 'config_public.ini';
-    $network_path = $conf_dir . '/' . $network_file;
-    $network_config = file_exists($network_path) ? parse_ini_file($network_path, true) : [];
-    if (!is_array($network_config)) {
-        $network_config = [];
-    }
-
-    // 3. Merge them. If there are sections that overlap, merge their keys.
-    $merged = $general_config;
-    foreach ($network_config as $section => $values) {
-        if (isset($merged[$section]) && is_array($merged[$section]) && is_array($values)) {
-            $merged[$section] = array_merge($merged[$section], $values);
-        } else {
-            $merged[$section] = $values;
+        if (!empty($db_settings)) {
+            foreach ($db_settings as $s) {
+                $merged[$s['section']][$s['key']] = $s['value'];
+            }
         }
+    } catch (PDOException $e) {
+        error_log("Failed to load settings from SQLite: " . $e->getMessage());
     }
 
-    return ensure_config_structure($merged, $is_local_network);
+    // 2. Load services configuration from services database table
+    try {
+        $stmt_srv = $db->query("SELECT * FROM services");
+        $services = $stmt_srv->fetchAll(PDO::FETCH_ASSOC);
+
+        $merged['services-methods'] = [];
+        $merged['services-colors'] = [];
+        foreach ($services as $srv) {
+            $merged['services-methods'][$srv['name']] = $srv['method'];
+            $merged['services-colors'][$srv['name']] = $srv['color'];
+        }
+    } catch (PDOException $e) {
+        error_log("Failed to load services from SQLite: " . $e->getMessage());
+    }
+
+    $merged = ensure_config_structure($merged, $is_local_network);
+
+    // 3. Load devices from devices database table
+    try {
+        $stmt = $db->prepare("SELECT * FROM devices WHERE is_local = ?");
+        $stmt->execute([$is_local_network ? 1 : 0]);
+        $devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $db_ips_host = [];
+        $db_ips_type = [];
+        $db_ips_network = [];
+
+        foreach ($devices as $d) {
+            $db_ips_host[$d['ip']] = $d['host'];
+            $db_ips_type[$d['ip']] = $d['type'];
+            $db_ips_network[$d['ip']] = $d['network'];
+        }
+
+        if ($is_local_network) {
+            $merged['ips-host'] = $db_ips_host;
+            $merged['ips-network'] = $db_ips_network;
+        } else {
+            $merged['ips-services'] = $db_ips_host;
+        }
+        $merged['ips-type'] = $db_ips_type;
+    } catch (PDOException $e) {
+        error_log("Failed to load devices from SQLite: " . $e->getMessage());
+    }
+
+    return $merged;
 }
 
 function get_current_config()
@@ -601,35 +674,130 @@ function get_current_config()
 function save_config_file($config, $file_path = '')
 {
     global $is_local_network;
-    $conf_dir = __DIR__ . '/../conf';
 
     // Ensure structure is clean
     $config = ensure_config_structure($config, $is_local_network);
 
-    // Split into General sections and Network-specific sections
-    $general_sections = ['settings', 'telegram', 'security'];
+    global $db;
+    try {
+        $db->beginTransaction();
 
-    $general_config = [];
-    $network_config = [];
+        // 1. Sync settings, security, telegram to settings database table
+        $general_sections = ['settings', 'telegram', 'security'];
+        $stmt_setting_check = $db->prepare("SELECT 1 FROM settings WHERE section = ? AND key = ?");
+        $stmt_setting_insert = $db->prepare("INSERT INTO settings (section, key, value) VALUES (?, ?, ?)");
+        $stmt_setting_update = $db->prepare("UPDATE settings SET value = ? WHERE section = ? AND key = ?");
 
-    foreach ($config as $section => $values) {
-        if (in_array($section, $general_sections)) {
-            $general_config[$section] = $values;
-        } else {
-            $network_config[$section] = $values;
+        foreach ($general_sections as $section) {
+            if (isset($config[$section]) && is_array($config[$section])) {
+                foreach ($config[$section] as $key => $value) {
+                    $stmt_setting_check->execute([$section, $key]);
+                    $exists = $stmt_setting_check->fetchColumn();
+                    if ($exists) {
+                        $stmt_setting_update->execute([(string) $value, $section, $key]);
+                    } else {
+                        $stmt_setting_insert->execute([$section, $key, (string) $value]);
+                    }
+                }
+            }
         }
+
+        // 2. Sync services to services database table
+        $services_colors = $config['services-colors'] ?? [];
+        $services_methods = $config['services-methods'] ?? [];
+        $all_service_names = array_unique(array_merge(array_keys($services_colors), array_keys($services_methods)));
+
+        $stmt_service_check = $db->prepare("SELECT 1 FROM services WHERE name = ?");
+        $stmt_service_insert = $db->prepare("INSERT INTO services (name, method, color) VALUES (?, ?, ?)");
+        $stmt_service_update = $db->prepare("UPDATE services SET method = ?, color = ? WHERE name = ?");
+
+        foreach ($all_service_names as $name) {
+            $color = $services_colors[$name] ?? '#6b7280';
+            $method = $services_methods[$name] ?? 'icmp';
+
+            $stmt_service_check->execute([$name]);
+            $exists = $stmt_service_check->fetchColumn();
+            if ($exists) {
+                $stmt_service_update->execute([$method, $color, $name]);
+            } else {
+                $stmt_service_insert->execute([$name, $method, $color]);
+            }
+        }
+
+        // Clean services that are no longer in the config
+        if (!empty($all_service_names)) {
+            $placeholders = implode(',', array_fill(0, count($all_service_names), '?'));
+            $stmt_service_delete = $db->prepare("DELETE FROM services WHERE name NOT IN ($placeholders)");
+            $stmt_service_delete->execute($all_service_names);
+        } else {
+            $db->exec("DELETE FROM services");
+        }
+
+        // 3. Sync devices to SQLite database
+        $current_ips = [];
+        $db_devices = $is_local_network ? ($config['ips-host'] ?? []) : ($config['ips-services'] ?? []);
+
+        $stmt_check = $db->prepare("SELECT id FROM devices WHERE ip = ?");
+        $stmt_insert = $db->prepare("INSERT INTO devices (ip, host, type, network, is_local) VALUES (?, ?, ?, ?, ?)");
+        $stmt_update = $db->prepare("UPDATE devices SET host = ?, type = ?, network = ?, is_local = ? WHERE ip = ?");
+
+        foreach ($db_devices as $ip => $host) {
+            $current_ips[] = $ip;
+            $type = $config['ips-type'][$ip] ?? 'other';
+            $network = $is_local_network ? ($config['ips-network'][$ip] ?? 'Ethernet') : 'Ethernet';
+            $is_local = $is_local_network ? 1 : 0;
+
+            $stmt_check->execute([$ip]);
+            $exists = $stmt_check->fetchColumn();
+
+            if ($exists) {
+                $stmt_update->execute([$host, $type, $network, $is_local, $ip]);
+            } else {
+                $stmt_insert->execute([$ip, $host, $type, $network, $is_local]);
+            }
+        }
+
+        // Delete devices that are no longer in this network's config
+        if (!empty($current_ips)) {
+            $placeholders = implode(',', array_fill(0, count($current_ips), '?'));
+            $stmt_delete = $db->prepare("DELETE FROM devices WHERE is_local = ? AND ip NOT IN ($placeholders)");
+            $stmt_delete->execute(array_merge([$is_local_network ? 1 : 0], $current_ips));
+        } else {
+            $stmt_delete = $db->prepare("DELETE FROM devices WHERE is_local = ?");
+            $stmt_delete->execute([$is_local_network ? 1 : 0]);
+        }
+
+        $db->commit();
+    } catch (Exception $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log("Failed to save configuration to SQLite: " . $e->getMessage());
     }
 
-    // Save general config (config.ini)
-    $general_path = $conf_dir . '/config.ini';
-    $general_written = write_ini_file_content($general_config, $general_path);
+    return true;
+}
 
-    // Save network specific config
-    $network_file = $is_local_network ? 'config_private.ini' : 'config_public.ini';
-    $network_path = $conf_dir . '/' . $network_file;
-    $network_written = write_ini_file_content($network_config, $network_path);
-
-    return $general_written && $network_written;
+/**
+ * Obtiene la versión actual de la aplicación desde la base de datos
+ * @return string Versión de la aplicación
+ */
+function get_version_from_db()
+{
+    global $db;
+    try {
+        if ($db) {
+            $stmt = $db->prepare("SELECT value FROM settings WHERE section = ? AND key = ?");
+            $stmt->execute(['settings', 'version']);
+            $db_version = $stmt->fetchColumn();
+            if ($db_version !== false && $db_version !== null && $db_version !== '') {
+                return $db_version;
+            }
+        }
+    } catch (PDOException $e) {
+        error_log("Failed to fetch version from database: " . $e->getMessage());
+    }
+    return '1.1.0'; // Fallback a la versión por defecto si falla
 }
 
 function ensure_config_structure($config, $is_local_network = false)
@@ -639,10 +807,11 @@ function ensure_config_structure($config, $is_local_network = false)
     }
 
     $config['settings'] = array_merge([
-        'version' => '1.0.5',
         'ping_attempts' => '5',
         'ping_interval' => '300',
     ], $config['settings'] ?? []);
+
+    $config['settings']['version'] = get_version_from_db();
 
     if ($is_local_network) {
         $config['ips-host'] = $config['ips-host'] ?? [];
@@ -882,37 +1051,47 @@ function get_telegram_alert_history_file()
 
 function get_telegram_alert_history($limit = 25)
 {
-    $file = get_telegram_alert_history_file();
-    $history = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
-
-    if (!is_array($history)) {
-        return [];
+    global $db;
+    try {
+        $stmt = $db->prepare("SELECT timestamp, service, ip, old_status, new_status, response_time, message FROM telegram_alerts ORDER BY timestamp DESC LIMIT ?");
+        $stmt->bindValue(1, max(1, (int) $limit), PDO::PARAM_INT);
+        $stmt->execute();
+        $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!empty($history)) {
+            return $history;
+        }
+    } catch (PDOException $e) {
+        error_log("Failed to load telegram alerts from SQLite: " . $e->getMessage());
     }
 
-    return array_slice($history, 0, max(1, (int) $limit));
+    return [];
 }
 
 function record_telegram_alert($ip, $old_status, $new_status, $service, $message, $timestamp = null, $response_time = null)
 {
-    $file = get_telegram_alert_history_file();
-    $history = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
+    $formatted_timestamp = (string) ($timestamp ?? date('Y-m-d H:i:s'));
 
-    if (!is_array($history)) {
-        $history = [];
+    // Guardar en la base de datos
+    global $db;
+    try {
+        $stmt = $db->prepare("INSERT INTO telegram_alerts (timestamp, service, ip, old_status, new_status, response_time, message) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $formatted_timestamp,
+            (string) $service,
+            (string) $ip,
+            (string) $old_status,
+            (string) $new_status,
+            (string) ($response_time ?? 'N/A'),
+            (string) $message
+        ]);
+
+        // Mantener solo las últimas 100 alertas para evitar que la tabla crezca infinitamente
+        $db->exec("DELETE FROM telegram_alerts WHERE id NOT IN (
+            SELECT id FROM telegram_alerts ORDER BY timestamp DESC LIMIT 100
+        )");
+    } catch (PDOException $e) {
+        error_log("Failed to insert telegram alert to SQLite: " . $e->getMessage());
     }
-
-    array_unshift($history, [
-        'timestamp' => (string) ($timestamp ?? date('Y-m-d H:i:s')),
-        'service' => (string) $service,
-        'ip' => (string) $ip,
-        'old_status' => (string) $old_status,
-        'new_status' => (string) $new_status,
-        'response_time' => (string) ($response_time ?? 'N/A'),
-        'message' => (string) $message,
-    ]);
-
-    $history = array_slice($history, 0, 100);
-    file_put_contents($file, json_encode($history, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
 
 function notify_telegram_status_change($ip, $old_status, $new_status, $service, $telegram_cfg, $timestamp = null, $response_time = null)
@@ -1664,33 +1843,26 @@ function save_manual_speedtest($download, $upload, $latency)
  */
 function save_speedtest_results($results)
 {
-    $history_file = __DIR__ . '/../results/speedtest_results.json';
-    $history = [];
+    $timestamp = date('Y-m-d H:i:s');
+    $latency = floatval($results['latency']);
+    $download = floatval($results['download']);
+    $upload = floatval($results['upload']);
+    $jitter = $results['jitter'] ?? 'N/A';
+    $packet_loss = floatval($results['packet_loss'] ?? 0);
 
-    if (file_exists($history_file)) {
-        $content = @file_get_contents($history_file);
-        if ($content !== false) {
-            $decoded = json_decode($content, true);
-            if (is_array($decoded)) {
-                $history = $decoded;
-            }
-        }
+    // Guardar en la base de datos
+    global $db;
+    try {
+        $stmt = $db->prepare("INSERT INTO speedtest_results (timestamp, latency, download, upload, jitter, packet_loss) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$timestamp, $latency, $download, $upload, $jitter, $packet_loss]);
+
+        // Mantener solo los últimos 50 registros para histórico general en base de datos
+        $db->exec("DELETE FROM speedtest_results WHERE id NOT IN (
+            SELECT id FROM speedtest_results ORDER BY timestamp DESC LIMIT 50
+        )");
+    } catch (PDOException $e) {
+        error_log("Failed to save speedtest result to SQLite: " . $e->getMessage());
     }
-
-    $new_entry = [
-        'timestamp' => date('Y-m-d H:i:s'),
-        'latency' => $results['latency'],
-        'download' => $results['download'],
-        'upload' => $results['upload'],
-        'jitter' => $results['jitter'] ?? 'N/A',
-        'packet_loss' => $results['packet_loss'] ?? 0,
-    ];
-
-    array_unshift($history, $new_entry);
-    $history = array_slice($history, 0, 5); // Keep only last 5
-
-    // Use LOCK_EX to prevent race conditions and @ to suppress warnings that might break JSON response
-    @file_put_contents($history_file, json_encode($history, JSON_PRETTY_PRINT), LOCK_EX);
 }
 
 /**
@@ -1976,54 +2148,55 @@ function get_network_health()
     }
 
     // 3. Analyze active local devices
-    if (file_exists($ping_file)) {
-        $ping_data = json_decode(file_get_contents($ping_file), true);
-        $total_latency = 0;
-        $active_count = 0;
+    global $db;
+    try {
+        if (isset($db)) {
+            $stmt = $db->query("SELECT id FROM devices WHERE is_local = 1");
+            $local_devices = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        foreach ($ping_data as $ip => $history) {
-            // Robust local IP check (Private ranges + Loopback)
-            $is_local = false;
-            $ip_long = ip2long($ip);
+            $total_latency = 0;
+            $active_count = 0;
+            $report['devices']['total'] = count($local_devices);
 
-            if ($ip_long !== false) {
-                $is_local = (
-                    ($ip_long & 0xFF000000) === 0x0A000000 || // 10.0.0.0/8
-                    ($ip_long & 0xFFF00000) === 0xAC100000 || // 172.16.0.0/12
-                    ($ip_long & 0xFFFF0000) === 0xC0A80000 || // 192.168.0.0/16
-                    ($ip_long & 0xFF000000) === 0x7F000000    // 127.0.0.0/8
-                );
-            } elseif ($ip === '::1') {
-                $is_local = true;
-            }
+            $stmt_ping = $db->prepare("SELECT status, latency FROM ping_results WHERE device_id = ? ORDER BY timestamp DESC LIMIT 1");
 
-            if ($is_local) {
-                $report['devices']['total']++;
-                if (!empty($history) && isset($history[0]['status']) && $history[0]['status'] === 'UP') {
+            foreach ($local_devices as $dev) {
+                $stmt_ping->execute([$dev['id']]);
+                $latest = $stmt_ping->fetch(PDO::FETCH_ASSOC);
+
+                if ($latest && $latest['status'] === 'UP') {
                     $report['devices']['up']++;
                     $active_count++;
 
-                    $latency_str = $history[0]['response_time'] ?? '0';
-                    $latency_val = floatval(str_replace(['ms', ' '], '', $latency_str));
-                    if ($latency_val > 0) {
-                        $total_latency += $latency_val;
+                    if ($latest['latency'] !== null && $latest['latency'] !== 'N/A') {
+                        $latency_val = floatval($latest['latency']);
+                        if ($latency_val > 0) {
+                            $total_latency += $latency_val;
+                        }
                     }
                 }
             }
-        }
 
-        if ($active_count > 0) {
-            $report['devices']['avg_latency'] = round($total_latency / $active_count, 2);
+            if ($active_count > 0) {
+                $report['devices']['avg_latency'] = round($total_latency / $active_count, 2);
+            }
         }
+    } catch (PDOException $e) {
+        error_log("Failed to load local devices for health check: " . $e->getMessage());
     }
 
     // 4. Get Speed Test results
-    $history_file = __DIR__ . '/../results/speedtest_results.json';
-    if (file_exists($history_file)) {
-        $speed_history = json_decode(file_get_contents($history_file), true);
-        if (!empty($speed_history) && is_array($speed_history[0])) {
-            $report['speed'] = $speed_history[0]; // Latest test
+    global $db;
+    try {
+        if (isset($db)) {
+            $stmt = $db->query("SELECT timestamp, latency, download, upload, jitter, packet_loss FROM speedtest_results ORDER BY timestamp DESC LIMIT 1");
+            $latest_speed = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($latest_speed) {
+                $report['speed'] = $latest_speed;
+            }
         }
+    } catch (PDOException $e) {
+        error_log("Failed to load speed test history for health check: " . $e->getMessage());
     }
 
     // 5. Final Summary logic

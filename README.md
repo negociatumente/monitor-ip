@@ -52,22 +52,19 @@ monitor-ip/
 ├── auth/                             # Archivos de configuración y resultados
 │   ├── login.php                     # Página de login y autenticación
 │   └── logout.php                    # Página de cierre de sesión
-├── conf/                             # Archivos de configuración y resultados
-│   ├── config.ini                    # Configuración general
-│   ├── config_public.ini             # Configuración de IPs públicas
-│   └── config_private.ini            # Configuración de IPs privadas
-├── results/                          # Resultados de los pings y speedtests
-│   ├── ping_results.json             # Resultados de los pings remotos
-│   ├── ping_results_local.json       # Resultados de los pings locales
-│   ├── speedtest_results.json        # Resultados de los speedtests
-│   └── telegram_alert_history.json   # Historial de alertas de Telegram
+├── database/                         # Almacén SQLite de la aplicación
+│   └── monitor.db                    # Base de datos SQLite
 └── lib/                              # Librerías y recursos del proyecto
-	├── Speedtest++/                    # Librería speedtest++ para tests de velocidad
-	│	└── Speedtest                     # Script speedtest para tests de velocidad
-	└── functions.php                   # Funciones PHP reutilizables
+    ├── Speedtest++/                  # Librería speedtest++ para tests de velocidad
+    │   └── Speedtest                 # Script speedtest para tests de velocidad
+    ├── db/                           # Scripts de inicialización de SQLite
+    │   ├── deployDB.php              # Inicializa y conecta monitor.db
+    │   └── migrateDB.php             # Script para migrar la base de datos
+    ├── functions.php                 # Funciones PHP reutilizables
     ├── network_scan.js               # Lógica de escaneo de red y speedtest
     ├── script.js                     # Scripts JavaScript principales
     └── styles.css                    # Estilos CSS personalizados
+
 ```
 ## 🔧 Tabla de funcionalidades y compatibilidad de herramientas de red
 
@@ -104,12 +101,12 @@ https://docs.docker.com/get-docker/
 
 **🔹Clona el repositorio:**
 ```bash
-docker pull ghcr.io/negociatumente/monitor-ip:1.0.6
+docker pull ghcr.io/negociatumente/monitor-ip:1.1.0
 ```
 
 **🔹Ejecuta el contenedor:**
 ```bash
-docker run --name monitor-ip --network host -p 80 ghcr.io/negociatumente/monitor-ip:1.0.6
+docker run --name monitor-ip --network host -p 80 ghcr.io/negociatumente/monitor-ip:1.1.0
 ``` 
 
 ### 4️⃣ Resultados
@@ -130,9 +127,9 @@ http://localhost/monitor-ip
 sudo apt update
 ```
 
-**🔹Instala Apache, PHP y Git:**
+**🔹Instala Apache, PHP, SQLite y Git:**
 ```bash
-sudo apt install apache2 php libapache2-mod-php git -y
+sudo apt install apache2 php libapache2-mod-php php-sqlite3 sqlite3 git -y
 ```
 
 **🔹Instala las herramientas de red necesarias:**
@@ -150,39 +147,27 @@ git clone https://github.com/negociatumente/monitor-ip.git
 sudo mv ./monitor-ip /var/www/html/monitor-ip
 ```
 
-**🔹Da permisos de escritura a la carpeta de configuración:**
+**🔹Da permisos de escritura a las carpetas necesarias:**
 ```bash
-sudo chown -R www-data:www-data /var/www/html/monitor-ip/conf
-sudo chmod -R 775 /var/www/html/monitor-ip/conf
-sudo chmod -R 775 /var/www/html/monitor-ip/results
+sudo chown -R www-data:www-data /var/www/html/monitor-ip/database
+sudo chmod -R 775 /var/www/html/monitor-ip/database
 ```
 
-### 3️⃣ Configuración
-**🔹Abre el archivo config.ini para modificar la configuración general:**
-```bash
-cd /var/www/html/monitor-ip/conf
-nano config.ini
-```
+**Nota:** El archivo SQLite principal se guarda en `/var/www/html/monitor-ip/database/monitor.db`
 
-**🔹Abre el archivo config_public.ini y modifica las IPs públicas según los servidores que quieras monitorizar:**
-```bash
-cd /var/www/html/monitor-ip/conf
-nano config_public.ini
-```
+**Ver los datos con DB Browser for SQLite:**
+- Instala DB Browser for SQLite en tu sistema.
+- Abre la aplicación y selecciona `Open Database`.
+- Navega hasta `/var/www/html/monitor-ip/database/monitor.db` y seleccionalo.
+- Explora las tablas `devices`, `ping_results`, `settings`, `services`, `telegram_alerts` y `speedtest_results`.
 
-**🔹Abre el archivo config_private.ini y modifica las IPs privadas según los servidores que quieras monitorizar:**
-```bash
-cd /var/www/html/monitor-ip/conf
-nano config_private.ini
-```
-
-### 4️⃣ Ejecución
+### 3️⃣ Ejecución
 **🔹Levanta el servidor Apache local:**
 ```bash
 sudo systemctl start apache2
 ```
 
-### 5️⃣ Resultados
+### 4️⃣ Resultados
 **🔹Finalmente, abre en tu navegador la siguiente url:**
 ```bash
 http://localhost/monitor-ip
@@ -214,6 +199,11 @@ https://www.tiktok.com/@negociatumente/video/7504332909923568919
 -Descarga el instalador desde la página oficial.  
 -Pon el ejecutable speedtest.exe en la carpeta /monitor-ip/lib del proyecto 
 
+**🔹Habilitar SQLite en PHP (XAMPP):**
+-Abre `php.ini` desde el panel de XAMPP o en `C:\xampp\php\php.ini`.  
+-Descomenta la línea `extension=sqlite3` y `extension=pdo_sqlite` si está comentada.  
+-Reinicia Apache en el panel de XAMPP.
+
 ### 3️⃣ Descargar y configurar el proyecto
 **🔹Descargar el código ZIP:**  
 https://github.com/negociatumente/monitor-ip
@@ -221,35 +211,31 @@ https://github.com/negociatumente/monitor-ip
 **🔹Mueve la carpeta /monitor-ip que hay dentro de la carpeta /monitor-ip-main a la carpeta de htdocs:**  
 C:\xampp\htdocs\monitor-ip
 
-### 4️⃣ Configuración
-**🔹Abre el archivo config.ini para modificar la configuración general:**
-```bash
-cd C:\xampp\htdocs\monitor-ip\conf
-nano config.ini
-```
+**🔹Asegúrate de crear y dar permisos al directorio de base de datos:**
+- `C:\xampp\htdocs\monitor-ip\database`
+- El archivo SQLite se guardará en `C:\xampp\htdocs\monitor-ip\database\monitor.db`.
+- Debe ser escribible por el servicio Apache/XAMPP.
 
-**🔹Abre el archivo config_public.ini y modifica las IPs públicas según los servidores que quieras monitorizar:**
-```bash
-cd C:\xampp\htdocs\monitor-ip\conf
-nano config_public.ini
-```
+**Ver los datos con DB Browser for SQLite en Windows:**
+- Instala DB Browser for SQLite desde  
+ https://sqlitebrowser.org
+- Abre la aplicación y selecciona `Open Database`.
+- Navega hasta `C:\xampp\htdocs\monitor-ip\database\monitor.db` y seleccionalo.
+- Explora las tablas `devices`, `ping_results`, `settings`, `services`, `telegram_alerts` y `speedtest_results`.
 
-**🔹Abre el archivo config_private.ini y modifica las IPs privadas según los servidores que quieras monitorizar:**
-```bash
-cd C:\xampp\htdocs\monitor-ip\conf
-nano config_private.ini
-```
 
-### 5️⃣ Resultados
+### 4️⃣ Resultados
 **🔹Finalmente, abre en tu navegador la siguiente url:**    
 http://localhost/monitor-ip
 
 
 
-# 🚨 Configurar Alertas Telegram (Opcional)
-## 1️⃣ Crear un bot de Telegram
-Abrir:
+## 🚨 Configurar Alertas Telegram (Opcional)
+### 1️⃣ Crear un bot de Telegram
+
+Abrir este bot de Telegram:  
 [https://t.me/BotFather](https://t.me/BotFather)
+
 Enviar:
 ```text
 /newbot
@@ -266,7 +252,7 @@ ip_monitor_alerts_bot
 ```
 
 ---
-## 2️⃣ Obtener el BOT TOKEN
+### 2️⃣ Obtener el BOT TOKEN
 Después de crear el bot, BotFather mostrará algo parecido a:
 
 ```text
@@ -277,7 +263,7 @@ Ese valor es el BOT TOKEN.
 ⚠️ No compartas este token.
 
 ---
-## 3️⃣ Iniciar conversación con el bot
+### 3️⃣ Iniciar conversación con el bot
 
 Abrir el bot creado y pulsar:
 ```text
@@ -287,9 +273,9 @@ Abrir el bot creado y pulsar:
 ⚠️ Este paso es obligatorio para recibir mensajes privados del bot.
 
 ---
-## 4️⃣ Obtener tu Telegram User ID
+### 4️⃣ Obtener tu Telegram User ID
 
-Abrir este bot de Telegram:
+Abrir este bot de Telegram:  
 [https://t.me/userinfobot](https://t.me/userinfobot)
 
 Enviar:
@@ -304,7 +290,7 @@ Id: 123456789
 
 Ese número es tu Telegram User ID.
 ---
-## 5️⃣ Obtener el Chat ID de un grupo (Opcional)
+### 5️⃣ Obtener el Chat ID de un grupo (Opcional)
 
 Si quieres recibir alertas en un grupo:
 
@@ -320,7 +306,7 @@ En la url del navegador, el Group Chat ID aparecerá después de `https://web.te
 Ese valor es el Group Chat ID.
 
 ---
-## 6️⃣ Configurar Telegram en el panel de IP Monitor
+### 6️⃣ Configurar Telegram en el panel de IP Monitor
 
 Abrir el panel de configuración e introducir:
 
@@ -339,7 +325,7 @@ Ejemplo:
 
 ---
 
-## 7️⃣ Probar las alertas
+### 7️⃣ Probar las alertas
 
 Guardar configuración.
 

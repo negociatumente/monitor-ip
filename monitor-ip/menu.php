@@ -237,18 +237,17 @@
     </div>
 </div>
 
-<!-- Modal: Import/Export Config -->
+<!-- Modal: Database Import / Export -->
 <div id="configModal" class="modal">
     <div class="modal-content p-0 max-w-3xl shadow-2xl border-0 bg-white dark:bg-gray-800">
         <div class="bg-gray-500 dark:bg-gray-700 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
-                    <i class="fas fa-cogs text-3xl text-white drop-shadow"></i>
+                    <i class="fas fa-database text-3xl text-white drop-shadow"></i>
                 </div>
                 <div>
-                    <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Config Import / Export</h2>
-                    <p class="text-indigo-100 text-xs font-medium">*If you are using Local Network monitoring, make sure
-                        to select the correct network type when importing/exporting configurations.</p>
+                    <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Database Import / Export</h2>
+                    <p class="text-indigo-100 text-xs font-medium">Importa o exporta el archivo SQLite `monitor.db` directamente.</p>
                 </div>
             </div>
             <button type="button" onclick="hideConfigModal();"
@@ -261,7 +260,7 @@
                 <div
                     class="mb-4 p-3 rounded-xl bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-700 flex items-center gap-2">
                     <i class="fas fa-info-circle"></i>
-                    <span><?php echo $import_export_message === true ? 'Configuración importada correctamente.' : htmlspecialchars($import_export_message); ?></span>
+                    <span><?php echo htmlspecialchars($import_export_message); ?></span>
                 </div>
             <?php endif; ?>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -270,13 +269,13 @@
                     class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center gap-3 mb-2">
                         <i class="fas fa-file-import text-indigo-500 text-2xl"></i>
-                        <span class="font-bold text-gray-700 dark:text-gray-200">Import Configuration</span>
+                        <span class="font-bold text-gray-700 dark:text-gray-200">Import Database</span>
                     </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">*Imports will overwrite existing settings</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">*Importará y reemplazará la base de datos SQLite actual.</p>
 
                     <input type="hidden" name="network"
                         value="<?php echo isset($network_type) ? $network_type : 'external'; ?>">
-                    <input type="file" name="import_config" accept=".ini,text/plain" required
+                    <input type="file" name="import_config" accept=".db" required
                         class="block w-full text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2">
                     <button type="submit"
                         class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
@@ -288,9 +287,9 @@
                     class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center gap-3 mb-2">
                         <i class="fas fa-file-export text-green-500 text-2xl"></i>
-                        <span class="font-bold text-gray-700 dark:text-gray-200">Export Configuration</span>
+                        <span class="font-bold text-gray-700 dark:text-gray-200">Export Database</span>
                     </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Export your current configuration settings</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Exporta una copia del archivo `monitor.db` actual.</p>
                     <a href="?export_config=1<?php echo isset($network_type) ? '&network=' . $network_type : ''; ?>"
                         class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
                         <i class="fas fa-download"></i> Export

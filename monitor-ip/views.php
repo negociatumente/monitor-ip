@@ -11,34 +11,36 @@ if (!isset($ping_file))
 // Require functions
 require_once $functions_path;
 
-// Cargar resultados previos si existen
-if (file_exists($ping_file)) {
+// Cargar resultados previos desde la base de datos (con fallback a JSON)
+$ping_data = load_ping_data_from_db($is_local_network ?? false, $ping_attempts ?? 5);
+if (empty($ping_data) && file_exists($ping_file)) {
     $ping_data = json_decode(file_get_contents($ping_file), true);
-} else {
+}
+if (!is_array($ping_data)) {
     $ping_data = [];
 }
 
 // Manejo de importación/exportación de configuración
 $import_export_message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_config'])) {
-    $success = import_config_ini($_FILES['import_config']);
-    // Limpiar datos de ping automáticamente tras importar
-    if (file_exists($ping_file)) {
-        file_put_contents($ping_file, json_encode([]));
+    $success = import_monitor_db($_FILES['import_config']);
+    if ($success) {
+        // Limpiar datos de ping automáticamente tras importar
+        if (file_exists($ping_file)) {
+            file_put_contents($ping_file, json_encode([]));
+        }
+        $network_param = isset($_GET['network']) ? '&network=' . urlencode($_GET['network']) : '';
+        header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '?imported=1' . $network_param);
+        exit;
     }
-    $import_export_message = $success ? 'Configuración importada correctamente. (Datos de ping limpiados)' : 'Error al importar configuración.';
-
-    // Redirigir para evitar reenvío del archivo
-    $network_param = isset($_GET['network']) ? '&network=' . urlencode($_GET['network']) : '';
-    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '?imported=1' . $network_param);
-    exit;
+    $import_export_message = 'Error al importar la base de datos.';
 }
 if (isset($_GET['export_config'])) {
-    export_config_ini();
+    export_monitor_db();
     exit;
 }
 if (isset($_GET['imported'])) {
-    $import_export_message = 'Configuración importada correctamente.';
+    $import_export_message = 'Base de datos importada correctamente.';
 }
 
 
