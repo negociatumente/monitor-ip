@@ -153,13 +153,7 @@ sudo chown -R www-data:www-data /var/www/html/monitor-ip/database
 sudo chmod -R 775 /var/www/html/monitor-ip/database
 ```
 
-**Nota:** El archivo SQLite principal se guarda en `/var/www/html/monitor-ip/database/monitor.db`
-
-**Ver los datos con DB Browser for SQLite:**
-- Instala DB Browser for SQLite en tu sistema.
-- Abre la aplicación y selecciona `Open Database`.
-- Navega hasta `/var/www/html/monitor-ip/database/monitor.db` y seleccionalo.
-- Explora las tablas `devices`, `ping_results`, `settings`, `services`, `telegram_alerts` y `speedtest_results`.
+**Nota:** El archivo con la base de datos se creará en `/var/www/html/monitor-ip/database/monitor.db`
 
 ### 3️⃣ Ejecución
 **🔹Levanta el servidor Apache local:**
@@ -211,23 +205,16 @@ https://github.com/negociatumente/monitor-ip
 **🔹Mueve la carpeta /monitor-ip que hay dentro de la carpeta /monitor-ip-main a la carpeta de htdocs:**  
 C:\xampp\htdocs\monitor-ip
 
-**🔹Asegúrate de crear y dar permisos al directorio de base de datos:**
-- `C:\xampp\htdocs\monitor-ip\database`
-- El archivo SQLite se guardará en `C:\xampp\htdocs\monitor-ip\database\monitor.db`.
-- Debe ser escribible por el servicio Apache/XAMPP.
-
-**Ver los datos con DB Browser for SQLite en Windows:**
-- Instala DB Browser for SQLite desde  
- https://sqlitebrowser.org
-- Abre la aplicación y selecciona `Open Database`.
-- Navega hasta `C:\xampp\htdocs\monitor-ip\database\monitor.db` y seleccionalo.
-- Explora las tablas `devices`, `ping_results`, `settings`, `services`, `telegram_alerts` y `speedtest_results`.
-
-
 ### 4️⃣ Resultados
 **🔹Finalmente, abre en tu navegador la siguiente url:**    
 http://localhost/monitor-ip
 
+
+## ⚒️ Gestionar la base de datos (Opcional)
+- Instala el programa DB Browser for SQLite en tu sistema.
+- Abre la aplicación y selecciona `Open Database`.
+- Navega hasta `/var/www/html/monitor-ip/database/monitor.db` y seleccionalo.
+- Explora las tablas `devices`, `ping_results`, `settings`, `services`, `telegram_alerts` y `speedtest_results`.
 
 
 ## 🚨 Configurar Alertas Telegram (Opcional)

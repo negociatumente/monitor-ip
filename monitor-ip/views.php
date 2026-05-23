@@ -3,19 +3,10 @@
 // Centralizar rutas (solo si no están definidas previamente por index.php)
 if (!isset($functions_path))
     $functions_path = __DIR__ . '/lib/functions.php';
-if (!isset($config_path))
-    $config_path = __DIR__ . '/conf/config.ini';
-if (!isset($ping_file))
-    $ping_file = __DIR__ . '/results/ping_results.json';
-
-// Require functions
 require_once $functions_path;
 
-// Cargar resultados previos desde la base de datos (con fallback a JSON)
+// Cargar resultados previos desde la base de datos
 $ping_data = load_ping_data_from_db($is_local_network ?? false, $ping_attempts ?? 5);
-if (empty($ping_data) && file_exists($ping_file)) {
-    $ping_data = json_decode(file_get_contents($ping_file), true);
-}
 if (!is_array($ping_data)) {
     $ping_data = [];
 }
@@ -25,10 +16,6 @@ $import_export_message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_config'])) {
     $success = import_monitor_db($_FILES['import_config']);
     if ($success) {
-        // Limpiar datos de ping automáticamente tras importar
-        if (file_exists($ping_file)) {
-            file_put_contents($ping_file, json_encode([]));
-        }
         $network_param = isset($_GET['network']) ? '&network=' . urlencode($_GET['network']) : '';
         header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '?imported=1' . $network_param);
         exit;

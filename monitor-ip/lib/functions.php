@@ -1044,11 +1044,6 @@ function format_telegram_event_time_label($timestamp)
     }
 }
 
-function get_telegram_alert_history_file()
-{
-    return __DIR__ . '/../results/telegram_alert_history.json';
-}
-
 function get_telegram_alert_history($limit = 25)
 {
     global $db;
@@ -2078,7 +2073,7 @@ function get_geoip_info($ip)
  */
 function get_network_health()
 {
-    global $ping_file, $config_path;
+    global $config_path;
 
     // Load configuration for theoretical speed
     $config = get_current_config();

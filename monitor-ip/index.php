@@ -45,14 +45,8 @@ $ips_types = $config['ips-type'] ?? [];
 $ping_attempts = $config['settings']['ping_attempts'] ?? 5;
 $ping_interval = $config['settings']['ping_interval'] ?? 300;
 
-// Cargar archivos
-$ping_file = __DIR__ . '/results/' . ($is_local_network ? 'ping_results_local.json' : 'ping_results.json');
-
-// Cargar resultados previos desde la base de datos (con fallback a JSON)
+// Cargar resultados previos desde la base de datos
 $ping_data = load_ping_data_from_db($is_local_network, $ping_attempts);
-if (empty($ping_data) && file_exists($ping_file)) {
-    $ping_data = json_decode(file_get_contents($ping_file), true);
-}
 if (!is_array($ping_data)) {
     $ping_data = [];
 }
@@ -133,12 +127,6 @@ if (isset($_GET['action'])) {
             error_log("Failed to load speedtest history from SQLite: " . $e->getMessage());
         }
 
-        // Fallback a JSON si no hay resultados en BD
-        if (empty($history)) {
-            $history_file = __DIR__ . '/results/speedtest_results.json';
-            $history = file_exists($history_file) ? json_decode(file_get_contents($history_file), true) : [];
-        }
-
         echo json_encode($history ?: []);
         exit;
     }
@@ -150,11 +138,6 @@ if (isset($_GET['action'])) {
             global $db;
             $db->exec("DELETE FROM speedtest_results");
 
-            // Limpiar también archivo JSON para retrocompatibilidad
-            $history_file = __DIR__ . '/results/speedtest_results.json';
-            if (file_exists($history_file)) {
-                file_put_contents($history_file, json_encode([]));
-            }
             echo json_encode(['success' => true]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
@@ -553,11 +536,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_data'])) {
         error_log("Failed to clear SQLite data: " . $e->getMessage());
     }
 
-    // Limpiar los datos de ping en archivo JSON
-    if (file_exists($ping_file)) {
-        file_put_contents($ping_file, json_encode([])); // Vaciar el archivo
-    }
-
     $config = ensure_config_structure(load_config($is_local_network), $is_local_network);
 
     // Verificar si se deben borrar también las IPs
@@ -731,10 +709,6 @@ $ips_array = array_keys($ips_to_monitor);
 if (!isset($_GET['page']) && !isset($_GET['action']) && !isset($_GET['no_ping'])) {
     update_ping_results_parallel($ips_array);
 }
-
-// Guardar resultados actualizados en JSON
-file_put_contents($ping_file, json_encode($ping_data));
-
 
 // Manejar notificaciones
 $notifications = [
