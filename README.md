@@ -185,6 +185,11 @@ https://www.tiktok.com/@negociatumente/video/7504332909923568919
 -Asegúrate de seleccionar Apache y PHP en la instalación.  
 -Cuando termine, abre XAMPP Control Panel y presiona "Start" en Apache.  
 
+**🔹Habilitar SQLite en PHP (XAMPP):**  
+-Abre `php.ini` desde el panel de XAMPP o en `C:\xampp\php\php.ini`.  
+-Descomenta la línea `extension=sqlite3` y `extension=pdo_sqlite` si está comentada.  
+-Reinicia Apache en el panel de XAMPP.
+
 **🔹Instalar Nmap:**  
 -Descarga el instalador desde la página oficial.  
 -Ejecuta el instalador y sigue los pasos.
@@ -192,11 +197,6 @@ https://www.tiktok.com/@negociatumente/video/7504332909923568919
 **🔹Instalar Speedtest:**  
 -Descarga el instalador desde la página oficial.  
 -Pon el ejecutable speedtest.exe en la carpeta /monitor-ip/lib del proyecto 
-
-**🔹Habilitar SQLite en PHP (XAMPP):**
--Abre `php.ini` desde el panel de XAMPP o en `C:\xampp\php\php.ini`.  
--Descomenta la línea `extension=sqlite3` y `extension=pdo_sqlite` si está comentada.  
--Reinicia Apache en el panel de XAMPP.
 
 ### 3️⃣ Descargar y configurar el proyecto
 **🔹Descargar el código ZIP:**  

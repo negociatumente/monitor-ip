@@ -1,5 +1,12 @@
 # Historial de Cambios - Monitor IP
 
+## [1.1.0] - 2026-05-23
+- **Migración a BD SQLite**: Cambio de almacenamiento a SQLite para mejorar la gestión de datos y la escalabilidad del sistema.
+- **Optimización de rendimiento**: Mejoras en la eficiencia del sistema, reduciendo el consumo de recursos y acelerando los procesos de escaneo y monitorización.
+
+---
+
+
 ## [1.0.6] - 2026-05-19
 - **Correcciones varias**: Errores de configuración, tipos y versión mobile.
 
