@@ -212,7 +212,7 @@
 
 <!-- Modal: Database Import / Export -->
 <div id="configModal" class="modal">
-    <div class="modal-content p-0 max-w-3xl shadow-2xl border-0 bg-white dark:bg-gray-800">
+    <div class="modal-content p-0 max-w-4xl shadow-2xl border-0 bg-white dark:bg-gray-800">
         <div class="bg-gray-500 dark:bg-gray-700 p-6 rounded-t-xl flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
@@ -220,7 +220,8 @@
                 </div>
                 <div>
                     <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Database Import / Export</h2>
-                    <p class="text-indigo-100 text-xs font-medium">Importa o exporta el archivo SQLite `monitor.db` directamente.</p>
+                    <p class="text-indigo-100 text-xs font-medium">Importa o exporta el archivo SQLite (monitor.db)
+                        directamente.</p>
                 </div>
             </div>
             <button type="button" onclick="hideConfigModal();"
@@ -236,7 +237,7 @@
                     <span><?php echo htmlspecialchars($import_export_message); ?></span>
                 </div>
             <?php endif; ?>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Importar -->
                 <form method="POST" enctype="multipart/form-data"
                     class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
@@ -244,8 +245,8 @@
                         <i class="fas fa-file-import text-indigo-500 text-2xl"></i>
                         <span class="font-bold text-gray-700 dark:text-gray-200">Import Database</span>
                     </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">*Importará y reemplazará la base de datos SQLite actual.</p>
-
+                    <p class="text-sm text-gray-500 dark:text-gray-400">*Importará la base de datos SQLite actual
+                        (monitor.db).</p>
                     <input type="hidden" name="network"
                         value="<?php echo isset($network_type) ? $network_type : 'external'; ?>">
                     <input type="file" name="import_config" accept=".db" required
@@ -262,15 +263,37 @@
                         <i class="fas fa-file-export text-green-500 text-2xl"></i>
                         <span class="font-bold text-gray-700 dark:text-gray-200">Export Database</span>
                     </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Exporta una copia del archivo `monitor.db` actual.</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Exporta una copia del archivo (monitor.db)
+                        actual.</p>
                     <a href="?export_config=1<?php echo isset($network_type) ? '&network=' . $network_type : ''; ?>"
                         class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
                         <i class="fas fa-download"></i> Export
                     </a>
                 </div>
+                <div
+                    class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
+
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fas fa-chart-line text-blue-500"></i>
+                        <span class="font-bold text-gray-700 dark:text-gray-200">Generate Report (30d)</span>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        Incluye estado general del sistema y latencias agregadas (últimos 30 días).</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <a href="?export_report=pdf<?php echo isset($network_type) ? '&network=' . $network_type : ''; ?>"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </a>
+                        <a href="?export_report=csv<?php echo isset($network_type) ? '&network=' . $network_type : ''; ?>"
+                            class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <!-- Modal: Add IP Form -->
@@ -1418,11 +1441,13 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <i class="fas fa-gauge-high text-amber-500 text-xs"></i>
-                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar por latencia alta</span>
+                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar por latencia
+                                alta</span>
                         </div>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                        <input type="checkbox" id="notify_on_latency" name="notify_on_latency" class="sr-only peer" <?php echo $telegram_config['notify_on_latency'] ? 'checked' : ''; ?>>
+                        <input type="checkbox" id="notify_on_latency" name="notify_on_latency" class="sr-only peer"
+                            <?php echo $telegram_config['notify_on_latency'] ? 'checked' : ''; ?>>
                         <div
                             class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500">
                         </div>

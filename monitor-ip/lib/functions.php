@@ -491,6 +491,688 @@ function get_monitor_db_path()
     return __DIR__ . '/../database/monitor.db';
 }
 
+function get_report_window_start_30d()
+{
+    // Use SQLite datetime-compatible format (UTC/local depends on PHP config; consistent within this app).
+    return date('Y-m-d H:i:s', strtotime('-30 days'));
+}
+
+function fetch_monthly_report_data($is_local_network, $window_start)
+{
+    global $db;
+
+    $report = [
+        'window_start' => $window_start,
+        'window_end' => date('Y-m-d H:i:s'),
+        'devices' => [],
+        'totals' => [
+            'samples' => 0,
+            'up' => 0,
+            'down' => 0,
+        ],
+    ];
+
+    try {
+        $stmt_devices = $db->prepare("SELECT id, ip, host, type, network FROM devices WHERE is_local = ? ORDER BY ip ASC");
+        $stmt_devices->execute([$is_local_network ? 1 : 0]);
+        $devices = $stmt_devices->fetchAll(PDO::FETCH_ASSOC);
+
+        $stmt_rows = $db->prepare("
+            SELECT status, latency, timestamp
+            FROM ping_results
+            WHERE device_id = ? AND timestamp >= ?
+            ORDER BY timestamp ASC
+        ");
+
+        foreach ($devices as $device) {
+            $stmt_rows->execute([(int) $device['id'], $window_start]);
+            $rows = $stmt_rows->fetchAll(PDO::FETCH_ASSOC);
+
+            $samples = count($rows);
+            $up = 0;
+            $down = 0;
+            $latencies = [];
+
+            foreach ($rows as $r) {
+                if (($r['status'] ?? '') === 'UP') {
+                    $up++;
+                    if ($r['latency'] !== null && is_numeric($r['latency'])) {
+                        $latencies[] = (float) $r['latency'];
+                    }
+                } else {
+                    $down++;
+                }
+            }
+
+            sort($latencies);
+            $lat_count = count($latencies);
+            $avg_latency = $lat_count > 0 ? array_sum($latencies) / $lat_count : null;
+            $min_latency = $lat_count > 0 ? $latencies[0] : null;
+            $max_latency = $lat_count > 0 ? $latencies[$lat_count - 1] : null;
+            $p95_latency = null;
+            if ($lat_count > 0) {
+                $idx = (int) ceil(0.95 * $lat_count) - 1;
+                $idx = max(0, min($idx, $lat_count - 1));
+                $p95_latency = $latencies[$idx];
+            }
+
+            $uptime_pct = $samples > 0 ? ($up / $samples) * 100 : 0;
+
+            $report['devices'][] = [
+                'ip' => $device['ip'],
+                'host' => $device['host'],
+                'type' => $device['type'],
+                'network' => $device['network'],
+                'samples' => $samples,
+                'up' => $up,
+                'down' => $down,
+                'uptime_pct' => $uptime_pct,
+                'avg_latency_ms' => $avg_latency,
+                'min_latency_ms' => $min_latency,
+                'max_latency_ms' => $max_latency,
+                'p95_latency_ms' => $p95_latency,
+            ];
+
+            $report['totals']['samples'] += $samples;
+            $report['totals']['up'] += $up;
+            $report['totals']['down'] += $down;
+        }
+    } catch (PDOException $e) {
+        error_log("Failed to fetch monthly report data: " . $e->getMessage());
+    }
+
+    return $report;
+}
+
+function fetch_system_monthly_report_data($is_local_network, $window_start)
+{
+    global $db;
+
+    $report = [
+        'window_start' => $window_start,
+        'window_end' => date('Y-m-d H:i:s'),
+        'network_label' => $is_local_network ? 'local' : 'external',
+        'totals' => [
+            'samples' => 0,
+            'up' => 0,
+            'down' => 0,
+            'uptime_pct' => 0,
+            'avg_latency_ms' => null,
+            'p95_latency_ms' => null,
+        ],
+        'days' => [], // YYYY-MM-DD => metrics
+    ];
+
+    try {
+        $windowStartTs = strtotime($window_start);
+        $windowStartDay = date('Y-m-d', $windowStartTs);
+        $windowEndDay = date('Y-m-d');
+
+        // Daily totals across all IPs (sample-weighted)
+        $stmt = $db->prepare("
+            SELECT
+                date(pr.timestamp) AS day,
+                COUNT(*) AS samples,
+                SUM(CASE WHEN pr.status = 'UP' THEN 1 ELSE 0 END) AS up,
+                SUM(CASE WHEN pr.status != 'UP' THEN 1 ELSE 0 END) AS down,
+                AVG(CASE WHEN pr.status = 'UP' AND pr.latency IS NOT NULL THEN pr.latency ELSE NULL END) AS avg_latency_ms
+            FROM ping_results pr
+            JOIN devices d ON d.id = pr.device_id
+            WHERE d.is_local = ? AND pr.timestamp >= ?
+            GROUP BY day
+            ORDER BY day ASC
+        ");
+        $stmt->execute([$is_local_network ? 1 : 0, $window_start]);
+        $rowsTotals = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $totalsByDay = [];
+        foreach ($rowsTotals as $r) {
+            $day = (string) ($r['day'] ?? '');
+            if ($day === '') {
+                continue;
+            }
+            $totalsByDay[$day] = [
+                'samples' => (int) ($r['samples'] ?? 0),
+                'up' => (int) ($r['up'] ?? 0),
+                'down' => (int) ($r['down'] ?? 0),
+                'avg_latency_ms' => ($r['avg_latency_ms'] !== null && is_numeric($r['avg_latency_ms'])) ? (float) $r['avg_latency_ms'] : null,
+            ];
+        }
+
+        // Daily average uptime across IPs (device-weighted: each IP has same weight)
+        $stmtIpAvg = $db->prepare("
+            SELECT
+                day_data.day AS day,
+                AVG(day_data.uptime_pct) AS uptime_pct_ip_avg
+            FROM (
+                SELECT
+                    date(pr.timestamp) AS day,
+                    pr.device_id,
+                    (100.0 * SUM(CASE WHEN pr.status = 'UP' THEN 1 ELSE 0 END) / COUNT(*)) AS uptime_pct
+                FROM ping_results pr
+                JOIN devices d ON d.id = pr.device_id
+                WHERE d.is_local = ? AND pr.timestamp >= ?
+                GROUP BY date(pr.timestamp), pr.device_id
+            ) AS day_data
+            GROUP BY day_data.day
+            ORDER BY day_data.day ASC
+        ");
+        $stmtIpAvg->execute([$is_local_network ? 1 : 0, $window_start]);
+        $rowsIpAvg = $stmtIpAvg->fetchAll(PDO::FETCH_ASSOC);
+        $ipAvgByDay = [];
+        foreach ($rowsIpAvg as $r) {
+            $day = (string) ($r['day'] ?? '');
+            if ($day === '') {
+                continue;
+            }
+            $ipAvgByDay[$day] = ($r['uptime_pct_ip_avg'] !== null && is_numeric($r['uptime_pct_ip_avg'])) ? (float) $r['uptime_pct_ip_avg'] : 0.0;
+        }
+
+        // Optional: latency distribution for p95 (overall)
+        $stmt_lat = $db->prepare("
+            SELECT pr.latency AS latency
+            FROM ping_results pr
+            JOIN devices d ON d.id = pr.device_id
+            WHERE d.is_local = ? AND pr.timestamp >= ? AND pr.status = 'UP' AND pr.latency IS NOT NULL
+            ORDER BY pr.latency ASC
+        ");
+        $stmt_lat->execute([$is_local_network ? 1 : 0, $window_start]);
+        $latencies = $stmt_lat->fetchAll(PDO::FETCH_COLUMN, 0);
+        $latencies = array_values(array_filter($latencies, fn($v) => $v !== null && is_numeric($v)));
+        $latencies = array_map('floatval', $latencies);
+        sort($latencies);
+        $latCount = count($latencies);
+        $p95 = null;
+        if ($latCount > 0) {
+            $idx = (int) ceil(0.95 * $latCount) - 1;
+            $idx = max(0, min($idx, $latCount - 1));
+            $p95 = $latencies[$idx];
+        }
+
+        $totalSamples = 0;
+        $totalUp = 0;
+        $totalDown = 0;
+        // Fill complete day range (all month window), even if day has no samples.
+        $cur = strtotime($windowStartDay . ' 00:00:00');
+        $end = strtotime($windowEndDay . ' 00:00:00');
+        while ($cur <= $end) {
+            $day = date('Y-m-d', $cur);
+            $samples = (int) ($totalsByDay[$day]['samples'] ?? 0);
+            $up = (int) ($totalsByDay[$day]['up'] ?? 0);
+            $down = (int) ($totalsByDay[$day]['down'] ?? 0);
+            $avgLatency = $totalsByDay[$day]['avg_latency_ms'] ?? null;
+            $uptimeBySamples = $samples > 0 ? ($up / $samples) * 100 : 0;
+            $uptimeByIpAvg = isset($ipAvgByDay[$day]) ? (float) $ipAvgByDay[$day] : 0.0;
+
+            $report['days'][$day] = [
+                'day' => $day,
+                'samples' => $samples,
+                'up' => $up,
+                'down' => $down,
+                'uptime_pct' => $uptimeByIpAvg,
+                'uptime_pct_weighted' => $uptimeBySamples,
+                'avg_latency_ms' => $avgLatency,
+            ];
+
+            $totalSamples += $samples;
+            $totalUp += $up;
+            $totalDown += $down;
+            $cur = strtotime('+1 day', $cur);
+        }
+
+        // Accurate overall avg latency for UP samples with latency.
+        $stmt_avg = $db->prepare("
+            SELECT AVG(pr.latency) AS avg_latency_ms
+            FROM ping_results pr
+            JOIN devices d ON d.id = pr.device_id
+            WHERE d.is_local = ? AND pr.timestamp >= ? AND pr.status = 'UP' AND pr.latency IS NOT NULL
+        ");
+        $stmt_avg->execute([$is_local_network ? 1 : 0, $window_start]);
+        $overallAvg = $stmt_avg->fetchColumn();
+        $overallAvg = ($overallAvg !== false && $overallAvg !== null && is_numeric($overallAvg)) ? (float) $overallAvg : null;
+
+        $report['totals']['samples'] = $totalSamples;
+        $report['totals']['up'] = $totalUp;
+        $report['totals']['down'] = $totalDown;
+        // Monthly uptime total as average of daily IP-average uptime (same weighting per day).
+        $dailyUptimes = array_map(
+            fn($d) => (float) ($d['uptime_pct'] ?? 0),
+            array_values($report['days'])
+        );
+        $report['totals']['uptime_pct'] = count($dailyUptimes) > 0 ? (array_sum($dailyUptimes) / count($dailyUptimes)) : 0;
+        $report['totals']['avg_latency_ms'] = $overallAvg;
+        $report['totals']['p95_latency_ms'] = $p95;
+    } catch (PDOException $e) {
+        error_log("Failed to fetch system monthly report data: " . $e->getMessage());
+    }
+
+    return $report;
+}
+
+function export_monthly_report_csv($is_local_network)
+{
+    $window_start = get_report_window_start_30d();
+    $report = fetch_system_monthly_report_data($is_local_network, $window_start);
+
+    $network_label = $is_local_network ? 'local' : 'external';
+    $safe_date = date('Y-m-d');
+    $filename = "monitor-report-{$network_label}-30d-{$safe_date}.csv";
+
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+
+    $out = fopen('php://output', 'w');
+    if ($out === false) {
+        header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error');
+        echo 'No se pudo generar el CSV.';
+        exit;
+    }
+
+    // UTF-8 BOM for Excel compatibility
+    fwrite($out, "\xEF\xBB\xBF");
+
+    fputcsv($out, ['IP Monitor - Reporte general (ultimos 30 días)']);
+    fputcsv($out, ['Red', $network_label]);
+    fputcsv($out, ['Ventana inicio', $report['window_start']]);
+    fputcsv($out, ['Ventana fin', $report['window_end']]);
+    fputcsv($out, []);
+
+    fputcsv($out, ['Resumen']);
+    fputcsv($out, ['samples_total', (int) ($report['totals']['samples'] ?? 0)]);
+    fputcsv($out, ['up_total', (int) ($report['totals']['up'] ?? 0)]);
+    fputcsv($out, ['down_total', (int) ($report['totals']['down'] ?? 0)]);
+    fputcsv($out, ['uptime_pct_total', round((float) ($report['totals']['uptime_pct'] ?? 0), 2)]);
+    fputcsv($out, ['avg_latency_ms_total', $report['totals']['avg_latency_ms'] === null ? '' : round((float) $report['totals']['avg_latency_ms'], 2)]);
+    fputcsv($out, ['p95_latency_ms_total', $report['totals']['p95_latency_ms'] === null ? '' : round((float) $report['totals']['p95_latency_ms'], 2)]);
+
+    fputcsv($out, []);
+    fputcsv($out, ['Serie diaria (por fecha)']);
+    fputcsv($out, ['day', 'samples', 'up', 'down', 'uptime_pct', 'avg_latency_ms']);
+    foreach ($report['days'] as $day => $d) {
+        fputcsv($out, [
+            $day,
+            (int) ($d['samples'] ?? 0),
+            (int) ($d['up'] ?? 0),
+            (int) ($d['down'] ?? 0),
+            round((float) ($d['uptime_pct'] ?? 0), 2),
+            $d['avg_latency_ms'] === null ? '' : round((float) $d['avg_latency_ms'], 2),
+        ]);
+    }
+
+    fclose($out);
+    exit;
+}
+
+function export_monthly_report_pdf($is_local_network)
+{
+    $window_start = get_report_window_start_30d();
+    $report = fetch_system_monthly_report_data($is_local_network, $window_start);
+
+    $network_label = $is_local_network ? 'local' : 'external';
+    $safe_date = date('Y-m-d');
+    $filename = "monitor-report-{$network_label}-30d-{$safe_date}.pdf";
+
+    $pdf = build_system_report_pdf($report, [
+        'title' => 'Reporte general ultimos 30 dias',
+    ]);
+
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . strlen($pdf));
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    echo $pdf;
+    exit;
+}
+
+function build_system_report_pdf(array $report, array $meta = [])
+{
+    $title = (string) ($meta['title'] ?? 'IP Monitor - Reporte');
+    $network = (string) ($report['network_label'] ?? '');
+    $window = (string) ($report['window_start'] ?? '') . ' -> ' . (string) ($report['window_end'] ?? '');
+
+    $totSamples = (int) ($report['totals']['samples'] ?? 0);
+    $totUp = (int) ($report['totals']['up'] ?? 0);
+    $totDown = (int) ($report['totals']['down'] ?? 0);
+    $totUptime = $totSamples > 0 ? round(($totUp / $totSamples) * 100, 2) : 0;
+    $avgLat = $report['totals']['avg_latency_ms'] === null ? null : round((float) $report['totals']['avg_latency_ms'], 2);
+    $p95Lat = $report['totals']['p95_latency_ms'] === null ? null : round((float) $report['totals']['p95_latency_ms'], 2);
+
+    // Page setup (A4)
+    $pageW = 595;
+    $pageH = 842;
+    $margin = 40;
+    $contentW = $pageW - $margin * 2;
+
+    $days = array_values($report['days'] ?? []);
+    $dayCount = count($days);
+    if ($dayCount === 0) {
+        // still render a basic text-only PDF
+        $lines = [
+            $title,
+            "Red: {$network}",
+            "Ventana: {$window}",
+            "",
+            "No hay datos en los últimos 30 días.",
+        ];
+        return build_simple_text_pdf($lines, ['title' => $title]);
+    }
+
+    $chartX = $margin;
+    $chartW = $contentW;
+    $dayWidth = $chartW / $dayCount;
+
+    $escape = function ($s) {
+        $s = (string) $s;
+        $s = preg_replace('/[^\\x09\\x0A\\x0D\\x20-\\x7E]/', '', $s);
+        return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $s);
+    };
+
+    $stream = "";
+    // Background
+    $stream .= "1 1 1 rg\n";
+    $stream .= sprintf("%.2f %.2f %.2f %.2f re f\n", 0, 0, $pageW, $pageH);
+
+    // Header text
+    $stream .= "0.08 0.10 0.14 rg\n";
+    $stream .= "BT\n/F1 18 Tf\n";
+    $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $margin, 800, $escape($title));
+    $stream .= "/F1 11 Tf\n";
+    $stream .= "ET\n";
+
+    // Summary cards
+    $cardY = 720;
+    $cardH = 42;
+    $gap = 10;
+    $cardW = ($contentW - $gap * 2) / 3;
+
+    $drawCard = function ($x, $label, $value, $colorRgb) use (&$stream, $cardY, $cardW, $cardH, $escape) {
+        [$r, $g, $b] = $colorRgb;
+        $stream .= sprintf("%.3f %.3f %.3f rg\n", $r, $g, $b);
+        $stream .= sprintf("%.2f %.2f %.2f %.2f re f\n", $x, $cardY, $cardW, $cardH);
+        $stream .= "0.08 0.10 0.14 rg\n";
+        $stream .= "BT\n/F1 10 Tf\n";
+        $stream .= sprintf("1 0 0 1 %.2f %.2f Tm (%s) Tj\n", $x + 10, $cardY + 26, $escape($label));
+        $stream .= "/F1 14 Tf\n";
+        $stream .= sprintf("1 0 0 1 %.2f %.2f Tm (%s) Tj\n", $x + 10, $cardY + 8, $escape($value));
+        $stream .= "ET\n";
+    };
+
+    $drawCard($margin, 'Uptime total', $totUptime . ' %', ($totUptime >= 95 ? [0.78, 0.92, 0.84] : ($totUptime >= 80 ? [0.99, 0.93, 0.76] : [0.98, 0.82, 0.80])));
+    $drawCard($margin + $cardW + $gap, 'Muestras (UP/DOWN)', $totSamples . " ({$totUp}/{$totDown})", [0.82, 0.89, 0.98]);
+    $drawCard($margin + ($cardW + $gap) * 2, 'Latencia (avg/p95)', (($avgLat === null ? '-' : $avgLat) . ' / ' . ($p95Lat === null ? '-' : $p95Lat) . ' ms'), [0.90, 0.85, 0.97]);
+
+    // Charts title
+    $stream .= "0.08 0.10 0.14 rg\nBT\n/F1 12 Tf\n";
+    $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $margin, 684, $escape('Graficas diarias (30 dias)'));
+    $stream .= "ET\n";
+
+    // Chart 1: Uptime by IP average (color by threshold)
+    $uptimeY = 646;
+    $chartH = 18;
+    $stream .= "0.92 0.95 0.99 rg\n";
+    $stream .= sprintf("%.2f %.2f %.2f %.2f re f\n", $chartX, $uptimeY, $chartW, $chartH);
+    foreach ($days as $i => $d) {
+        $uptime = (float) ($d['uptime_pct'] ?? 0);
+        if ($uptime >= 95) {
+            $rgb = [0.25, 0.72, 0.44];
+        } elseif ($uptime >= 80) {
+            $rgb = [0.93, 0.71, 0.24];
+        } else {
+            $rgb = [0.88, 0.40, 0.38];
+        }
+        [$r, $g, $b] = $rgb;
+        $x = $chartX + ($i * $dayWidth);
+        $stream .= sprintf("%.3f %.3f %.3f rg\n%.2f %.2f %.2f %.2f re f\n", $r, $g, $b, $x, $uptimeY, $dayWidth, $chartH);
+    }
+    $stream .= "0.10 0.12 0.18 rg\nBT\n/F1 9 Tf\n";
+    $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $margin, $uptimeY + 22, $escape('Uptime diario (%)'));
+    $stream .= "ET\n";
+
+    // Chart 2: Avg latency heat strip (green -> red by latency)
+    $latY = 614;
+    $stream .= "0.92 0.95 0.99 rg\n";
+    $stream .= sprintf("%.2f %.2f %.2f %.2f re f\n", $chartX, $latY, $chartW, $chartH);
+    foreach ($days as $i => $d) {
+        $lat = $d['avg_latency_ms'];
+        $x = $chartX + ($i * $dayWidth);
+        if ($lat === null) {
+            $rgb = [0.85, 0.88, 0.92];
+        } else {
+            $lat = (float) $lat;
+            $t = min(1, max(0, $lat / 120.0));
+            $rgb = [0.30 + (0.58 * $t), 0.78 - (0.35 * $t), 0.42 - (0.12 * $t)];
+        }
+        [$r, $g, $b] = $rgb;
+        $stream .= sprintf("%.3f %.3f %.3f rg\n%.2f %.2f %.2f %.2f re f\n", $r, $g, $b, $x, $latY, $dayWidth, $chartH);
+    }
+    $stream .= "0.10 0.12 0.18 rg\nBT\n/F1 9 Tf\n";
+    $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $margin, $latY + 22, $escape('Latencia media diaria (ms)'));
+    $stream .= "ET\n";
+
+    // Chart 3: Samples intensity strip (low -> high)
+    $samplesY = 582;
+    $maxSamples = 0;
+    foreach ($days as $d) {
+        $maxSamples = max($maxSamples, (int) ($d['samples'] ?? 0));
+    }
+    $stream .= "0.92 0.95 0.99 rg\n";
+    $stream .= sprintf("%.2f %.2f %.2f %.2f re f\n", $chartX, $samplesY, $chartW, $chartH);
+    foreach ($days as $i => $d) {
+        $s = (int) ($d['samples'] ?? 0);
+        $x = $chartX + ($i * $dayWidth);
+        $t = $maxSamples > 0 ? ($s / $maxSamples) : 0;
+        $rgb = [0.70 - 0.20 * $t, 0.82 - 0.15 * $t, 0.96 - 0.20 * $t];
+        [$r, $g, $b] = $rgb;
+        $stream .= sprintf("%.3f %.3f %.3f rg\n%.2f %.2f %.2f %.2f re f\n", $r, $g, $b, $x, $samplesY, $dayWidth, $chartH);
+    }
+    $stream .= "0.10 0.12 0.18 rg\nBT\n/F1 9 Tf\n";
+    $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $margin, $samplesY + 22, $escape('Volumen de muestras diario'));
+    $stream .= "ET\n";
+
+    // Legend
+    $legendY = 552;
+    $legendX = $margin;
+    $legendItemW = 12;
+    $legendItemH = 10;
+    $legendGap = 8;
+
+    $legend = [
+        [[0.25, 0.72, 0.44], '>=95% OK'],
+        [[0.93, 0.71, 0.24], '80-95% Degradado'],
+        [[0.88, 0.40, 0.38], '<80% Incidencia'],
+    ];
+    foreach ($legend as $idx => $item) {
+        [$rgb, $label] = $item;
+        [$r, $g, $b] = $rgb;
+        $x = $legendX + $idx * 170;
+        $stream .= sprintf("%.3f %.3f %.3f rg\n", $r, $g, $b);
+        $stream .= sprintf("%.2f %.2f %.2f %.2f re f\n", $x, $legendY, $legendItemW, $legendItemH);
+        $stream .= "0.10 0.12 0.18 rg\nBT\n/F1 10 Tf\n";
+        $stream .= sprintf("1 0 0 1 %.2f %.2f Tm (%s) Tj\n", $x + $legendItemW + $legendGap, $legendY + 1, $escape($label));
+        $stream .= "ET\n";
+    }
+
+    // Footnote with first/last day labels
+    $firstDay = (string) ($days[0]['day'] ?? '');
+    $lastDay = (string) ($days[$dayCount - 1]['day'] ?? '');
+    $stream .= "0.10 0.12 0.18 rg\nBT\n/F1 9 Tf\n";
+    $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $margin, 534, $escape("Inicio: {$firstDay}"));
+    $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $margin + (int) ($chartW - 140), 534, $escape("Fin: {$lastDay}"));
+    $stream .= "ET\n";
+
+    // Small table (last 10 days)
+    $stream .= "0.08 0.10 0.14 rg\nBT\n/F1 11 Tf\n";
+    $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $margin, 506, $escape('Detalle (ultimos 10 dias)'));
+    $stream .= "ET\n";
+
+    $tableY = 486;
+    $rowH = 14;
+    $colXs = [$margin, $margin + 120, $margin + 240, $margin + 360, $margin + 470];
+    $headers = ['Fecha', 'Uptime %', 'Muestras', 'Avg ms', 'UP/DOWN'];
+    $stream .= "0.10 0.12 0.18 rg\nBT\n/F1 9 Tf\n";
+    foreach ($headers as $ci => $h) {
+        $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $colXs[$ci], $tableY, $escape($h));
+    }
+    $stream .= "ET\n";
+
+    $lastDays = array_slice($days, max(0, $dayCount - 10));
+    $y = $tableY - $rowH;
+    foreach ($lastDays as $d) {
+        $day = (string) ($d['day'] ?? '');
+        $uptime = round((float) ($d['uptime_pct'] ?? 0), 2);
+        $samples = (int) ($d['samples'] ?? 0);
+        $avg = ($d['avg_latency_ms'] === null) ? '-' : round((float) $d['avg_latency_ms'], 2);
+        $up = (int) ($d['up'] ?? 0);
+        $down = (int) ($d['down'] ?? 0);
+
+        $stream .= "0.10 0.12 0.18 rg\nBT\n/F1 9 Tf\n";
+        $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $colXs[0], $y, $escape($day));
+        $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $colXs[1], $y, $escape((string) $uptime));
+        $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $colXs[2], $y, $escape((string) $samples));
+        $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $colXs[3], $y, $escape((string) $avg));
+        $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $colXs[4], $y, $escape("{$up}/{$down}"));
+        $stream .= "ET\n";
+        $y -= $rowH;
+    }
+
+    return build_vector_pdf_single_page($stream, ['title' => $title]);
+}
+
+function build_vector_pdf_single_page($contentStream, array $meta = [])
+{
+    $title = (string) ($meta['title'] ?? 'Report');
+    $escape = function ($s) {
+        $s = (string) $s;
+        $s = preg_replace('/[^\\x20-\\x7E]/', '', $s);
+        return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $s);
+    };
+
+    $objects = [];
+    $offsets = [];
+    $out = "%PDF-1.4\n";
+
+    $addObj = function ($content) use (&$objects) {
+        $objects[] = $content;
+        return count($objects);
+    };
+
+    $catalogId = $addObj("<< /Type /Catalog /Pages 2 0 R >>");
+    $pagesId = $addObj(""); // placeholder
+    $fontId = $addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+
+    $content = (string) $contentStream;
+    $contentObj = "<< /Length " . strlen($content) . " >>\nstream\n" . $content . "endstream";
+    $contentId = $addObj($contentObj);
+
+    $pageObj = "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 {$fontId} 0 R >> >> /MediaBox [0 0 595 842] /Contents {$contentId} 0 R >>";
+    $pageId = $addObj($pageObj);
+
+    $pagesObj = "<< /Type /Pages /Kids [ {$pageId} 0 R ] /Count 1 >>";
+    $objects[$pagesId - 1] = $pagesObj;
+
+    $infoId = $addObj("<< /Title (" . $escape($title) . ") /Producer (IP Monitor) >>");
+
+    $offsets[0] = 0;
+    foreach ($objects as $i => $obj) {
+        $objNum = $i + 1;
+        $offsets[$objNum] = strlen($out);
+        $out .= $objNum . " 0 obj\n" . $obj . "\nendobj\n";
+    }
+
+    $xrefPos = strlen($out);
+    $out .= "xref\n0 " . (count($objects) + 1) . "\n";
+    $out .= "0000000000 65535 f \n";
+    for ($i = 1; $i <= count($objects); $i++) {
+        $out .= sprintf("%010d 00000 n \n", $offsets[$i]);
+    }
+    $out .= "trailer\n<< /Size " . (count($objects) + 1) . " /Root {$catalogId} 0 R /Info {$infoId} 0 R >>\n";
+    $out .= "startxref\n{$xrefPos}\n%%EOF";
+
+    return $out;
+}
+
+function build_simple_text_pdf(array $lines, array $meta = [])
+{
+    // Very small PDF generator (Helvetica) for ASCII-ish reports.
+    // If line contains non-ASCII chars, they are stripped (PDF core fonts are WinAnsi).
+    $title = (string) ($meta['title'] ?? 'Report');
+
+    $maxLinesPerPage = 52;
+    $pages = array_chunk($lines, $maxLinesPerPage);
+
+    $objects = [];
+    $offsets = [];
+    $out = "%PDF-1.4\n";
+
+    $addObj = function ($content) use (&$objects) {
+        $objects[] = $content;
+        return count($objects);
+    };
+
+    // 1: Catalog (filled later)
+    // 2: Pages
+    // 3: Font
+    $catalogId = $addObj("<< /Type /Catalog /Pages 2 0 R >>");
+    $pagesId = $addObj(""); // placeholder
+    $fontId = $addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+
+    $pageIds = [];
+    $contentIds = [];
+
+    foreach ($pages as $pageIndex => $pageLines) {
+        $yStart = 800;
+        $lineHeight = 14;
+        $x = 40;
+
+        $stream = "BT\n/F1 10 Tf\n";
+        $y = $yStart;
+        foreach ($pageLines as $line) {
+            $line = (string) $line;
+            $line = preg_replace('/[^\\x09\\x0A\\x0D\\x20-\\x7E]/', '', $line);
+            $line = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $line);
+            $stream .= sprintf("1 0 0 1 %d %d Tm (%s) Tj\n", $x, $y, $line);
+            $y -= $lineHeight;
+        }
+        $stream .= "ET\n";
+
+        $content = "<< /Length " . strlen($stream) . " >>\nstream\n" . $stream . "endstream";
+        $contentId = $addObj($content);
+        $contentIds[] = $contentId;
+
+        $pageObj = "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 {$fontId} 0 R >> >> /MediaBox [0 0 595 842] /Contents {$contentId} 0 R >>";
+        $pageId = $addObj($pageObj);
+        $pageIds[] = $pageId;
+    }
+
+    $kids = implode(' ', array_map(fn($id) => "{$id} 0 R", $pageIds));
+    $pagesObj = "<< /Type /Pages /Kids [ {$kids} ] /Count " . count($pageIds) . " >>";
+    $objects[$pagesId - 1] = $pagesObj;
+
+    $infoId = $addObj("<< /Title (" . str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], preg_replace('/[^\\x20-\\x7E]/', '', $title)) . ") /Producer (IP Monitor) >>");
+
+    // Write objects with xref
+    $offsets[0] = 0;
+    foreach ($objects as $i => $obj) {
+        $objNum = $i + 1;
+        $offsets[$objNum] = strlen($out);
+        $out .= $objNum . " 0 obj\n" . $obj . "\nendobj\n";
+    }
+
+    $xrefPos = strlen($out);
+    $out .= "xref\n0 " . (count($objects) + 1) . "\n";
+    $out .= "0000000000 65535 f \n";
+    for ($i = 1; $i <= count($objects); $i++) {
+        $out .= sprintf("%010d 00000 n \n", $offsets[$i]);
+    }
+    $out .= "trailer\n<< /Size " . (count($objects) + 1) . " /Root {$catalogId} 0 R /Info {$infoId} 0 R >>\n";
+    $out .= "startxref\n{$xrefPos}\n%%EOF";
+
+    return $out;
+}
+
 // Exporta el archivo de base de datos SQLite actual para descarga
 function export_monitor_db()
 {
@@ -1077,7 +1759,7 @@ function format_telegram_status_summary_message(array $events)
             $up_events[] = "• {$display_name} → UP";
         } elseif ($event['new_status'] === 'LATENCY_HIGH') {
             $threshold = (int) ($event['latency_threshold'] ?? 0);
-            $latency_events[] = "• {$display_name} → {$event['response_time']} (umbral {$threshold} ms)";
+            $latency_events[] = "• {$display_name} → {$event['response_time']}";
         }
     }
 

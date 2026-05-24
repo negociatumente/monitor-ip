@@ -26,6 +26,14 @@ if (isset($_GET['export_config'])) {
     export_monitor_db();
     exit;
 }
+if (isset($_GET['export_report']) && $_GET['export_report'] === 'csv') {
+    export_monthly_report_csv($is_local_network ?? false);
+    exit;
+}
+if (isset($_GET['export_report']) && $_GET['export_report'] === 'pdf') {
+    export_monthly_report_pdf($is_local_network ?? false);
+    exit;
+}
 if (isset($_GET['imported'])) {
     $import_export_message = 'Base de datos importada correctamente.';
 }
@@ -463,7 +471,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                 <button onclick="showConfigModal();"
                                     class="btn  btn-accent px-3 sm:px-6 py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
                                     <i class="fas fa-file-import"></i> <span class="hidden sm:inline">
-                                        Manage Config</span><span class="sm:hidden">Config</span>
+                                       Import/Export</span><span class="sm:hidden">Config</span>
                                 </button>
 
                                 <button type="button" onclick="showClearDataConfirmation();"
