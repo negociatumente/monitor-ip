@@ -34,7 +34,7 @@ function is_running_in_container()
 // Función para realizar un ping y actualizar los datos
 function update_ping_results($ip)
 {
-    global $ping_attempts, $ping_data;
+    global $ping_data;
 
     // Detectar si el sistema es Windows
     $isWindows = (PHP_OS_FAMILY === 'Windows');
@@ -86,10 +86,6 @@ function update_ping_results($ip)
         "timestamp" => $timestamp,
         "response_time" => $response_time,
     ]);
-    if (count($ping_data[$ip]) > $ping_attempts) {
-        // Mantiene solo los últimos registros
-        array_pop($ping_data[$ip]);
-    }
 
     // Guardar en base de datos
     global $db;
@@ -104,11 +100,6 @@ function update_ping_results($ip)
             }
             $stmt_ping_insert = $db->prepare("INSERT INTO ping_results (device_id, status, latency, timestamp) VALUES (?, ?, ?, ?)");
             $stmt_ping_insert->execute([$device_id, $ping_status, $clean_latency, $timestamp]);
-
-            // Eliminar registros antiguos que superen los 50
-            $db->prepare("DELETE FROM ping_results WHERE device_id = ? AND id NOT IN (
-                SELECT id FROM ping_results WHERE device_id = ? ORDER BY timestamp DESC LIMIT 50
-            )")->execute([$device_id, $device_id]);
         }
     } catch (PDOException $e) {
         error_log("Failed to insert single ping result: " . $e->getMessage());
@@ -118,7 +109,7 @@ function update_ping_results($ip)
 // Nueva función para hacer pings en paralelo
 function update_ping_results_parallel($ips)
 {
-    global $ping_attempts, $ping_data, $config_path;
+    global $ping_data, $config_path;
 
     // Load methods configuration
     // Load configuration
@@ -283,9 +274,6 @@ function update_ping_results_parallel($ips)
             "timestamp" => $timestamp,
             "response_time" => $response_time,
         ]);
-        if (count($ping_data[$ip]) > $ping_attempts) {
-            array_pop($ping_data[$ip]);
-        }
 
         // Guardar en base de datos
         global $db;
@@ -300,11 +288,6 @@ function update_ping_results_parallel($ips)
                 }
                 $stmt_ping_insert = $db->prepare("INSERT INTO ping_results (device_id, status, latency, timestamp) VALUES (?, ?, ?, ?)");
                 $stmt_ping_insert->execute([$device_id, $ping_status, $clean_latency, $timestamp]);
-
-                // Eliminar registros antiguos que superen los 50
-                $db->prepare("DELETE FROM ping_results WHERE device_id = ? AND id NOT IN (
-                    SELECT id FROM ping_results WHERE device_id = ? ORDER BY timestamp DESC LIMIT 50
-                )")->execute([$device_id, $device_id]);
             }
         } catch (PDOException $e) {
             error_log("Failed to insert parallel ping result: " . $e->getMessage());
@@ -335,11 +318,27 @@ function analyze_ip($ip)
     global $ping_data;
 
     $ping_results = $ping_data[$ip] ?? array_fill(0, 5, ["status" => "-", "timestamp" => "-", "response_time" => "-"]);
+    $since_24h = time() - 86400;
+    $since_30d = time() - (86400 * 30);
+    $filter_since = function ($ping) {
+        if (empty($ping['timestamp']) || $ping['timestamp'] === '-') {
+            return false;
+        }
+        $timestamp = strtotime($ping['timestamp']);
+        return $timestamp !== false;
+    };
+    $ping_results_24h = array_values(array_filter($ping_results, function ($ping) use ($since_24h, $filter_since) {
+        return $filter_since($ping) && strtotime($ping['timestamp']) >= $since_24h;
+    }));
+    $ping_results_30d = array_values(array_filter($ping_results, function ($ping) use ($since_30d, $filter_since) {
+        return $filter_since($ping) && strtotime($ping['timestamp']) >= $since_30d;
+    }));
     $success_count = 0;
     $total_response_time = 0;
     $response_time_count = 0;
+    $monthly_success_count = 0;
 
-    foreach ($ping_results as $ping) {
+    foreach ($ping_results_24h as $ping) {
         if ($ping['status'] === "UP") {
             $success_count++;
         }
@@ -349,9 +348,16 @@ function analyze_ip($ip)
             $response_time_count++;
         }
     }
-    $count_ping_results = count($ping_results);
+    foreach ($ping_results_30d as $ping) {
+        if ($ping['status'] === "UP") {
+            $monthly_success_count++;
+        }
+    }
+    $count_ping_results = count($ping_results_24h);
+    $count_ping_results_30d = count($ping_results_30d);
     $percentage = $count_ping_results > 0 ? ($success_count / $count_ping_results) * 100 : 0;
-    $status = $count_ping_results > 0 ? ($ping_results[0]['status'] ?? "-") : "-";
+    $monthly_percentage = $count_ping_results_30d > 0 ? ($monthly_success_count / $count_ping_results_30d) * 100 : 0;
+    $status = !empty($ping_results) ? ($ping_results[0]['status'] ?? "-") : "-";
 
     if ($percentage >= 80) {
         $label = "Good";
@@ -367,6 +373,10 @@ function analyze_ip($ip)
         'status' => $status,
         'percentage' => $percentage,
         'ping_results' => $ping_results,
+        'ping_results_24h' => $ping_results_24h,
+        'sample_count_24h' => $count_ping_results,
+        'monthly_percentage' => $monthly_percentage,
+        'sample_count_30d' => $count_ping_results_30d,
         'label' => $label,
         'average_response_time' => $average_response_time
     ];
@@ -687,6 +697,7 @@ function save_config_file($config, $file_path = '')
         $stmt_setting_check = $db->prepare("SELECT 1 FROM settings WHERE section = ? AND key = ?");
         $stmt_setting_insert = $db->prepare("INSERT INTO settings (section, key, value) VALUES (?, ?, ?)");
         $stmt_setting_update = $db->prepare("UPDATE settings SET value = ? WHERE section = ? AND key = ?");
+        $db->prepare("DELETE FROM settings WHERE section = ? AND key = ?")->execute(['settings', 'ping_attempts']);
 
         foreach ($general_sections as $section) {
             if (isset($config[$section]) && is_array($config[$section])) {
@@ -807,9 +818,9 @@ function ensure_config_structure($config, $is_local_network = false)
     }
 
     $config['settings'] = array_merge([
-        'ping_attempts' => '5',
         'ping_interval' => '300',
     ], $config['settings'] ?? []);
+    unset($config['settings']['ping_attempts']);
 
     $config['settings']['version'] = get_version_from_db();
 
@@ -1167,7 +1178,6 @@ function getNotificationData($action, $msg = null)
         'deleted' => ['type' => 'success', 'icon' => 'fas fa-trash', 'message' => 'IP eliminada exitosamente del monitoreo.'],
         'service_added' => ['type' => 'success', 'icon' => 'fas fa-plus-circle', 'message' => 'Servicio creado exitosamente.'],
         'timer_updated' => ['type' => 'success', 'icon' => 'fas fa-clock', 'message' => 'Intervalo de ping actualizado exitosamente.'],
-        'ping_attempts_updated' => ['type' => 'success', 'icon' => 'fas fa-network-wired', 'message' => 'Número de intentos de ping actualizado exitosamente.'],
         'data_cleared' => ['type' => 'success', 'icon' => 'fas fa-broom', 'message' => 'Datos de ping eliminados exitosamente.'],
         'password_updated' => ['type' => 'success', 'icon' => 'fas fa-key', 'message' => 'Contraseña actualizada correctamente.'],
         'telegram_updated' => ['type' => 'success', 'icon' => 'fab fa-telegram-plane', 'message' => 'Alertas de Telegram actualizadas correctamente.'],
@@ -1272,6 +1282,8 @@ function calculateSystemStats($ips_to_monitor)
     $ips_down = 0;
     $total_ping = 0;
     $ping_count = 0;
+    $total_24h_pings = 0;
+    $up_24h_pings = 0;
 
     foreach ($ips_to_monitor as $ip => $service) {
         $result = analyze_ip($ip);
@@ -1281,19 +1293,28 @@ function calculateSystemStats($ips_to_monitor)
             $ips_down++;
         }
 
-        if ($result['average_response_time'] !== 'N/A') {
-            $total_ping += $result['average_response_time'];
-            $ping_count++;
+        foreach ($result['ping_results_24h'] as $ping) {
+            $total_24h_pings++;
+            if (($ping['status'] ?? null) === 'UP') {
+                $up_24h_pings++;
+            }
+            if (($ping['response_time'] ?? 'N/A') !== 'N/A' && ($ping['response_time'] ?? '-') !== '-') {
+                $total_ping += floatval(str_replace(['ms', ' '], '', $ping['response_time']));
+                $ping_count++;
+            }
         }
     }
 
     $average_ping = $ping_count > 0 ? round($total_ping / $ping_count, 2) : 'N/A';
+    $uptime_percentage = $total_24h_pings > 0 ? round(($up_24h_pings / $total_24h_pings) * 100, 1) : 0;
     $system_status = $ips_down === 0 ? "Healthy" : ($ips_up > $ips_down ? "Degraded" : "Critical");
 
     return [
         'total_ips' => $total_ips,
         'ips_up' => $ips_up,
         'ips_down' => $ips_down,
+        'uptime_percentage' => $uptime_percentage,
+        'sample_count_24h' => $total_24h_pings,
         'average_ping' => $average_ping,
         'system_status' => $system_status,
         'system_status_color' => getSystemStatusColor($system_status),
@@ -2066,6 +2087,120 @@ function get_geoip_info($ip)
         return json_decode($response, true);
     }
     return ['status' => 'fail', 'message' => 'API connection failed or timed out'];
+}
+
+function get_local_ip_diagnostics($ip, $device_type = 'other')
+{
+    $ip = trim((string) $ip);
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        return ['status' => 'fail', 'message' => 'Invalid local IP'];
+    }
+
+    $is_windows = (PHP_OS_FAMILY === 'Windows');
+    $escaped_ip = escapeshellarg($ip);
+    $count = 10;
+
+    if ($is_windows) {
+        $ping_command = "ping -n $count -w 1000 $escaped_ip";
+    } else {
+        $sudo_prefix = is_running_in_container() ? 'sudo ' : '';
+        $ping_command = $sudo_prefix . "/bin/ping -c $count -W 1 $escaped_ip 2>&1";
+    }
+
+    $ping_output = shell_exec($ping_command) ?? '';
+    $latencies = [];
+    if (preg_match_all('/time[=<]\s*([\d\.]+)\s*ms/i', $ping_output, $matches)) {
+        $latencies = array_map('floatval', $matches[1]);
+    } elseif (preg_match_all('/tiempo[=<]\s*([\d\.]+)\s*ms/i', $ping_output, $matches)) {
+        $latencies = array_map('floatval', $matches[1]);
+    }
+
+    $packet_loss = null;
+    if (preg_match('/(\d+(?:\.\d+)?)%\s*(?:packet loss|loss|perdidos)/i', $ping_output, $loss_match)) {
+        $packet_loss = (float) $loss_match[1];
+    } elseif (preg_match('/\((\d+)%\s*(?:loss|perdidos)\)/i', $ping_output, $loss_match)) {
+        $packet_loss = (float) $loss_match[1];
+    }
+
+    $received = count($latencies);
+    if ($packet_loss === null) {
+        $packet_loss = $count > 0 ? round((($count - $received) / $count) * 100, 2) : null;
+    }
+
+    $avg = $received > 0 ? round(array_sum($latencies) / $received, 2) : null;
+    $min = $received > 0 ? round(min($latencies), 2) : null;
+    $max = $received > 0 ? round(max($latencies), 2) : null;
+    $jitter = null;
+    if ($received > 1) {
+        $diffs = [];
+        for ($i = 1; $i < $received; $i++) {
+            $diffs[] = abs($latencies[$i] - $latencies[$i - 1]);
+        }
+        $jitter = round(array_sum($diffs) / count($diffs), 2);
+    }
+
+    $hostname = gethostbyaddr($ip);
+    if ($hostname === $ip) {
+        $hostname = null;
+    }
+
+    $arp_output = shell_exec(($is_windows ? 'arp -a ' : 'arp -n ') . $escaped_ip . ' 2>&1') ?? '';
+    $mac = null;
+    if (preg_match('/([0-9a-f]{2}(?:[:-][0-9a-f]{2}){5})/i', $arp_output, $mac_match)) {
+        $mac = strtoupper(str_replace('-', ':', $mac_match[1]));
+    }
+
+    $type_ports = [
+        'gateway' => [['port' => 53, 'protocol' => 'DNS'], ['port' => 80, 'protocol' => 'HTTP'], ['port' => 443, 'protocol' => 'HTTPS'], ['port' => 22, 'protocol' => 'SSH']],
+        'router' => [['port' => 53, 'protocol' => 'DNS'], ['port' => 80, 'protocol' => 'HTTP'], ['port' => 443, 'protocol' => 'HTTPS'], ['port' => 22, 'protocol' => 'SSH']],
+        'ap-mesh' => [['port' => 80, 'protocol' => 'HTTP'], ['port' => 443, 'protocol' => 'HTTPS'], ['port' => 22, 'protocol' => 'SSH']],
+        'camera' => [['port' => 80, 'protocol' => 'HTTP'], ['port' => 443, 'protocol' => 'HTTPS'], ['port' => 554, 'protocol' => 'RTSP'], ['port' => 8080, 'protocol' => 'HTTP-ALT']],
+        'printer' => [['port' => 80, 'protocol' => 'HTTP'], ['port' => 443, 'protocol' => 'HTTPS'], ['port' => 631, 'protocol' => 'IPP'], ['port' => 9100, 'protocol' => 'RAW']],
+        'server' => [['port' => 22, 'protocol' => 'SSH'], ['port' => 80, 'protocol' => 'HTTP'], ['port' => 443, 'protocol' => 'HTTPS'], ['port' => 445, 'protocol' => 'SMB'], ['port' => 2049, 'protocol' => 'NFS']],
+        'computer' => [['port' => 22, 'protocol' => 'SSH'], ['port' => 80, 'protocol' => 'HTTP'], ['port' => 443, 'protocol' => 'HTTPS'], ['port' => 445, 'protocol' => 'SMB'], ['port' => 3389, 'protocol' => 'RDP']],
+        'iot' => [['port' => 80, 'protocol' => 'HTTP'], ['port' => 443, 'protocol' => 'HTTPS'], ['port' => 1883, 'protocol' => 'MQTT'], ['port' => 8080, 'protocol' => 'HTTP-ALT']],
+        'mobile' => [['port' => 80, 'protocol' => 'HTTP'], ['port' => 443, 'protocol' => 'HTTPS']],
+        'other' => [['port' => 22, 'protocol' => 'SSH'], ['port' => 80, 'protocol' => 'HTTP'], ['port' => 443, 'protocol' => 'HTTPS'], ['port' => 445, 'protocol' => 'SMB'], ['port' => 8080, 'protocol' => 'HTTP-ALT']],
+    ];
+    $normalized_type = strtolower(trim((string) $device_type));
+    $ports = $type_ports[$normalized_type] ?? $type_ports['other'];
+    $port_results = [];
+    foreach ($ports as $port_info) {
+        $port = (int) $port_info['port'];
+        $errno = 0;
+        $errstr = '';
+        $start = microtime(true);
+        $conn = @fsockopen($ip, $port, $errno, $errstr, 0.35);
+        $elapsed = round((microtime(true) - $start) * 1000, 1);
+        if ($conn) {
+            fclose($conn);
+        }
+        $port_results[] = [
+            'port' => $port,
+            'protocol' => $port_info['protocol'],
+            'open' => (bool) $conn,
+            'latency_ms' => $conn ? $elapsed : null,
+        ];
+    }
+
+    return [
+        'status' => 'success',
+        'ip' => $ip,
+        'hostname' => $hostname,
+        'mac' => $mac,
+        'ping' => [
+            'sent' => $count,
+            'received' => $received,
+            'packet_loss' => $packet_loss,
+            'avg' => $avg,
+            'min' => $min,
+            'max' => $max,
+            'jitter' => $jitter,
+        ],
+        'ports' => $port_results,
+        'raw_ping' => $ping_output,
+        'raw_arp' => $arp_output,
+    ];
 }
 
 /**

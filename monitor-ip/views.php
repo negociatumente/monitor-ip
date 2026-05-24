@@ -6,7 +6,7 @@ if (!isset($functions_path))
 require_once $functions_path;
 
 // Cargar resultados previos desde la base de datos
-$ping_data = load_ping_data_from_db($is_local_network ?? false, $ping_attempts ?? 5);
+$ping_data = load_ping_data_from_db($is_local_network ?? false);
 if (!is_array($ping_data)) {
     $ping_data = [];
 }
@@ -76,8 +76,6 @@ if (isset($_GET['imported'])) {
         let countdown = pingInterval;
         let countdownInterval = null;
         let pingStopped = false;
-        let currentPage = 1;
-        const pingsPerPage = 5;
         let showSpeedPrompt = <?php echo $show_speed_prompt ? 'true' : 'false'; ?>;
         let currentNetworkType = '<?php echo $network_type; ?>';
         let currentNetworkSpeed = <?php echo (int) ($config['settings']['speed_connection_mbps'] ?? 0); ?>;
@@ -120,10 +118,13 @@ if (isset($_GET['imported'])) {
                     'label_badge' => $label_styling['badge'],
                     'label_icon' => $label_styling['icon'],
                     'percentage' => $result['percentage'],
+                    'monthly_percentage' => $result['monthly_percentage'],
+                    'sample_count_30d' => $result['sample_count_30d'],
                     'percentage_text_class' => $percentage_styling['text_class'],
                     'average_response_time' => $result['average_response_time'],
                     'response_class' => $response_styling['class'],
                     'ping_results' => $result['ping_results'],
+                    'ping_results_24h' => $result['ping_results_24h'],
                     'network_type' => $ips_network[$ip] ?? null,
                     'type' => $ips_types[$ip] ?? null,
                     'ip' => $ip,
@@ -561,11 +562,11 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                     <?php endif; ?>
                                     <th class='p-3 whitespace-nowrap'>Status</th>
                                     <th class='p-3 whitespace-nowrap'>Reliability</th>
-                                    <th class='p-3 whitespace-nowrap'>Uptime</th>
+                                    <th class='p-3 whitespace-nowrap'>Uptime (24h)</th>
                                     <th class='p-3 whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600'
                                         onclick="window.location.href='?sort=latency&order=<?php echo (isset($_GET['sort']) && $_GET['sort'] === 'latency' && isset($_GET['order']) && $_GET['order'] === 'asc') ? 'desc' : 'asc'; ?><?php echo $network_param; ?>&no_ping=1'">
                                         <div class="flex items-center gap-1">
-                                            LATENCY
+                                            LATENCY (24h)
                                             <?php if (isset($_GET['sort']) && $_GET['sort'] === 'latency'): ?>
                                                 <i
                                                     class="fas fa-sort-<?php echo $_GET['order'] === 'asc' ? 'up' : 'down'; ?>"></i>
@@ -754,37 +755,37 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                                 </div>
                                             </td>
                                             <td class='p-3'>
-                                                <?php 
-                                                $ip_type = trim((string) ($ips_types[$ip] ?? '')); 
-                                                if ($ip_type !== ''): 
+                                                <?php
+                                                $ip_type = trim((string) ($ips_types[$ip] ?? ''));
+                                                if ($ip_type !== ''):
                                                     $normalized_type = strtolower($ip_type);
                                                     $type_details = [
-                                                         'gateway' => ['icon' => 'globe', 'label' => 'Gateway'],
-                                                         'router' => ['icon' => 'network-wired', 'label' => 'Router'],
-                                                         'ap-mesh' => ['icon' => 'wifi', 'label' => 'AP/Mesh'],
-                                                         'ap/mesh' => ['icon' => 'wifi', 'label' => 'AP/Mesh'],
-                                                         'camera' => ['icon' => 'video', 'label' => 'Cámara'],
-                                                         'mobile' => ['icon' => 'mobile-alt', 'label' => 'Móvil'],
-                                                         'computer' => ['icon' => 'desktop', 'label' => 'Ordenador'],
-                                                         'printer' => ['icon' => 'print', 'label' => 'Impresora'],
-                                                         'web' => ['icon' => 'globe', 'label' => 'Web'],
-                                                         'server' => ['icon' => 'server', 'label' => 'Servidor'],
-                                                         'cdn' => ['icon' => 'exchange-alt', 'label' => 'CDN'],
-                                                         'iot' => ['icon' => 'microchip', 'label' => 'IoT'],
-                                                         'other' => ['icon' => 'cube', 'label' => 'Otro'],
+                                                        'gateway' => ['icon' => 'globe', 'label' => 'Gateway'],
+                                                        'router' => ['icon' => 'network-wired', 'label' => 'Router'],
+                                                        'ap-mesh' => ['icon' => 'wifi', 'label' => 'AP/Mesh'],
+                                                        'ap/mesh' => ['icon' => 'wifi', 'label' => 'AP/Mesh'],
+                                                        'camera' => ['icon' => 'video', 'label' => 'Cámara'],
+                                                        'mobile' => ['icon' => 'mobile-alt', 'label' => 'Móvil'],
+                                                        'computer' => ['icon' => 'desktop', 'label' => 'Ordenador'],
+                                                        'printer' => ['icon' => 'print', 'label' => 'Impresora'],
+                                                        'web' => ['icon' => 'globe', 'label' => 'Web'],
+                                                        'server' => ['icon' => 'server', 'label' => 'Servidor'],
+                                                        'cdn' => ['icon' => 'exchange-alt', 'label' => 'CDN'],
+                                                        'iot' => ['icon' => 'microchip', 'label' => 'IoT'],
+                                                        'other' => ['icon' => 'cube', 'label' => 'Otro'],
 
-                                                         // Legacy/Spanish keys for backward compatibility
-                                                         'camara' => ['icon' => 'video', 'label' => 'Cámara'],
-                                                         'movil' => ['icon' => 'mobile-alt', 'label' => 'Móvil'],
-                                                         'ordenador' => ['icon' => 'desktop', 'label' => 'Ordenador'],
-                                                         'impresora' => ['icon' => 'print', 'label' => 'Impresora'],
-                                                         'servidor' => ['icon' => 'server', 'label' => 'Servidor'],
-                                                         'otro' => ['icon' => 'cube', 'label' => 'Otro'],
-                                                     ];
+                                                        // Legacy/Spanish keys for backward compatibility
+                                                        'camara' => ['icon' => 'video', 'label' => 'Cámara'],
+                                                        'movil' => ['icon' => 'mobile-alt', 'label' => 'Móvil'],
+                                                        'ordenador' => ['icon' => 'desktop', 'label' => 'Ordenador'],
+                                                        'impresora' => ['icon' => 'print', 'label' => 'Impresora'],
+                                                        'servidor' => ['icon' => 'server', 'label' => 'Servidor'],
+                                                        'otro' => ['icon' => 'cube', 'label' => 'Otro'],
+                                                    ];
                                                     $type_info = $type_details[$normalized_type] ?? ['icon' => 'tag', 'label' => $ip_type];
                                                     $type_icon = $type_info['icon'];
                                                     $type_label = $type_info['label'];
-                                                ?>
+                                                    ?>
                                                     <span
                                                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                                                         <i class="fas fa-<?php echo $type_icon; ?> mr-1 text-[10px]"></i>
@@ -797,10 +798,10 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                             <td class='p-3 font-mono text-sm'>
                                                 <div class="flex items-center gap-2">
                                                     <?php echo $ip; ?>
-                                                    <?php 
+                                                    <?php
                                                     $normalized_type = strtolower(trim((string) ($ips_types[$ip] ?? '')));
-                                                    if ($is_local_network && ($normalized_type === 'gateway' || $normalized_type === 'ap-mesh' || $normalized_type === 'ap/mesh')): 
-                                                    ?>
+                                                    if ($is_local_network && ($normalized_type === 'gateway' || $normalized_type === 'ap-mesh' || $normalized_type === 'ap/mesh')):
+                                                        ?>
                                                         <a href="http://<?php echo $ip; ?>" target="_blank"
                                                             class="text-blue-500 hover:text-blue-700 transition-colors inline-flex items-center justify-center p-1 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30"
                                                             title="Configure">
@@ -1059,16 +1060,27 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                             <!-- General Tab Content -->
                             <div id="ipDetailContentGeneral" class="space-y-4 sm:space-y-6">
                                 <div id="modalIpContent"></div>
-
                                 <div class="mt-4 sm:mt-2">
-                                    <h4
-                                        class="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 flex items-center">
+                                    <h4 class="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 flex items-center">
                                         <i class="fas fa-chart-area mr-2 text-blue-500"></i>
-                                        Latency Performance (Last <?php echo $ping_attempts; ?> pings)
+                                        Latency Performance
                                     </h4>
                                     <div
-                                        class="bg-gray-50 dark:bg-gray-800 p-3 sm:p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner overflow-auto">
-                                        <canvas id="pingChart" width="400" height="200"></canvas>
+                                        class="bg-gray-50 dark:bg-gray-800 p-3 sm:p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-inner overflow-hidden">
+                                        <div class="h-64 sm:h-80">
+                                            <canvas id="pingChart"></canvas>
+                                        </div>
+                                        <div
+                                            class="mt-4 mb-2 flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                            <span class="inline-flex items-center">
+                                                <i class="fas fa-stream mr-2 text-blue-500"></i>
+                                                Ping timeline
+                                            </span>
+                                            <span>Last 24h</span>
+                                        </div>
+                                        <div id="pingStatusTimeline"
+                                            class="flex items-center gap-1 min-h-3 overflow-x-auto pb-1 custom-scrollbar">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1088,7 +1100,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                     </div>
 
                                     <!-- Traceroute Section -->
-                                    <div class="border-t border-gray-100 dark:border-gray-800 pt-4 sm:pt-2">
+                                    <div id="detail_traceroute_section"
+                                        class="border-t border-gray-100 dark:border-gray-800 pt-4 sm:pt-2">
                                         <div
                                             class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
                                             <h4
@@ -1167,18 +1180,26 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                 <!-- Modal para cambiar servicio de una IP -->
                 <div id="changeIpServiceModal"
                     class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 hidden">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">
-                        <button onclick="closeChangeIpServiceModal()"
-                            class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                            <i class="fas fa-times text-xl"></i>
-                        </button>
-                        <div class="flex items-center mb-6">
-                            <i class="fas fa-edit text-blue-500 text-2xl mr-3"></i>
-                            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                                <?php echo 'Modify Host'; ?>
-                            </h3>
+                    <div
+                        class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-5 flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
+                                    <i class="fas fa-edit text-2xl text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-2xl font-extrabold text-white tracking-tight">
+                                        <?php echo 'Modify Host'; ?>
+                                    </h3>
+                                    <p class="text-blue-100 text-sm">Update identification, category and assigned service.</p>
+                                </div>
+                            </div>
+                            <button onclick="closeChangeIpServiceModal()"
+                                class="text-white/75 hover:text-white transition-colors text-2xl ml-4">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
-                        <form method="POST" action="">
+                        <form method="POST" action="" class="p-6">
                             <input type="hidden" id="change_service_ip" name="update_ip_service">
                             <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Host IP /
@@ -1201,18 +1222,18 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         Type</label>
                                     <div class="relative">
                                         <select id="new_device_type" name="new_device_type"
-                                             class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
-                                             required>
-                                             <option value="gateway">🌐 Gateway</option>
-                                             <option value="router">📡 Router</option>
-                                             <option value="ap-mesh">🛜 AP/Mesh</option>
-                                             <option value="camera">📹 Cámara</option>
-                                             <option value="mobile">📱 Móvil</option>
-                                             <option value="computer">💻 Ordenador</option>
-                                             <option value="printer">🖨️ Impresora</option>
-                                             <option value="iot">📟 IoT</option>
-                                             <option value="other">💡 Otro</option>
-                                         </select>
+                                            class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                                            required>
+                                            <option value="gateway">🌐 Gateway</option>
+                                            <option value="router">📡 Router</option>
+                                            <option value="ap-mesh">🛜 AP/Mesh</option>
+                                            <option value="camera">📹 Cámara</option>
+                                            <option value="mobile">📱 Móvil</option>
+                                            <option value="computer">💻 Ordenador</option>
+                                            <option value="printer">🖨️ Impresora</option>
+                                            <option value="iot">📟 IoT</option>
+                                            <option value="other">💡 Otro</option>
+                                        </select>
                                         <div
                                             class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
                                             <i class="fas fa-chevron-down"></i>
@@ -1298,14 +1319,14 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         Type</label>
                                     <div class="relative">
                                         <select id="new_device_type" name="new_device_type"
-                                             class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
-                                             required>
-                                             <option value="web">🌐 Web</option>
-                                             <option value="server">🖳 Servidor</option>
-                                             <option value="cdn">🔀 CDN</option>
-                                             <option value="iot">📟 IoT</option>
-                                             <option value="other">📡 Otro</option>
-                                         </select>
+                                            class="w-full p-2.5 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                                            required>
+                                            <option value="web">🌐 Web</option>
+                                            <option value="server">🖳 Servidor</option>
+                                            <option value="cdn">🔀 CDN</option>
+                                            <option value="iot">📟 IoT</option>
+                                            <option value="other">📡 Otro</option>
+                                        </select>
                                         <div
                                             class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
                                             <i class="fas fa-chevron-down"></i>

@@ -20,15 +20,8 @@
 
         <?php
         // Pre-calculate stats
-        $total_ips = count($ips_to_monitor);
-        $online_count = 0;
-        foreach ($ips_to_monitor as $ip => $service) {
-            $result = analyze_ip($ip);
-            if ($result['status'] === 'UP')
-                $online_count++;
-        }
-        $uptime_percentage = $total_ips > 0 ? round(($online_count / $total_ips) * 100, 1) : 0;
         $stats = calculateSystemStats($ips_to_monitor);
+        $uptime_percentage = $stats['uptime_percentage'];
         $health_color = $uptime_percentage >= 90 ? 'emerald' : ($uptime_percentage >= 50 ? 'amber' : 'red');
         // Calculate circle with radius 32 (matching SVG viewBox)
         $circle_radius = 32;
@@ -84,7 +77,7 @@
                     <div class="flex-shrink-0">
                         <p
                             class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                            Uptime</p>
+                            Uptime (24h)</p>
                         <div class="flex items-baseline gap-2">
                             <span
                                 class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100"><?php echo $uptime_percentage; ?>%</span>
@@ -121,7 +114,7 @@
                     <div class="ml-1 sm:ml-4 mr-1 sm:mr-2">
                         <p
                             class="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                            Latency</p>
+                            Latency (24h)</p>
                         <div class="flex items-baseline gap-2">
                             <span class="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
                                 <?php echo ($stats['average_ping'] !== 'N/A' ? $stats['average_ping'] : '-'); ?>
@@ -149,26 +142,6 @@
                         <i class="fas fa-edit text-yellow-600 dark:text-yellow-400 text-[10px] sm:text-xs"></i>
                     </button>
                 </div>
-
-                <!-- Compact Ping History -->
-                <div class="flex items-center gap-2 bg-purple-50/80 dark:bg-purple-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-purple-200/50 dark:border-purple-700/40 hover:bg-purple-100/80 dark:hover:bg-purple-900/30 transition-all group cursor-pointer flex-shrink-0"
-                    onclick="showChangePingAttemptsForm();">
-                    <i class="fas fa-history text-purple-500 text-xs sm:text-sm"></i>
-                    <div>
-                        <p
-                            class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">
-                            History</p>
-                        <span
-                            class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_attempts; ?>
-                            pings</span>
-                    </div>
-                    <button onclick="showChangePingAttemptsForm(); event.stopPropagation();"
-                        class="ml-1 p-1 rounded hover:bg-purple-200/50 dark:hover:bg-purple-800/40 transition-all opacity-0 group-hover:opacity-100"
-                        title="Change History">
-                        <i class="fas fa-edit text-purple-600 dark:text-purple-400 text-[10px] sm:text-xs"></i>
-                    </button>
-                </div>
-
 
                 <!-- Alertas Telegram -->
                 <div class="flex items-center gap-2 bg-blue-50/80 dark:bg-blue-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-blue-200/50 dark:border-blue-700/40 hover:bg-blue-100/80 dark:hover:bg-blue-900/30 transition-all group cursor-pointer flex-shrink-0"
@@ -451,18 +424,24 @@
 </div>
 <!-- Modal: Delete IP Confirmation -->
 <div id="deleteIpForm" class="modal">
-    <div class="modal-content">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-                <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i> Delete IP / Domain
-            </h2>
+    <div class="modal-content p-0 max-w-md shadow-2xl border-0 bg-white dark:bg-gray-800 overflow-hidden">
+        <div class="bg-gradient-to-r from-red-500 to-rose-600 p-5 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
+                    <i class="fas fa-trash-alt text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold text-white tracking-tight">Delete IP / Domain</h2>
+                    <p class="text-red-50 text-sm">Remove this host from monitoring and keep the action explicit.</p>
+                </div>
+            </div>
             <button type="button" onclick="hideDeleteIpForm();"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <i class="fas fa-times text-xl"></i>
+                class="text-white/75 hover:text-white transition-colors text-2xl ml-4">
+                <i class="fas fa-times"></i>
             </button>
         </div>
 
-        <form method="POST" action="">
+        <form method="POST" action="" class="p-6">
             <input type="hidden" id="delete_ip" name="delete_ip">
 
             <div class="bg-red-50 dark:bg-red-900/30 p-4 rounded-lg mb-5">
@@ -627,151 +606,6 @@
         </form>
     </div>
 </div>
-<!-- Modal: Change Ping History -->
-<div id="changePingAttemptsForm"
-    class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
-    <div
-        class="bg-white dark:bg-gray-900 w-[92%] max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transform scale-100">
-
-        <div
-            class="p-5 bg-gradient-to-br from-purple-600 to-indigo-700 text-white relative overflow-hidden flex-shrink-0">
-            <!-- Decorative background elements -->
-            <div class="absolute top-0 right-0 p-4 opacity-10">
-                <i class="fas fa-history text-9xl"></i>
-            </div>
-
-            <div class="flex justify-between items-start relative z-10 w-full">
-                <div class="flex items-center gap-4">
-                    <div class="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-inner">
-                        <i class="fas fa-history text-2xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-bold tracking-tight">Change Ping History</h3>
-                        <p class="text-purple-100/80 text-[11px] uppercase tracking-wider font-medium mt-0.5">
-                            Historical Data Length
-                        </p>
-                    </div>
-                </div>
-                <button type="button" onclick="hideChangePingAttemptsForm();"
-                    class="text-white/60 hover:text-white transition-colors bg-black/20 hover:bg-black/30 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-times text-sm"></i>
-                </button>
-            </div>
-        </div>
-
-        <form method="POST" action="" class="flex-1 flex flex-col min-h-0">
-            <div class="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Choose how many ping results to keep for trend
-                    analysis</p>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <!-- Quick Analysis - 5 pings -->
-                    <div class="group">
-                        <button type="button" id="btn-5"
-                            class="ping-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_attempts == 5 ? 'bg-purple-500 text-white border-purple-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-purple-50 hover:border-purple-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-purple-900/20'); ?>"
-                            onclick="setPingAttempts(5)">
-                            <div class="flex flex-col items-center">
-                                <div
-                                    class="mb-3 p-3 rounded-full <?php echo ($ping_attempts == 5 ? 'bg-white/20' : 'bg-purple-100 dark:bg-purple-900/30'); ?>">
-                                    <i
-                                        class="fas fa-bolt text-2xl <?php echo ($ping_attempts == 5 ? 'text-purple' : 'text-purple-500'); ?>"></i>
-                                </div>
-                                <div class="text-2xl font-bold mb-1">5</div>
-                                <div class="text-sm font-medium">Quick</div>
-                                <div class="text-xs opacity-75 mt-1">Minimal tracking</div>
-                            </div>
-                        </button>
-                    </div>
-
-                    <!-- Standard Analysis - 15 pings -->
-                    <div class="group">
-                        <button type="button" id="btn-15"
-                            class="ping-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_attempts == 15 ? 'bg-blue-500 text-white border-blue-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-blue-900/20'); ?>"
-                            onclick="setPingAttempts(15)">
-                            <div class="flex flex-col items-center">
-                                <div
-                                    class="mb-3 p-3 rounded-full <?php echo ($ping_attempts == 15 ? 'bg-white/20' : 'bg-blue-100 dark:bg-blue-900/30'); ?>">
-                                    <i
-                                        class="fas fa-chart-bar text-2xl <?php echo ($ping_attempts == 15 ? 'text-blue' : 'text-blue-500'); ?>"></i>
-                                </div>
-                                <div class="text-2xl font-bold mb-1">15</div>
-                                <div class="text-sm font-medium">Standard</div>
-                                <div class="text-xs opacity-75 mt-1">Balanced view</div>
-                            </div>
-                        </button>
-                    </div>
-
-                    <!-- Detailed Analysis - 25 pings -->
-                    <div class="group">
-                        <button type="button" id="btn-25"
-                            class="ping-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_attempts == 25 ? 'bg-orange-500 text-white border-orange-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-orange-50 hover:border-orange-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-orange-900/20'); ?>"
-                            onclick="setPingAttempts(25)">
-                            <div class="flex flex-col items-center">
-                                <div
-                                    class="mb-3 p-3 rounded-full <?php echo ($ping_attempts == 25 ? 'bg-white/20' : 'bg-orange-100 dark:bg-orange-900/30'); ?>">
-                                    <i
-                                        class="fas fa-chart-line text-2xl <?php echo ($ping_attempts == 25 ? 'text-white' : 'text-orange-500'); ?>"></i>
-                                </div>
-                                <div class="text-2xl font-bold mb-1">25</div>
-                                <div class="text-sm font-medium">Detailed</div>
-                                <div class="text-xs opacity-75 mt-1">More insights</div>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-
-                <div
-                    class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-info-circle text-blue-500 text-xl"></i>
-                        </div>
-                        <div class="ml-3">
-                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">History Guidelines
-                            </h4>
-                            <div class="text-sm text-blue-700 dark:text-blue-200 space-y-1">
-                                <div class="flex items-center">
-                                    <i class="fas fa-circle text-purple-500 text-xs mr-2"></i>
-                                    <span><strong>5 pings:</strong> Basic monitoring, minimal table width</span>
-                                </div>
-                                <div class="flex items-center">
-                                    <i class="fas fa-circle text-blue-500 text-xs mr-2"></i>
-                                    <span><strong>15 pings:</strong> Good balance between detail and performance</span>
-                                </div>
-                                <div class="flex items-center">
-                                    <i class="fas fa-circle text-orange-500 text-xs mr-2"></i>
-                                    <span><strong>25 pings:</strong> Detailed trend analysis for important
-                                        services</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <input type="hidden" id="new_ping_attempts" name="new_ping_attempts"
-                    value="<?php echo $ping_attempts; ?>">
-            </div>
-
-            <div
-                class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-3 flex-shrink-0">
-                <p class="text-[10px] text-gray-400 text-center sm:text-left flex-1">
-                    More ping results provide better trend analysis, but require more storage and memory.
-                </p>
-                <div class="flex gap-3 flex-shrink-0">
-                    <button type="button" onclick="hideChangePingAttemptsForm();"
-                        class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                        <i class="fas fa-times mr-2"></i> Cancel
-                    </button>
-                    <button type="submit" name="change_ping_attempts"
-                        class="btn px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600">
-                        <i class="fas fa-save mr-2"></i> Update
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
 <!-- Modal: Clear Data Confirmation -->
 <div id="clearDataConfirmation" class="modal">
     <div class="modal-content p-0 max-w-3xl shadow-2xl border-0 bg-white dark:bg-gray-800">

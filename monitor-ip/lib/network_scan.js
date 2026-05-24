@@ -1491,6 +1491,11 @@ async function runGeoIPDetail(ip) {
     const container = document.getElementById('detail_geoip_container');
     if (!container) return;
 
+    const isLocal = new URLSearchParams(window.location.search).get('network') === 'local';
+    if (isLocal) {
+        return runLocalDiagnosticsDetail(ip);
+    }
+
     container.innerHTML = `<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4 text-purple-500"></i><p class="text-sm text-gray-400">Analysing global location...</p></div>`;
 
     try {
@@ -1542,6 +1547,130 @@ async function runGeoIPDetail(ip) {
         }
     } catch (e) {
         container.innerHTML = `<div class="col-span-2 py-10 text-red-500/70 text-center text-[10px]"><i class="fas fa-exclamation-triangle mr-1"></i> Timeout fetching location</div>`;
+    }
+}
+
+async function runLocalDiagnosticsDetail(ip) {
+    const container = document.getElementById('detail_geoip_container');
+    if (!container) return;
+
+    const deviceType = window.currentIpData?.type || 'other';
+    container.innerHTML = `<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4 text-blue-500"></i><p class="text-sm text-gray-400">Running local diagnostics...</p></div>`;
+
+    try {
+        const formData = new FormData();
+        formData.append('ip', ip);
+        formData.append('type', 'local_diagnostics');
+        formData.append('device_type', deviceType);
+
+        const response = await fetch('?action=diagnose', { method: 'POST', body: formData });
+        const data = await response.json();
+        const r = data.result || {};
+        if (!data.success || r.status !== 'success') {
+            container.innerHTML = `<div class="col-span-2 py-10 text-center text-red-500 text-xs font-bold"><i class="fas fa-exclamation-triangle mr-1"></i>${r.message || data.message || 'Local diagnostics failed'}</div>`;
+            return;
+        }
+
+        const ping = r.ping || {};
+        const packetLoss = ping.packet_loss ?? 'N/A';
+        const avg = ping.avg ?? 'N/A';
+        const min = ping.min ?? 'N/A';
+        const max = ping.max ?? 'N/A';
+        const jitter = ping.jitter ?? 'N/A';
+        const received = ping.received ?? 0;
+        const sent = ping.sent ?? 0;
+        const openPorts = (r.ports || []).filter(p => p.open);
+        const closedPorts = (r.ports || []).filter(p => !p.open);
+        const lossNumeric = typeof packetLoss === 'number' ? packetLoss : parseFloat(packetLoss);
+        const qualityLabel = Number.isFinite(lossNumeric)
+            ? (lossNumeric === 0 ? 'Stable' : (lossNumeric < 5 ? 'Minor loss' : 'Unstable'))
+            : 'Unknown';
+        const qualityColor = Number.isFinite(lossNumeric)
+            ? (lossNumeric === 0
+                ? 'text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+                : (lossNumeric < 5
+                    ? 'text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                    : 'text-rose-600 dark:text-rose-300 bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800'))
+            : 'text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+
+        const portHtml = (r.ports || []).map(port => `
+            <div class="rounded-xl border px-4 py-3 ${port.open
+                ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
+                : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700'}">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fas ${port.open ? 'fa-lock-open text-green-600 dark:text-green-300' : 'fa-lock text-gray-400 dark:text-gray-500'} text-sm"></i>
+                        <div>
+                            <span class="text-base font-black ${port.open ? 'text-green-700 dark:text-green-200' : 'text-gray-700 dark:text-gray-200'}">${port.port}</span>
+                        </div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider ${port.open ? 'text-green-600/70 dark:text-green-300/70' : 'text-gray-400 dark:text-gray-500'}">${port.protocol || 'TCP'}</p>
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-wider ${port.open ? 'text-green-600 dark:text-green-300' : 'text-gray-400 dark:text-gray-500'}">${port.open ? 'Open' : 'Closed'}</span>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = `
+            <div class="col-span-2 rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 p-5 sm:p-6 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs uppercase font-black tracking-[0.18em] text-blue-500/70 dark:text-blue-300/70">Private diagnostics</p>
+                        <h4 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-gray-100 mt-2">Local host check</h4>
+                        <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-2">Connectivity, identity and common LAN services for this device.</p>
+                    </div>
+                    <div class="inline-flex items-center px-4 py-3 rounded-2xl border text-sm font-black ${qualityColor}">
+                        <i class="fas fa-heartbeat mr-2"></i>${qualityLabel}
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-slate-900/60 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <p class="text-xs uppercase font-black tracking-[0.16em] text-slate-400 mb-4">Connectivity</p>
+                <div class="flex items-end gap-2">
+                    <p class="text-4xl sm:text-5xl font-black text-blue-600 dark:text-blue-400 leading-none">${avg}</p>
+                    <span class="text-sm mb-1 font-bold text-slate-400">ms avg</span>
+                </div>
+                <div class="mt-5 grid grid-cols-2 gap-3">
+                    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 p-4">
+                        <p class="text-xs uppercase font-black tracking-wider text-slate-400">Loss</p>
+                        <p class="mt-2 text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">${packetLoss}%</p>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 p-4">
+                        <p class="text-xs uppercase font-black tracking-wider text-slate-400">Jitter</p>
+                        <p class="mt-2 text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">${jitter} ms</p>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 p-4">
+                        <p class="text-xs uppercase font-black tracking-wider text-slate-400">Min / Max</p>
+                        <p class="mt-2 text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100">${min} / ${max} ms</p>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 p-4">
+                        <p class="text-xs uppercase font-black tracking-wider text-slate-400">Packets</p>
+                        <p class="mt-2 text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100">${received}/${sent}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-slate-900/60 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <p class="text-xs uppercase font-black tracking-[0.16em] text-slate-400 mb-4">Identity</p>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-xs font-black uppercase tracking-wider text-slate-400">Hostname</p>
+                        <p class="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 truncate mt-1">${r.hostname || 'Hostname unavailable'}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black uppercase tracking-wider text-slate-400">MAC / ARP</p>
+                        <p class="text-sm sm:text-base font-mono text-slate-600 dark:text-slate-300 truncate mt-1">${r.mac || 'MAC not found in ARP cache'}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="md:col-span-2 bg-white dark:bg-slate-900/60 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <p class="text-xs uppercase font-black tracking-[0.16em] text-slate-400">Common Services</p>
+                    <p class="text-sm font-black text-slate-500">${openPorts.length} open · ${closedPorts.length} closed</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${portHtml || '<span class="text-sm text-slate-400 italic">No ports tested</span>'}</div>
+            </div>
+        `;
+    } catch (e) {
+        container.innerHTML = `<div class="col-span-2 py-10 text-red-500/70 text-center text-[10px]"><i class="fas fa-exclamation-triangle mr-1"></i> Local diagnostics timeout</div>`;
     }
 }
 
@@ -1722,9 +1851,14 @@ async function generateAIReportDetail(ip) {
             return;
         }
 
-        // Fetch location data from the detail container if available
-        const geoContainer = document.getElementById('detail_geoip_container');
-        const geoData = geoContainer ? geoContainer.innerText.replace(/\s+/g, ' ').trim() : "Geo data analysis in progress...";
+        const isLocal = new URLSearchParams(window.location.search).get('network') === 'local';
+        let geoData = "Geo data analysis in progress...";
+        if (isLocal) {
+            geoData = `Local/private network host. Context available: network=${ipData.network_type || 'Unknown'}, type=${ipData.type || 'Unknown'}.`;
+        } else {
+            const geoContainer = document.getElementById('detail_geoip_container');
+            geoData = geoContainer ? geoContainer.innerText.replace(/\s+/g, ' ').trim() : geoData;
+        }
 
         let report = `[AI DIAGNOSTIC PROFILE FOR ${ip}]\n`;
         report += `TIMESTAMP: ${new Date().toLocaleString()}\n\n`;

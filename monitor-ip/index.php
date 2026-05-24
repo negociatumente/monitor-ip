@@ -42,11 +42,10 @@ if ($is_local_network) {
 
 $services_methods = $config['services-methods'] ?? [];
 $ips_types = $config['ips-type'] ?? [];
-$ping_attempts = $config['settings']['ping_attempts'] ?? 5;
 $ping_interval = $config['settings']['ping_interval'] ?? 300;
 
 // Cargar resultados previos desde la base de datos
-$ping_data = load_ping_data_from_db($is_local_network, $ping_attempts);
+$ping_data = load_ping_data_from_db($is_local_network);
 if (!is_array($ping_data)) {
     $ping_data = [];
 }
@@ -164,6 +163,9 @@ if (isset($_GET['action'])) {
                 }
             } elseif ($type === 'geoip') {
                 $response['result'] = get_geoip_info($ip);
+            } elseif ($type === 'local_diagnostics') {
+                $device_type = $_POST['device_type'] ?? 'other';
+                $response['result'] = get_local_ip_diagnostics($ip, $device_type);
             } elseif ($type === 'network_health') {
                 $response['result'] = get_network_health();
             }
@@ -500,26 +502,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_timer'])) {
     }
 }
 
-// Manejar el cambio de intentos de ping
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_ping_attempts'])) {
-    $new_ping_attempts = intval($_POST['new_ping_attempts']);
-
-    if ($new_ping_attempts > 0) {
-        // Cargar la configuración actual
-        $config = load_config($is_local_network);
-
-        // Actualizar el valor de ping_attempts
-        $config['settings']['ping_attempts'] = $new_ping_attempts;
-
-        save_config_file($config, $config_path);
-
-        // Redirigir para evitar reenvío del formulario
-        header("Location: " . $_SERVER['PHP_SELF'] . "?action=ping_attempts_updated" . $network_param);
-        exit;
-    } else {
-        echo "<script>alert('Please enter a valid number greater than 0.');</script>";
-    }
-}
 // Manejar la eliminación de datos
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_data'])) {
     // Limpiar los datos de ping en la base de datos
@@ -718,7 +700,6 @@ $notifications = [
     'service_updated' => ['type' => 'success', 'icon' => 'fas fa-edit', 'message' => 'Servicio actualizado exitosamente.'],
     'service_cleared' => ['type' => 'success', 'icon' => 'fas fa-server', 'message' => 'Servicio eliminado exitosamente.'],
     'timer_updated' => ['type' => 'success', 'icon' => 'fas fa-clock', 'message' => 'Intervalo de ping actualizado exitosamente.'],
-    'ping_attempts_updated' => ['type' => 'success', 'icon' => 'fas fa-network-wired', 'message' => 'Número de intentos de ping actualizado exitosamente.'],
     'data_cleared' => ['type' => 'success', 'icon' => 'fas fa-broom', 'message' => 'Datos de ping eliminados exitosamente.'],
     'password_updated' => ['type' => 'success', 'icon' => 'fas fa-key', 'message' => 'Contraseña actualizada correctamente.'],
     'telegram_updated' => ['type' => 'success', 'icon' => 'fab fa-telegram-plane', 'message' => 'Alertas de Telegram actualizadas correctamente.'],
@@ -775,7 +756,6 @@ if ($is_local_network) {
     $ips_network = [];
 }
 
-$ping_attempts = $config['settings']['ping_attempts'] ?? 5;
 $ping_interval = $config['settings']['ping_interval'] ?? 300;
 $telegram_config = get_telegram_config($config);
 $telegram_alert_history = get_telegram_alert_history(25);

@@ -84,9 +84,6 @@ const modalFunctions = {
     showChangeTimerForm: function () { this.showModal('changeTimerForm'); },
     hideChangeTimerForm: function () { this.hideModal('changeTimerForm'); },
 
-    showChangePingAttemptsForm: function () { this.showModal('changePingAttemptsForm'); },
-    hideChangePingAttemptsForm: function () { this.hideModal('changePingAttemptsForm'); },
-
     showClearDataConfirmation: function () { this.showModal('clearDataConfirmation'); },
     hideClearDataConfirmation: function () { this.hideModal('clearDataConfirmation'); },
 
@@ -140,7 +137,7 @@ function reloadPage() {
     const url = new URL(window.location.href);
     const paramsToClear = [
         'page', 'action', 'msg', 'delete_ip', 'add_ip',
-        'update_ip_service', 'change_timer', 'change_ping_attempts', 'change_password',
+        'update_ip_service', 'change_timer', 'change_password',
         'clear_data', 'delete_service', 'export_config', 'import_config', 'no_ping'
     ];
 
@@ -283,8 +280,6 @@ window.showAddIpForm = function () { modalFunctions.showAddIpForm(); };
 window.hideAddIpForm = function () { modalFunctions.hideAddIpForm(); };
 window.showChangeTimerForm = function () { modalFunctions.showChangeTimerForm(); };
 window.hideChangeTimerForm = function () { modalFunctions.hideChangeTimerForm(); };
-window.showChangePingAttemptsForm = function () { modalFunctions.showChangePingAttemptsForm(); };
-window.hideChangePingAttemptsForm = function () { modalFunctions.hideChangePingAttemptsForm(); };
 window.showClearDataConfirmation = function () { modalFunctions.showClearDataConfirmation(); };
 window.hideClearDataConfirmation = function () { modalFunctions.hideClearDataConfirmation(); };
 window.showConfigModal = function () { modalFunctions.showConfigModal(); };
@@ -442,41 +437,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 /**
- * Changes the number of ping attempts and updates the button visuals.
- */
-function setPingAttempts(val) {
-    var input = document.getElementById('new_ping_attempts');
-    if (input) {
-        input.value = val;
-    }
-
-    // Reset all ping buttons
-    document.querySelectorAll('.ping-btn').forEach(btn => {
-        btn.className = btn.className.replace(/bg-(purple|blue|orange|green)-500|text-white|border-(purple|blue|orange|green)-500|shadow-lg/g, '');
-        if (btn.id === 'btn-5') {
-            btn.className = btn.className + ' bg-white text-gray-700 border-gray-200 hover:bg-purple-50 hover:border-purple-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-purple-900/20';
-        } else if (btn.id === 'btn-15') {
-            btn.className = btn.className + ' bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-blue-900/20';
-        } else if (btn.id === 'btn-25') {
-            btn.className = btn.className + ' bg-white text-gray-700 border-gray-200 hover:bg-orange-50 hover:border-orange-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-orange-900/20';
-        }
-    });
-
-    // Set active button
-    var activeBtn = document.getElementById('btn-' + val);
-    if (activeBtn) {
-        activeBtn.className = activeBtn.className.replace(/bg-white|text-gray-700|border-gray-200|hover:bg-\w+-50|hover:border-\w+-300|dark:bg-gray-700|dark:text-gray-200|dark:border-gray-600|dark:hover:bg-\w+-900\/20/g, '');
-        if (val == 5) {
-            activeBtn.className = activeBtn.className + ' bg-purple-500 text-white border-purple-500 shadow-lg';
-        } else if (val == 15) {
-            activeBtn.className = activeBtn.className + ' bg-blue-500 text-white border-blue-500 shadow-lg';
-        } else if (val == 25) {
-            activeBtn.className = activeBtn.className + ' bg-orange-500 text-white border-orange-500 shadow-lg';
-        }
-    }
-}
-
-/**
  * Changes the timer value and updates the button visuals.
  */
 function setTimerValue(val) {
@@ -514,7 +474,6 @@ function setTimerValue(val) {
  */
 function closeIpModal() {
     document.getElementById('ipDetailModal').classList.add('hidden');
-    currentPage = 1;
     window.currentIpData = null;
 }
 
@@ -522,7 +481,8 @@ function closeIpModal() {
  * Shows the confirmation modal to delete an IP from the detail view.
  */
 function showDeleteConfirmFromDetail() {
-    const ip = document.getElementById('modalIpTitle').innerText.replace('IP info: ', '');
+    const ip = window.currentIpData?.ip;
+    if (!ip) return;
     const confirmModal = document.getElementById('deleteIpForm');
     document.getElementById('delete_ip').value = ip;
     confirmModal.style.zIndex = '200'; // Más alto que el modal de detalle
@@ -533,10 +493,40 @@ function showDeleteConfirmFromDetail() {
  * Creates the ping latency chart using Chart.js.
  */
 function createPingChart(ipData) {
-    const ctx = document.getElementById('pingChart').getContext('2d');
-    // Invertir el orden de los pings para mostrar los más recientes a la derecha
-    const reversedResults = [...ipData.ping_results].reverse();
-    const labels = reversedResults.map(p => p.timestamp.split(' ')[1] || p.timestamp);
+    const canvas = document.getElementById('pingChart');
+    const ctx = canvas.getContext('2d');
+    const timeline = document.getElementById('pingStatusTimeline');
+    const chartResults = ipData.ping_results_24h || ipData.ping_results;
+    const reversedResults = [...chartResults].reverse();
+    const formatPingDate = function (timestamp) {
+        if (!timestamp) return '';
+        const normalized = timestamp.replace(' ', 'T');
+        const date = new Date(normalized);
+        if (Number.isNaN(date.getTime())) return timestamp;
+        return date.toLocaleString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+    const formatFullPingDate = function (timestamp) {
+        if (!timestamp) return '';
+        const normalized = timestamp.replace(' ', 'T');
+        const date = new Date(normalized);
+        if (Number.isNaN(date.getTime())) return timestamp;
+        return date.toLocaleString('es-ES', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    };
+    const labels = reversedResults.map(p => {
+        return formatPingDate(p.timestamp || '');
+    });
     const data = reversedResults.map(p => {
         let val = p.response_time;
         if (typeof val === 'string') {
@@ -544,6 +534,11 @@ function createPingChart(ipData) {
         }
         return isNaN(val) ? null : val;
     });
+    const statuses = reversedResults.map(p => p.status || 'DOWN');
+    const validValues = data.filter(val => val !== null && val !== undefined);
+    const maxLatency = validValues.length ? Math.max(...validValues) : 1;
+    const outageMarkerValue = Math.max(maxLatency * 1.08, 1);
+    const outageData = reversedResults.map((p, index) => p.status === 'DOWN' ? outageMarkerValue : null);
 
     const hasValidData = data.some(val => val !== null && val !== undefined);
 
@@ -551,7 +546,24 @@ function createPingChart(ipData) {
         window.pingChartInstance.destroy();
     }
 
-    if (!hasValidData) {
+    if (timeline) {
+        if (reversedResults.length === 0) {
+            timeline.innerHTML = `<div class="text-xs text-gray-400 italic">No ping samples in the last 24h</div>`;
+        } else {
+            timeline.innerHTML = reversedResults.map((p, index) => {
+                const status = p.status || 'DOWN';
+                const responseTime = p.response_time || 'N/A';
+                const timestamp = formatFullPingDate(p.timestamp || '-');
+                const color = status === 'UP'
+                    ? 'bg-green-500 hover:bg-green-400'
+                    : 'bg-red-500 hover:bg-red-400';
+                const label = status === 'UP' ? 'UP' : 'DOWN';
+                return `<span class="block h-4 min-w-2 flex-1 rounded-sm ${color} transition-colors" title="${label} - ${responseTime} - ${timestamp}" aria-label="${label} ${timestamp}"></span>`;
+            }).join('');
+        }
+    }
+
+    if (!hasValidData && reversedResults.length === 0) {
         window.pingChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
@@ -599,40 +611,102 @@ function createPingChart(ipData) {
             }
         });
     } else {
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.parentElement?.clientHeight || 260);
+        gradient.addColorStop(0, 'rgba(37,99,235,0.35)');
+        gradient.addColorStop(0.55, 'rgba(37,99,235,0.12)');
+        gradient.addColorStop(1, 'rgba(37,99,235,0)');
+        const pointColors = statuses.map(status => status === 'UP' ? '#22c55e' : '#ef4444');
+
         window.pingChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Latencia (ms)',
-                    data: data,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37,99,235,0.1)',
-                    pointBackgroundColor: '#2563eb',
-                    pointRadius: 4,
-                    fill: true,
-                    tension: 0.3
-                }]
+                datasets: [
+                    {
+                        label: 'Latency (ms)',
+                        data: data,
+                        borderColor: '#2563eb',
+                        backgroundColor: gradient,
+                        pointBackgroundColor: pointColors,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: statuses.map(status => status === 'DOWN' ? 5 : 3),
+                        pointHoverRadius: 7,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.35,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Down',
+                        data: outageData,
+                        borderColor: 'transparent',
+                        backgroundColor: '#ef4444',
+                        pointBackgroundColor: '#ef4444',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: outageData.map(value => value === null ? 0 : 7),
+                        pointHoverRadius: outageData.map(value => value === null ? 0 : 9),
+                        pointStyle: 'triangle',
+                        showLine: false
+                    }
+                ]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
+                        suggestedMax: outageMarkerValue * 1.12,
+                        grid: {
+                            color: 'rgba(148,163,184,0.18)'
+                        },
                         title: {
                             display: true,
                             text: 'ms'
                         }
                     },
                     x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 8
+                        },
                         title: {
                             display: true,
-                            text: 'Ping'
+                            text: 'Fecha'
                         }
                     }
                 },
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function (items) {
+                                const index = items[0]?.dataIndex ?? 0;
+                                return formatFullPingDate(reversedResults[index]?.timestamp) || labels[index] || '';
+                            },
+                            label: function (item) {
+                                const index = item.dataIndex;
+                                const ping = reversedResults[index];
+                                if (item.dataset.label === 'Down') {
+                                    return ping?.status === 'DOWN' ? 'Status: DOWN' : '';
+                                }
+                                const latency = item.parsed.y;
+                                const status = ping?.status || 'UNKNOWN';
+                                return latency === null ? `Status: ${status}` : `Latency: ${latency.toFixed(2)} ms (${status})`;
+                            }
+                        }
                     }
                 }
             }
@@ -650,8 +724,28 @@ function showIpDetailModal(ip, startTab = 'general') {
     const ipData = window.ipDetails[ip];
     if (!ipData) return;
 
-    currentPage = 1; // Reset to first page
-    document.getElementById('modalIpTitle').innerText = `${ip}`;
+    const escapeHtml = function (value) {
+        return String(value ?? '').replace(/[&<>"']/g, function (char) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[char];
+        });
+    };
+    const isLocal = new URLSearchParams(window.location.search).get('network') === 'local';
+    const displayName = ipData.service || ip;
+    const displayType = ipData.type || 'N/A';
+    const contextLabel = isLocal ? 'Network' : 'Service';
+    const contextValue = isLocal ? (ipData.network_type || 'Unknown') : (ipData.service || 'Default');
+    document.getElementById('modalIpTitle').innerHTML = `
+        <span class="block truncate leading-tight">${escapeHtml(displayName)}</span>
+        <span class="block text-xs sm:text-sm font-medium text-white/75 truncate leading-tight">
+            ${escapeHtml(ip)} · ${escapeHtml(displayType)} · ${escapeHtml(contextValue)}
+        </span>
+    `;
 
     // Reset tabs
     switchIpDetailTab(startTab);
@@ -661,28 +755,46 @@ function showIpDetailModal(ip, startTab = 'general') {
     const raw = document.getElementById('detail_traceroute_raw');
     const geo = document.getElementById('detail_geoip_container');
     const ai = document.getElementById('detail_aireport_content');
+    const tracerouteSection = document.getElementById('detail_traceroute_section');
 
     if (visual) visual.innerHTML = '<div class="flex flex-col items-center justify-center py-10 text-gray-400 italic">Click "Run Traceroute" to analyze path...</div>';
     if (raw) raw.textContent = '-- Raw output --';
-    if (geo) geo.innerHTML = '<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4 text-purple-500"></i><p class="text-sm text-gray-400">Initiating geolocation analysis...</p></div>';
+    if (geo) {
+        if (isLocal) {
+            geo.innerHTML = `
+                <div class="col-span-2 rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 p-6 sm:p-8 shadow-sm">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 flex items-center justify-center mb-4">
+                            <i class="fas fa-stethoscope text-xl"></i>
+                        </div>
+                        <h4 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100">Local diagnostics</h4>
+                        <p class="mt-2 text-sm sm:text-base text-slate-500 dark:text-slate-400 max-w-md">Run an on-demand LAN test for connectivity, device identity and common services.</p>
+                        <button type="button" onclick="runLocalDiagnosticsDetail('${escapeHtml(ip)}')"
+                            class="mt-5 inline-flex items-center px-5 py-3 rounded-2xl bg-blue-600 text-white font-black hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-play mr-2"></i>Run diagnosis test
+                        </button>
+                    </div>
+                </div>`;
+        } else {
+            geo.innerHTML = '<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4 text-purple-500"></i><p class="text-sm text-gray-400">Initiating geolocation analysis...</p></div>';
+        }
+    }
     if (ai) ai.innerText = 'Waiting for analysis trigger...';
 
-    // Check if it's an external network to show/hide diagnostics and AI tabs
-    const isLocal = new URLSearchParams(window.location.search).get('network') === 'local';
+    // Tabs are available for both private and public networks.
     const diagTab = document.getElementById('ipTabDiagnostics');
     const aiTab = document.getElementById('ipTabAIReport');
     const tabsNav = document.getElementById('ipDetailTabsNav');
 
-    if (isLocal) {
-        diagTab.classList.add('hidden');
-        aiTab.classList.add('hidden');
-        tabsNav.classList.add('hidden');
-    } else {
-        diagTab.classList.remove('hidden');
-        aiTab.classList.remove('hidden');
-        tabsNav.classList.remove('hidden');
+    diagTab.classList.remove('hidden');
+    aiTab.classList.remove('hidden');
+    tabsNav.classList.remove('hidden');
 
-        // Initial data fetch: Pre-load location for external IPs
+    if (tracerouteSection) {
+        tracerouteSection.classList.toggle('hidden', isLocal);
+    }
+
+    if (!isLocal) {
         runGeoIPDetail(ip);
     }
 
@@ -698,6 +810,20 @@ function showIpDetailModal(ip, startTab = 'general') {
     } else {
         uptimeColors = 'bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/40 dark:to-red-800/20 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-800';
         uptimeTextColor = 'text-red-700 dark:text-red-400';
+    }
+
+    let monthlyUptimeColors = '';
+    const monthlyPercentage = Number(ipData.monthly_percentage || 0);
+    const monthlySamples = Number(ipData.sample_count_30d || 0);
+    const monthlyDisplay = monthlySamples > 0 ? `${monthlyPercentage.toFixed(2)}%` : 'N/A';
+    if (monthlySamples === 0) {
+        monthlyUptimeColors = 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/40 dark:to-gray-800/20 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800';
+    } else if (monthlyPercentage >= 90) {
+        monthlyUptimeColors = 'bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-900/40 dark:to-green-800/20 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
+    } else if (monthlyPercentage >= 75) {
+        monthlyUptimeColors = 'bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-800/20 text-amber-600 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
+    } else {
+        monthlyUptimeColors = 'bg-gradient-to-br from-rose-50 to-red-100 dark:from-rose-900/40 dark:to-red-800/20 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800';
     }
 
     // Ping color logic
@@ -717,50 +843,25 @@ function showIpDetailModal(ip, startTab = 'general') {
         pingTextColor = 'text-green-700 dark:text-green-400';
     }
 
+    const latencyDisplay = typeof ipData.average_response_time === 'number' ? ipData.average_response_time.toFixed(2) : ipData.average_response_time;
     document.getElementById('modalIpContent').innerHTML = `
-        <div class='grid grid-cols-2 md:grid-cols-4 gap-4'>
-            <div class='${uptimeColors} rounded-2xl p-4 text-center shadow-sm'>
-                <div class='text-2xl font-black'>${Math.round(ipData.percentage)}%</div>
-                <div class='text-[10px] uppercase font-bold tracking-wider opacity-60'>Uptime</div>
+        <div class='grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4'>
+            <div class='${uptimeColors} rounded-3xl p-5 sm:p-6 shadow-sm'>
+                <div class='text-[11px] uppercase font-black tracking-[0.16em] opacity-60'>Uptime 24h</div>
+                <div class='mt-3 text-4xl sm:text-5xl font-black leading-none'>${ipData.percentage.toFixed(2)}%</div>
             </div>
-            <div class='${pingColors} rounded-2xl p-4 text-center shadow-sm'>
-                <div class='text-2xl font-black'>${typeof ipData.average_response_time === 'number' ? ipData.average_response_time.toFixed(1) : ipData.average_response_time} <span class='text-xs font-normal'>ms</span></div>
-                <div class='text-[10px] uppercase font-bold tracking-wider opacity-60'>Avg. Latency</div>
+            <div class='${pingColors} rounded-3xl p-5 sm:p-6 shadow-sm'>
+                <div class='text-[11px] uppercase font-black tracking-[0.16em] opacity-60'>Latency 24h</div>
+                <div class='mt-3 text-4xl sm:text-5xl font-black leading-none'>${latencyDisplay}</div>
+                <div class='mt-1 text-sm font-bold opacity-60'>ms avg</div>
             </div>
-            <div class='rounded-2xl p-4 text-center shadow-sm flex flex-col justify-center' style='background-color: ${ipData.service_color}; border: 1px solid rgba(0,0,0,0.1);'>
-                <div class='text-lg font-bold truncate leading-tight' style='color: ${ipData.service_text_color};'>${ipData.service}</div>
-                <div class='text-[10px] uppercase font-bold tracking-wider opacity-60 mt-1' style='color: ${ipData.service_text_color};'>Assigned Service</div>
+            <div class='${monthlyUptimeColors} rounded-3xl p-5 sm:p-6 shadow-sm'>
+                <div class='text-[11px] uppercase font-black tracking-[0.16em] opacity-60'>Uptime Month</div>
+                <div class='mt-3 text-4xl sm:text-5xl font-black leading-none'>${monthlyDisplay}</div>
             </div>
-            <div class='bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/40 dark:to-purple-800/20 text-indigo-600 dark:text-indigo-300 rounded-2xl p-4 text-center border border-indigo-100 dark:border-indigo-800 shadow-sm'>
-                <div class='text-2xl font-black'>${ipData.method || 'ICMP'}</div>
-                <div class='text-[10px] uppercase font-bold tracking-wider opacity-60'>Checking Method</div>
-            </div>
-        </div>
+        </div>`;
 
-        <div class='mt-8'>
-            <div class='flex justify-between items-center mb-4'>
-                <h4 class='text-md font-semibold text-gray-700 dark:text-gray-300 flex items-center'>
-                    <i class='fas fa-history mr-2 text-blue-500'></i>
-                    Recent Activity Logs
-                </h4>
-                <div class='text-xs font-bold text-gray-400 uppercase tracking-widest'>
-                    Total: ${ipData.ping_results.length} samples
-                </div>
-            </div>
-            <div id='pingsContainer' class='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4'>
-                <!-- Los pings se cargan aquí -->
-            </div>
-            <div id='paginationContainer' class='flex justify-center mt-2'>
-                <!-- La paginación se carga aquí -->
-            </div>
-        </div>
-    `;
-
-    // Store current IP data globally for pagination
     window.currentIpData = ipData;
-
-    // Load first page
-    loadPingsPage(ip, 1);
 
     document.getElementById('ipDetailModal').classList.remove('hidden');
 
@@ -803,7 +904,7 @@ function switchIpDetailTab(tabId) {
         if (contentEl) contentEl.classList.remove('hidden');
 
         // Load diagnostics data if needed
-        if (tabId === 'diagnostics' && window.currentIpData) {
+        if (tabId === 'diagnostics' && window.currentIpData && new URLSearchParams(window.location.search).get('network') !== 'local') {
             runGeoIPDetail(window.currentIpData.ip);
         } else if (tabId === 'aireport' && window.currentIpData) {
             generateAIReportDetail(window.currentIpData.ip);
@@ -813,142 +914,6 @@ function switchIpDetailTab(tabId) {
 
 window.showIpDetailModal = showIpDetailModal;
 window.switchIpDetailTab = switchIpDetailTab;
-
-/**
- * Loads the ping page in the IP detail modal.
- */
-function loadPingsPage(ip, page) {
-    const ipData = window.currentIpData;
-    if (!ipData) return;
-
-    currentPage = page;
-    const totalPings = ipData.ping_results.length;
-    const totalPages = Math.ceil(totalPings / pingsPerPage);
-    const startIndex = (page - 1) * pingsPerPage;
-    const endIndex = Math.min(startIndex + pingsPerPage, totalPings);
-    const pingsToShow = ipData.ping_results.slice(startIndex, endIndex);
-
-    // Render pings
-    const pingsHtml = pingsToShow.map((p, index) => {
-        const isUp = p.status === 'UP';
-        const isDown = p.status === 'DOWN';
-        let bgColor, iconColor, icon;
-        if (isUp) {
-            bgColor = 'bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700';
-            iconColor = 'text-green-500';
-            icon = 'check-circle';
-        } else if (isDown) {
-            bgColor = 'bg-red-50 dark:bg-red-900 border-red-200 dark:border-red-700';
-            iconColor = 'text-red-500';
-            icon = 'times-circle';
-        } else {
-            bgColor = 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600';
-            iconColor = 'text-gray-500';
-            icon = 'question-circle';
-        }
-        let responseTime = p.response_time;
-        if (typeof responseTime === 'string' && responseTime.includes('ms')) {
-            const num = parseFloat(responseTime.replace('ms', '').trim());
-            responseTime = isNaN(num) ? responseTime : num.toFixed(2) + ' ms';
-        }
-        const globalIndex = startIndex + index + 1;
-        // Mostrar hora si es de hoy, fecha completa si no
-        let fechaMostrar = p.timestamp;
-        if (p.timestamp && typeof p.timestamp === 'string') {
-            const fecha = new Date(p.timestamp.replace(/-/g, '/'));
-            const hoy = new Date();
-            if (fecha.getFullYear() === hoy.getFullYear() && fecha.getMonth() === hoy.getMonth() && fecha.getDate() === hoy.getDate()) {
-                fechaMostrar = p.timestamp.split(' ')[1];
-            }
-        }
-        return `
-                <div class='${bgColor} border rounded-md p-3 flex items-center justify-between text-sm transition-all hover:shadow-sm'>
-                    <div class='flex items-center gap-3'>
-                        <span class='text-xs text-gray-500 dark:text-gray-400 font-mono w-6'>#${globalIndex}</span>
-                        <i class='fas fa-${icon} ${iconColor}'></i>
-                        <span class='font-medium text-gray-800 dark:text-gray-200'>${fechaMostrar}</span>
-                    </div>
-                    <div class='text-right'>
-                        <span class='font-bold ${isUp ? 'text-green-600 dark:text-green-400' : isDown ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}'>${p.status}</span>
-                        <span class='text-xs text-gray-500 dark:text-gray-400 ml-2'>${responseTime}</span>
-                    </div>
-                </div>
-            `;
-    }).join('');
-
-    document.getElementById('pingsContainer').innerHTML = pingsHtml;
-
-    // Render pagination
-    if (totalPages > 1) {
-        const paginationHtml = createPaginationHtml(ip, page, totalPages);
-        document.getElementById('paginationContainer').innerHTML = paginationHtml;
-    } else {
-        document.getElementById('paginationContainer').innerHTML = '';
-    }
-}
-
-/**
- * Creates pagination for the ping history in the IP detail modal.
- */
-function createPaginationHtml(ip, currentPage, totalPages) {
-    let html = '<div class="flex items-center gap-2">';
-
-    // Previous button
-    if (currentPage > 1) {
-        html += `<button onclick="loadPingsPage('${ip}', ${currentPage - 1})" class="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-            <i class="fas fa-chevron-left mr-1"></i>Anterior
-        </button>`;
-    }
-
-    // Page numbers
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-    if (endPage - startPage + 1 < maxVisible) {
-        startPage = Math.max(1, endPage - maxVisible + 1);
-    }
-
-    if (startPage > 1) {
-        html += `<button onclick="loadPingsPage('${ip}', 1)" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">1</button>`;
-        if (startPage > 2) {
-            html += '<span class="px-2 text-gray-500">...</span>';
-        }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        const isActive = i === currentPage;
-        html += `<button onclick="loadPingsPage('${ip}', ${i})" class="px-3 py-1 text-sm rounded transition-colors ${isActive
-            ? 'bg-blue-500 text-white'
-            : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }">${i}</button>`;
-    }
-
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            html += '<span class="px-2 text-gray-500">...</span>';
-        }
-        html += `<button onclick="loadPingsPage('${ip}', ${totalPages})" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">${totalPages}</button>`;
-    }
-
-    // Next button
-    if (currentPage < totalPages) {
-        html += `<button onclick="loadPingsPage('${ip}', ${currentPage + 1})" class="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-            Siguiente<i class="fas fa-chevron-right ml-1"></i>
-        </button>`;
-    }
-
-    html += '</div>';
-
-    // Add page info
-    const startItem = (currentPage - 1) * pingsPerPage + 1;
-    const endItem = Math.min(currentPage * pingsPerPage, window.currentIpData.ping_results.length);
-    html += `<div class="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-2 text-center">
-        Mostrando ${startItem}-${endItem} de ${window.currentIpData.ping_results.length} pings
-    </div>`;
-
-    return html;
-}
 
 /**
  * Filters the monitoring table based on search input, service, and status.
