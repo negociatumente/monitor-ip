@@ -1413,6 +1413,31 @@
                     </label>
                 </div>
 
+                <div
+                    class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-gauge-high text-amber-500 text-xs"></i>
+                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar por latencia alta</span>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                        <input type="checkbox" id="notify_on_latency" name="notify_on_latency" class="sr-only peer" <?php echo $telegram_config['notify_on_latency'] ? 'checked' : ''; ?>>
+                        <div
+                            class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500">
+                        </div>
+                    </label>
+                </div>
+
+                <div>
+                    <div class="flex items-center gap-2 p-1">
+                        <input type="number" id="latency_threshold" name="latency_threshold" min="1"
+                            value="<?php echo htmlspecialchars((string) $telegram_config['latency_threshold'], ENT_QUOTES, 'UTF-8'); ?>"
+                            class="w-full p-3 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:text-white">
+                        <span class="text-xs text-gray-500 dark:text-gray-400">ms</span>
+                    </div>
+                </div>
+
                 <!--<div class="md:col-span-2">
                     <label for="message_template" class="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                         <i class="fas fa-comment-dots text-blue-500 mr-1"></i>Plantilla
@@ -1463,9 +1488,13 @@
                                     <?php foreach ($telegram_alert_history as $alert): ?>
                                         <?php
                                         $new_status = $alert['new_status'] ?? '-';
-                                        $status_class = $new_status === 'UP'
-                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                                            : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+                                        if ($new_status === 'UP') {
+                                            $status_class = 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300';
+                                        } elseif ($new_status === 'LATENCY_HIGH') {
+                                            $status_class = 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300';
+                                        } else {
+                                            $status_class = 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+                                        }
                                         ?>
                                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
                                             <td class="px-3 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">

@@ -1406,6 +1406,8 @@ function applyTelegramConfigToForm(telegram) {
     setTelegramFieldValue('chat_id', telegram.chat_id);
     setTelegramCheckboxValue('notify_on_up', telegram.notify_on_up);
     setTelegramCheckboxValue('notify_on_down', telegram.notify_on_down);
+    setTelegramCheckboxValue('notify_on_latency', telegram.notify_on_latency);
+    setTelegramFieldValue('latency_threshold', telegram.latency_threshold);
     setTelegramFieldValue('frequency', telegram.frequency);
     setTelegramFieldValue('message_template', telegram.message_template);
 }

@@ -344,6 +344,8 @@ if (isset($_GET['action'])) {
             'chat_id' => trim($_POST['chat_id'] ?? ''),
             'notify_on_up' => isset($_POST['notify_on_up']) ? 'true' : 'false',
             'notify_on_down' => isset($_POST['notify_on_down']) ? 'true' : 'false',
+            'notify_on_latency' => isset($_POST['notify_on_latency']) ? 'true' : 'false',
+            'latency_threshold' => (string) max(1, (int) ($_POST['latency_threshold'] ?? 100)),
             'frequency' => (string) $frequency,
             'message_template' => $message_template !== ''
                 ? $message_template
@@ -765,6 +767,8 @@ $telegram_config_json = json_encode([
     'chat_id' => $telegram_config['chat_id'],
     'notify_on_up' => $telegram_config['notify_on_up'],
     'notify_on_down' => $telegram_config['notify_on_down'],
+    'notify_on_latency' => $telegram_config['notify_on_latency'],
+    'latency_threshold' => $telegram_config['latency_threshold'],
     'frequency' => $telegram_config['frequency'],
     'message_template' => $telegram_config['message_template'],
 ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);

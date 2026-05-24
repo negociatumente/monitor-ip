@@ -255,6 +255,7 @@ function update_ping_results_parallel($ips)
         }
 
         $previous_status = $ping_data[$ip][0]['status'] ?? null;
+        $previous_response_time = $ping_data[$ip][0]['response_time'] ?? null;
         if ($previous_status !== null && $previous_status !== $ping_status) {
             $service = $ips_services[$ip] ?? 'DEFAULT';
             if (should_notify_telegram($previous_status, $ping_status, $telegram_cfg)) {
@@ -267,6 +268,19 @@ function update_ping_results_parallel($ips)
                     'response_time' => $response_time,
                 ];
             }
+        }
+
+        if ($ping_status === 'UP' && should_notify_telegram_latency($previous_response_time, $response_time, $telegram_cfg)) {
+            $service = $ips_services[$ip] ?? 'DEFAULT';
+            $telegram_events[] = [
+                'ip' => $ip,
+                'service' => $service,
+                'old_status' => 'LATENCY_OK',
+                'new_status' => 'LATENCY_HIGH',
+                'timestamp' => $timestamp,
+                'response_time' => $response_time,
+                'latency_threshold' => $telegram_cfg['latency_threshold'],
+            ];
         }
 
         array_unshift($ping_data[$ip], [
@@ -852,6 +866,8 @@ function ensure_config_structure($config, $is_local_network = false)
         'chat_id' => $telegram['chat_id'],
         'notify_on_up' => $telegram['notify_on_up'] ? 'true' : 'false',
         'notify_on_down' => $telegram['notify_on_down'] ? 'true' : 'false',
+        'notify_on_latency' => $telegram['notify_on_latency'] ? 'true' : 'false',
+        'latency_threshold' => (string) $telegram['latency_threshold'],
         'frequency' => (string) $telegram['frequency'],
         'message_template' => $telegram['message_template'],
     ];
@@ -867,6 +883,8 @@ function get_telegram_config($config)
         'chat_id' => '',
         'notify_on_up' => 'true',
         'notify_on_down' => 'true',
+        'notify_on_latency' => 'false',
+        'latency_threshold' => '100',
         'frequency' => '300',
         'message_template' => 'Dispositivo: {service} ({ip}) ha cambiado a estado {status}',
     ];
@@ -880,6 +898,8 @@ function get_telegram_config($config)
         'chat_id' => trim((string) $telegram['chat_id']),
         'notify_on_up' => filter_var($telegram['notify_on_up'], FILTER_VALIDATE_BOOLEAN),
         'notify_on_down' => filter_var($telegram['notify_on_down'], FILTER_VALIDATE_BOOLEAN),
+        'notify_on_latency' => filter_var($telegram['notify_on_latency'], FILTER_VALIDATE_BOOLEAN),
+        'latency_threshold' => max(1, (int) $telegram['latency_threshold']),
         'frequency' => max(0, (int) $telegram['frequency']),
         'message_template' => trim($message_template) !== ''
             ? $message_template
@@ -1013,6 +1033,33 @@ function should_notify_telegram($old_status, $new_status, $cfg)
     return false;
 }
 
+function extract_latency_ms($response_time)
+{
+    if ($response_time === null || $response_time === 'N/A' || $response_time === '-') {
+        return null;
+    }
+
+    $latency = floatval(str_replace(['ms', ' '], '', (string) $response_time));
+    return $latency > 0 ? $latency : null;
+}
+
+function should_notify_telegram_latency($previous_response_time, $current_response_time, $cfg)
+{
+    if (empty($cfg['enabled']) || empty($cfg['notify_on_latency'])) {
+        return false;
+    }
+
+    $threshold = max(1, (int) ($cfg['latency_threshold'] ?? 100));
+    $previous_latency = extract_latency_ms($previous_response_time);
+    $current_latency = extract_latency_ms($current_response_time);
+
+    if ($current_latency === null || $current_latency <= $threshold) {
+        return false;
+    }
+
+    return $previous_latency !== null && $previous_latency <= $threshold;
+}
+
 function format_telegram_status_summary_message(array $events)
 {
     if (empty($events)) {
@@ -1021,12 +1068,16 @@ function format_telegram_status_summary_message(array $events)
 
     $down_events = [];
     $up_events = [];
+    $latency_events = [];
     foreach ($events as $event) {
         $display_name = !empty($event['ip']) ? $event['ip'] : $event['service'];
         if ($event['new_status'] === 'DOWN') {
             $down_events[] = "• {$display_name} → DOWN";
         } elseif ($event['new_status'] === 'UP') {
             $up_events[] = "• {$display_name} → UP";
+        } elseif ($event['new_status'] === 'LATENCY_HIGH') {
+            $threshold = (int) ($event['latency_threshold'] ?? 0);
+            $latency_events[] = "• {$display_name} → {$event['response_time']} (umbral {$threshold} ms)";
         }
     }
 
@@ -1039,6 +1090,10 @@ function format_telegram_status_summary_message(array $events)
     if (!empty($up_events)) {
         //$time_label = format_telegram_event_time_label($events[0]['timestamp']);
         $message_parts[] = "✅ Recuperación detectada\n\n" . count($up_events) . " IPs recuperadas:\n\n" . implode("\n", $up_events);
+    }
+
+    if (!empty($latency_events)) {
+        $message_parts[] = "⚠️ Latencia alta detectada\n\n" . count($latency_events) . " IPs superan el umbral:\n\n" . implode("\n", $latency_events);
     }
 
     return implode("\n\n", $message_parts);
