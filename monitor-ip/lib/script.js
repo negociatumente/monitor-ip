@@ -116,11 +116,18 @@ const modalFunctions = {
 /**
  * Updates the countdown timer for the next ping and reloads the page when it reaches zero.
  */
+function formatSecondsToMinSec(totalSeconds) {
+    const seconds = Math.max(0, parseInt(totalSeconds, 10) || 0);
+    const minutesPart = Math.floor(seconds / 60);
+    const secondsPart = seconds % 60;
+    return `${minutesPart}m ${secondsPart}s`;
+}
+
 function updateCountdown() {
     if (pingStopped) return;
     const countdownElement = document.getElementById('countdown');
     if (countdownElement) {
-        countdownElement.innerText = countdown;
+        countdownElement.innerText = formatSecondsToMinSec(countdown);
         countdown--;
         if (countdown < 0) {
             countdown = pingInterval;

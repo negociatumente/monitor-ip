@@ -176,9 +176,7 @@
                             <div id="nextPingBlock" class="flex items-baseline gap-2">
                                 <span
                                     class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100 font-mono tracking-tight"
-                                    id="countdown"><?php echo $ping_interval; ?></span>
-                                <span
-                                    class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-300">sec</span>
+                                    id="countdown"><?php $pi = (int)$ping_interval; echo intdiv($pi, 60) . 'm ' . ($pi % 60) . 's'; ?></span>
                             </div>
                             <div id="stoppedMsg" style="display:none;"
                                 class="relative z-10 flex items-center gap-2 rounded-xl  ">
