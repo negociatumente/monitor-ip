@@ -1465,12 +1465,13 @@ function save_config_file($config, $file_path = '')
         }
 
         // Delete devices that are no longer in this network's config
+        // Keep intruders discovered at runtime (type = 'intruder')
         if (!empty($current_ips)) {
             $placeholders = implode(',', array_fill(0, count($current_ips), '?'));
-            $stmt_delete = $db->prepare("DELETE FROM devices WHERE is_local = ? AND ip NOT IN ($placeholders)");
+            $stmt_delete = $db->prepare("DELETE FROM devices WHERE is_local = ? AND type != 'intruder' AND ip NOT IN ($placeholders)");
             $stmt_delete->execute(array_merge([$is_local_network ? 1 : 0], $current_ips));
         } else {
-            $stmt_delete = $db->prepare("DELETE FROM devices WHERE is_local = ?");
+            $stmt_delete = $db->prepare("DELETE FROM devices WHERE is_local = ? AND type != 'intruder'");
             $stmt_delete->execute([$is_local_network ? 1 : 0]);
         }
 
@@ -1549,6 +1550,7 @@ function ensure_config_structure($config, $is_local_network = false)
         'notify_on_up' => $telegram['notify_on_up'] ? 'true' : 'false',
         'notify_on_down' => $telegram['notify_on_down'] ? 'true' : 'false',
         'notify_on_latency' => $telegram['notify_on_latency'] ? 'true' : 'false',
+        'notify_on_intruder' => $telegram['notify_on_intruder'] ? 'true' : 'false',
         'latency_threshold' => (string) $telegram['latency_threshold'],
         'message_template' => $telegram['message_template'],
     ];
@@ -1565,6 +1567,7 @@ function get_telegram_config($config)
         'notify_on_up' => 'true',
         'notify_on_down' => 'true',
         'notify_on_latency' => 'false',
+        'notify_on_intruder' => 'true',
         'latency_threshold' => '100',
         'message_template' => 'Dispositivo: {service} ({ip}) ha cambiado a estado {status}',
     ];
@@ -1579,6 +1582,7 @@ function get_telegram_config($config)
         'notify_on_up' => filter_var($telegram['notify_on_up'], FILTER_VALIDATE_BOOLEAN),
         'notify_on_down' => filter_var($telegram['notify_on_down'], FILTER_VALIDATE_BOOLEAN),
         'notify_on_latency' => filter_var($telegram['notify_on_latency'], FILTER_VALIDATE_BOOLEAN),
+        'notify_on_intruder' => filter_var($telegram['notify_on_intruder'], FILTER_VALIDATE_BOOLEAN),
         'latency_threshold' => max(1, (int) $telegram['latency_threshold']),
         'message_template' => trim($message_template) !== ''
             ? $message_template
@@ -2234,7 +2238,7 @@ function scan_local_network()
         $network_prefix = implode('.', array_slice($parts, 0, 3));
     } else {
         // Obtener la IP local en Linux
-        $local_ip = trim(shell_exec("hostname -I | awk '{print $1}'"));
+        $local_ip = trim(shell_exec("hostname -I 2>/dev/null | awk '{print $1}'"));
         if (empty($local_ip))
             $local_ip = '192.168.1.1';
         $parts = explode('.', $local_ip);
@@ -2245,8 +2249,13 @@ function scan_local_network()
     $ips_seen = [];
 
     // Escaneo con nmap en Windows y Linux
-    $nmap_output = shell_exec("nmap -sn " . $network_prefix . ".1-254");
-    if ($nmap_output === null || strpos($nmap_output, 'Failed') !== false || strpos($nmap_output, 'command not found') !== false) {
+    $nmap_output = shell_exec("nmap -sn " . $network_prefix . ".1-254 2>&1");
+    if (
+        $nmap_output === null ||
+        strpos($nmap_output, 'Failed') !== false ||
+        strpos($nmap_output, 'command not found') !== false ||
+        strpos($nmap_output, 'Operation not permitted') !== false
+    ) {
         echo renderNotification('error', 'scan_failed');
         return [];
     }
@@ -2294,7 +2303,7 @@ function scan_local_network()
         }
     } else {
         // En Linux
-        $route_output = shell_exec('ip route | grep default');
+        $route_output = shell_exec('ip route 2>/dev/null | grep default');
         if (preg_match('/default via (\d+\.\d+\.\d+\.\d+)/', $route_output, $matches)) {
             $gateway_ip = $matches[1];
         }
@@ -2330,6 +2339,237 @@ function scan_local_network()
     });
 
     return $discovered_devices;
+}
+
+/**
+ * Scan local network without echoing UI notifications.
+ * Returns [] on failure and logs the error instead.
+ */
+function scan_local_network_silent()
+{
+    ob_start();
+    try {
+        $devices = scan_local_network();
+        $output = (string) ob_get_clean();
+        if ($output !== '') {
+            error_log('scan_local_network_silent(): suppressed output from scan_local_network().');
+        }
+        return is_array($devices) ? $devices : [];
+    } catch (Throwable $e) {
+        ob_end_clean();
+        error_log('scan_local_network_silent(): exception: ' . $e->getMessage());
+        return [];
+    }
+}
+
+function is_gateway_or_self_device(array $device)
+{
+    $mac = strtoupper(trim((string)($device['mac'] ?? '')));
+    if ($mac === 'SELF' || $mac === 'SELF/GATEWAY') {
+        return true;
+    }
+    if ($mac === 'GATEWAY') {
+        return true;
+    }
+
+    $type = strtolower(trim((string)($device['type'] ?? '')));
+    if ($type === 'gateway') {
+        return true;
+    }
+
+    $hostname = strtolower(trim((string)($device['hostname'] ?? '')));
+    if ($hostname === 'gateway' || $hostname === '_gateway') {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Returns discovered devices not present in SQLite `devices` (is_local=1),
+ * excluding gateway and self.
+ */
+function detect_unknown_local_devices()
+{
+    global $db;
+
+    $discovered = scan_local_network_silent();
+    if (empty($discovered)) {
+        return [];
+    }
+
+    $known_ips = [];
+    try {
+        $stmt = $db->prepare("SELECT ip FROM devices WHERE is_local = 1");
+        $stmt->execute();
+        $known_ips = $stmt->fetchAll(PDO::FETCH_COLUMN, 0) ?: [];
+    } catch (PDOException $e) {
+        error_log('detect_unknown_local_devices(): failed to load known devices: ' . $e->getMessage());
+        $known_ips = [];
+    }
+    $known_lookup = array_fill_keys(array_map('strval', $known_ips), true);
+
+    $unknown = [];
+    foreach ($discovered as $device) {
+        if (!is_array($device)) {
+            continue;
+        }
+        $ip = trim((string)($device['ip'] ?? ''));
+        if ($ip === '') {
+            continue;
+        }
+        if (isset($known_lookup[$ip])) {
+            continue;
+        }
+        if (is_gateway_or_self_device($device)) {
+            continue;
+        }
+        $unknown[] = $device;
+    }
+
+    return $unknown;
+}
+
+function record_intruders_in_devices(array $unknown_devices)
+{
+    if (empty($unknown_devices)) {
+        return 0;
+    }
+
+    global $db;
+    $inserted_or_updated = 0;
+
+    try {
+        $stmt_check = $db->prepare("SELECT id FROM devices WHERE ip = ? LIMIT 1");
+        $stmt_insert = $db->prepare("INSERT INTO devices (ip, host, type, network, is_local) VALUES (?, ?, ?, ?, 1)");
+        $stmt_update = $db->prepare("UPDATE devices SET host = ?, type = ? WHERE ip = ?");
+
+        foreach ($unknown_devices as $device) {
+            if (!is_array($device)) {
+                continue;
+            }
+            $ip = trim((string)($device['ip'] ?? ''));
+            if ($ip === '') {
+                continue;
+            }
+            if (is_gateway_or_self_device($device)) {
+                continue;
+            }
+
+            $hostname = trim((string)($device['hostname'] ?? ''));
+            $host = ($hostname !== '' && strtolower($hostname) !== 'unknown') ? $hostname : 'intruder';
+            $type = 'intruder';
+            $network = 'Ethernet';
+
+            $stmt_check->execute([$ip]);
+            $id = $stmt_check->fetchColumn();
+            if ($id) {
+                $stmt_update->execute([$host, $type, $ip]);
+                $inserted_or_updated++;
+                continue;
+            }
+
+            $stmt_insert->execute([$ip, $host, $type, $network]);
+            $inserted_or_updated++;
+        }
+    } catch (PDOException $e) {
+        error_log('record_intruders_in_devices(): failed: ' . $e->getMessage());
+    }
+
+    return $inserted_or_updated;
+}
+
+function has_intruder_alert_been_sent_for_ip($ip)
+{
+    global $db;
+    try {
+        $stmt = $db->prepare("SELECT 1 FROM telegram_alerts WHERE service = 'INTRUDER' AND ip = ? LIMIT 1");
+        $stmt->execute([(string)$ip]);
+        return (bool)$stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log('has_intruder_alert_been_sent_for_ip(): query failed: ' . $e->getMessage());
+        return false;
+    }
+}
+
+function format_intruder_telegram_message(array $device)
+{
+    $ip = trim((string)($device['ip'] ?? ''));
+    $hostname = trim((string)($device['hostname'] ?? ''));
+    $mac = trim((string)($device['mac'] ?? ''));
+
+    $lines = ['Nuevo dispositivo desconocido conectado a tu red'];
+    if ($ip !== '') {
+        $lines[] = 'IP: ' . $ip;
+    }
+    if ($hostname !== '' && strtolower($hostname) !== 'unknown') {
+        $lines[] = 'Host: ' . $hostname;
+    }
+    if ($mac !== '' && strtoupper($mac) !== 'UNKNOWN') {
+        $lines[] = 'MAC: ' . $mac;
+    }
+    return implode("\n", $lines);
+}
+
+function notify_intruders_via_telegram(array $unknown_devices, array $telegram_cfg)
+{
+    if (empty($unknown_devices)) {
+        return;
+    }
+    if (!($telegram_cfg['enabled'] ?? false)) {
+        return;
+    }
+    if (empty($telegram_cfg['notify_on_intruder'])) {
+        return;
+    }
+
+    $to_notify = [];
+    foreach ($unknown_devices as $device) {
+        $ip = trim((string)($device['ip'] ?? ''));
+        if ($ip === '') {
+            continue;
+        }
+        if (has_intruder_alert_been_sent_for_ip($ip)) {
+            continue;
+        }
+        $to_notify[] = $device;
+    }
+
+    if (empty($to_notify)) {
+        return;
+    }
+
+    $lines = ['Nuevo dispositivo desconocido conectado a tu red'];
+    foreach ($to_notify as $device) {
+        $ip = trim((string)($device['ip'] ?? ''));
+        $hostname = trim((string)($device['hostname'] ?? ''));
+        $mac = trim((string)($device['mac'] ?? ''));
+
+        $parts = [];
+        if ($ip !== '') {
+            $parts[] = $ip;
+        }
+        if ($hostname !== '' && strtolower($hostname) !== 'unknown') {
+            $parts[] = $hostname;
+        }
+        if ($mac !== '' && strtoupper($mac) !== 'UNKNOWN') {
+            $parts[] = $mac;
+        }
+        $lines[] = '- ' . implode(' | ', $parts);
+    }
+    $message = implode("\n", $lines);
+
+    if (!send_telegram_message($message, $telegram_cfg)) {
+        return;
+    }
+
+    foreach ($to_notify as $device) {
+        $ip = trim((string)($device['ip'] ?? ''));
+        if ($ip === '') {
+            continue;
+        }
+        record_telegram_alert($ip, 'UNKNOWN', 'UNKNOWN', 'INTRUDER', $message);
+    }
 }
 
 

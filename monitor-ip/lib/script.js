@@ -1414,6 +1414,7 @@ function applyTelegramConfigToForm(telegram) {
     setTelegramCheckboxValue('notify_on_up', telegram.notify_on_up);
     setTelegramCheckboxValue('notify_on_down', telegram.notify_on_down);
     setTelegramCheckboxValue('notify_on_latency', telegram.notify_on_latency);
+    setTelegramCheckboxValue('notify_on_intruder', telegram.notify_on_intruder);
     setTelegramFieldValue('latency_threshold', telegram.latency_threshold);
     setTelegramFieldValue('message_template', telegram.message_template);
 }

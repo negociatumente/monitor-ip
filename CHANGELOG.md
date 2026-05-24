@@ -1,11 +1,18 @@
 # Historial de Cambios - Monitor IP
 
+## [1.2.0] - 2026-05-24
+- **Alertas por alta latencia**: Monitor-IP ahora puede detectar y alertar sobre latencias anormalmente altas en la red, enviando notificaciones automáticas a Telegram.
+- **Generacion de reportes**: Se ha implementado la capacidad de generar reportes detallados sobre el estado de la red y los dispositivos conectados.
+- **Se elimina la limitación de pings**: Ahora se pueden realizar pings ilimitados a los dispositivos monitorizados, mejorando la capacidad de diagnóstico y seguimiento.
+- **Nueva funcionalidad de alertas de intrusos**: Monitor-IP ahora puede detectar y alertar sobre dispositivos desconocidos conectados a la red local, enviando notificaciones automáticas a Telegram.
+
+---
+
 ## [1.1.0] - 2026-05-23
 - **Migración a BD SQLite**: Cambio de almacenamiento a SQLite para mejorar la gestión de datos y la escalabilidad del sistema.
 - **Optimización de rendimiento**: Mejoras en la eficiencia del sistema, reduciendo el consumo de recursos y acelerando los procesos de escaneo y monitorización.
 
 ---
-
 
 ## [1.0.6] - 2026-05-19
 - **Correcciones varias**: Errores de configuración, tipos y versión mobile.

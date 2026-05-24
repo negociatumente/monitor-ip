@@ -10,8 +10,10 @@ Este proyecto permite **monitorear la conectividad** a servidores desde tu red l
 
 🎯 Esta herramienta te **ayudará a**:  
 ✅ **Detectar bloqueos** de tu operador de Internet  
-✅ **Diagnosticar problemas** de tu red local  
+✅ **Diagnosticar problemas** de tu red privada
+✅ **Detectar intrusos** en tu red privada
 ✅ **Optimizar tu red** para un máximo rendimiento  
+✅ **Generar reportes** de la calidad de tu red  
 ✅ **Ahorrar dinero** evitando técnicos innecesarios  
 
 **¿Necesitas más información?**  
@@ -37,7 +39,10 @@ Si buscas una solución personalizada para tu empresa ofrezco versiones **Enterp
 ✅ **Trazabilidad de Red**: Analiza los saltos de la red para identificar problemas.  
 ✅ **Detección de CGNAT**: Identifica si estás detrás de una NAT compartida.  
 ✅ **Reporte de Red**: Genera un reporte de la calidad de tu red.  
-✅ **Alertas de Conectividad**: Recibe notificaciones en tiempo real sobre problemas de red.  
+✅ **Alertas de Conectividad**: Recibe notificaciones en tiempo real sobre problemas de red. 
+✅ **Alertas por alta latencia**: Recibe notificaciones en tiempo real sobre latencias anormalmente altas en la red.
+✅ **Alertas de Intrusos**: Recibe notificaciones en tiempo real sobre dispositivos desconocidos conectados a la red. 
+
 
 ## 📁 Estructura del proyecto
 ```
@@ -78,8 +83,10 @@ monitor-ip/
 | Test de velocidad | `Speedtest++` | `speedtest` | `speedtest.exe` | ✔️ | ✔️* | ✔️ | ✔️ |
 | Escaneo de dispositivos de la red | `nmap` | `nmap` | `nmap` | ✔️* | ✔️* | ✔️ | ❌ |
 | Alertas de Conectividad | `Telegram` | `Telegram` | `Telegram` | ✔️* | ✔️* | ✔️* | ✔️* |
+| Alertas por alta latencia | `Telegram` | `Telegram` | `Telegram` | ✔️* | ✔️* | ✔️* | ✔️* |
+| Alertas de Intrusos | `Telegram` | `Telegram` | `Telegram` | ✔️* | ✔️* | ✔️* | ✔️* |
 
-
+    
 **Leyenda:**
 - ✔️ = Funciona
 - ✔️* = Requiere instalación/configuración manual
@@ -101,12 +108,12 @@ https://docs.docker.com/get-docker/
 
 **🔹Clona el repositorio:**
 ```bash
-docker pull ghcr.io/negociatumente/monitor-ip:1.1.0
+docker pull ghcr.io/negociatumente/monitor-ip:lastest
 ```
 
 **🔹Ejecuta el contenedor:**
 ```bash
-docker run --name monitor-ip --network host -p 80 ghcr.io/negociatumente/monitor-ip:1.1.0
+docker run --name monitor-ip --network host -p 80 ghcr.io/negociatumente/monitor-ip:latest
 ``` 
 
 ### 4️⃣ Resultados
@@ -213,7 +220,7 @@ http://localhost/monitor-ip
 ## ⚒️ Gestionar la base de datos (Opcional)
 - Instala el programa DB Browser for SQLite en tu sistema.
 - Abre la aplicación y selecciona `Open Database`.
-- Navega hasta `/var/www/html/monitor-ip/database/monitor.db` y seleccionalo.
+- Navega hasta ` monitor-ip\database\monitor.db` y seleccionalo.
 - Explora las tablas `devices`, `ping_results`, `settings`, `services`, `telegram_alerts` y `speedtest_results`.
 
 
@@ -237,9 +244,6 @@ Ejemplo:
 IP Monitor Alerts
 ip_monitor_alerts_bot
 ```
-
----
-### 2️⃣ Obtener el BOT TOKEN
 Después de crear el bot, BotFather mostrará algo parecido a:
 
 ```text
@@ -249,9 +253,6 @@ Después de crear el bot, BotFather mostrará algo parecido a:
 Ese valor es el BOT TOKEN.
 ⚠️ No compartas este token.
 
----
-### 3️⃣ Iniciar conversación con el bot
-
 Abrir el bot creado y pulsar:
 ```text
 /start
@@ -260,7 +261,7 @@ Abrir el bot creado y pulsar:
 ⚠️ Este paso es obligatorio para recibir mensajes privados del bot.
 
 ---
-### 4️⃣ Obtener tu Telegram User ID
+### 2️⃣ Obtener tu Telegram User ID
 
 Abrir este bot de Telegram:  
 [https://t.me/userinfobot](https://t.me/userinfobot)
@@ -277,7 +278,7 @@ Id: 123456789
 
 Ese número es tu Telegram User ID.
 ---
-### 5️⃣ Obtener el Chat ID de un grupo (Opcional)
+### Obtener el Chat ID de un grupo (Opcional)
 
 Si quieres recibir alertas en un grupo:
 
@@ -293,7 +294,7 @@ En la url del navegador, el Group Chat ID aparecerá después de `https://web.te
 Ese valor es el Group Chat ID.
 
 ---
-### 6️⃣ Configurar Telegram en el panel de IP Monitor
+### 3️⃣ Configurar Telegram en el panel de IP Monitor
 
 Abrir el panel de configuración e introducir:
 
@@ -312,7 +313,7 @@ Ejemplo:
 
 ---
 
-### 7️⃣ Probar las alertas
+### 4️⃣ Probar las alertas
 
 Guardar configuración.
 
@@ -326,3 +327,15 @@ Deberías recibir algo parecido a:
 ```text
 Monitor-IP: prueba de alertas Telegram OK
 ```
+
+---
+
+## 🕵️ Alertas de “Intrusos” en red local (Opcional)
+Si estás en la vista de red local (`?network=local`) y tienes Telegram habilitado, Monitor-IP puede hacer un escaneo con `nmap -sn` antes de los pings y avisarte cuando detecte una **IP nueva no registrada** en la tabla `devices` (red local).
+
+- Mensaje (unificado): `Nuevo dispositivo desconocido conectado a tu red` + lista de IPs nuevas
+- Anti-spam: se envía **solo una vez por IP** (queda registrado en `telegram_alerts` con `service=INTRUDER`)
+- No avisa por el propio host ni por el gateway
+- Se puede activar/desactivar desde **Alertas Telegram → Opciones de alerta → Avisar de intrusos (red local)**
+- Si el aviso de intrusos está desactivado, no se ejecuta `nmap`
+- Los intrusos detectados se guardan en SQLite (`devices`) con `type=intruder`

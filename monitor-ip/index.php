@@ -344,6 +344,7 @@ if (isset($_GET['action'])) {
             'notify_on_up' => isset($_POST['notify_on_up']) ? 'true' : 'false',
             'notify_on_down' => isset($_POST['notify_on_down']) ? 'true' : 'false',
             'notify_on_latency' => isset($_POST['notify_on_latency']) ? 'true' : 'false',
+            'notify_on_intruder' => isset($_POST['notify_on_intruder']) ? 'true' : 'false',
             'latency_threshold' => (string) max(1, (int) ($_POST['latency_threshold'] ?? 100)),
             'message_template' => $message_template !== ''
                 ? $message_template
@@ -689,6 +690,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_service'])) {
 // Obtener solo las IPs en un array
 $ips_array = array_keys($ips_to_monitor);
 if (!isset($_GET['page']) && !isset($_GET['action']) && !isset($_GET['no_ping'])) {
+    // Intrusos (solo red local): escanear con nmap y alertar por Telegram si hay IPs desconocidas
+    if ($is_local_network) {
+        $telegram_cfg = get_telegram_config($config);
+        if ($telegram_cfg['enabled'] && !empty($telegram_cfg['notify_on_intruder'])) {
+            try {
+                $unknown_devices = detect_unknown_local_devices();
+                // Guardar intrusos detectados como "conocidos" (type=intruder) en SQLite
+                record_intruders_in_devices($unknown_devices);
+                notify_intruders_via_telegram($unknown_devices, $telegram_cfg);
+            } catch (Throwable $e) {
+                error_log('Intruder detection failed: ' . $e->getMessage());
+            }
+        }
+    }
     update_ping_results_parallel($ips_array);
 }
 
@@ -766,6 +781,7 @@ $telegram_config_json = json_encode([
     'notify_on_up' => $telegram_config['notify_on_up'],
     'notify_on_down' => $telegram_config['notify_on_down'],
     'notify_on_latency' => $telegram_config['notify_on_latency'],
+    'notify_on_intruder' => $telegram_config['notify_on_intruder'],
     'latency_threshold' => $telegram_config['latency_threshold'],
     'message_template' => $telegram_config['message_template'],
 ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);

@@ -134,7 +134,11 @@
                             class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">
                             Interval</p>
                         <span
-                            class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php echo $ping_interval; ?>s</span>
+                            class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200"><?php
+                            $pi = (int) $ping_interval;
+                            $minutes = (int) ceil($pi / 60);
+                            echo $minutes . 'm';
+                            ?></span>
                     </div>
                     <button onclick="showChangeTimerForm(); event.stopPropagation();"
                         class="ml-1 p-1 rounded hover:bg-yellow-200/50 dark:hover:bg-yellow-800/40 transition-all opacity-0 group-hover:opacity-100"
@@ -176,7 +180,8 @@
                             <div id="nextPingBlock" class="flex items-baseline gap-2">
                                 <span
                                     class="text-2xl sm:text-3xl font-black text-gray-800 dark:text-gray-100 font-mono tracking-tight"
-                                    id="countdown"><?php $pi = (int)$ping_interval; echo intdiv($pi, 60) . 'm ' . ($pi % 60) . 's'; ?></span>
+                                    id="countdown"><?php $pi = (int) $ping_interval;
+                                    echo intdiv($pi, 60) . 'm ' . ($pi % 60) . 's'; ?></span>
                             </div>
                             <div id="stoppedMsg" style="display:none;"
                                 class="relative z-10 flex items-center gap-2 rounded-xl  ">
@@ -1397,41 +1402,54 @@
                 <div id="telegramOptionsWrapper"
                     class="md:col-span-2 overflow-hidden transition-all duration-300 ease-in-out max-h-0 opacity-0 pointer-events-none">
                     <div class="space-y-4">
-                        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                        <div
+                            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                             <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                                 <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                     <i class="fas fa-sliders-h text-blue-500"></i>
                                     Opciones de alerta
                                 </h3>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Selecciona qué eventos quieres recibir.</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Selecciona qué eventos
+                                    quieres recibir.</p>
                             </div>
+
+                            <li class="px-4 py-3 flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-arrow-down text-red-500 text-xs"></i>
+                                        <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar al
+                                            caer</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Cuando un host pasa de UP
+                                        a DOWN.</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
+                                    <input type="checkbox" id="notify_on_down" name="notify_on_down"
+                                        class="sr-only peer" <?php echo $telegram_config['notify_on_down'] ? 'checked' : ''; ?>>
+                                    <div
+                                        class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-red-600">
+                                    </div>
+                                </label>
+                            </li>
 
                             <ul class="divide-y divide-gray-100 dark:divide-gray-700">
                                 <li class="px-4 py-3 flex items-start justify-between gap-4">
                                     <div class="min-w-0">
                                         <div class="flex items-center gap-2">
                                             <i class="fas fa-arrow-up text-green-500 text-xs"></i>
-                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar al recuperar</span>
+                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar
+                                                al recuperar</span>
                                         </div>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Cuando un host pasa de DOWN a UP.</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Cuando un host pasa
+                                            de DOWN a UP.</p>
                                     </div>
-                                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
-                                        <input type="checkbox" id="notify_on_up" name="notify_on_up" class="sr-only peer" <?php echo $telegram_config['notify_on_up'] ? 'checked' : ''; ?>>
-                                        <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
-                                    </label>
-                                </li>
-
-                                <li class="px-4 py-3 flex items-start justify-between gap-4">
-                                    <div class="min-w-0">
-                                        <div class="flex items-center gap-2">
-                                            <i class="fas fa-arrow-down text-red-500 text-xs"></i>
-                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar al caer</span>
+                                    <label
+                                        class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
+                                        <input type="checkbox" id="notify_on_up" name="notify_on_up"
+                                            class="sr-only peer" <?php echo $telegram_config['notify_on_up'] ? 'checked' : ''; ?>>
+                                        <div
+                                            class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-green-600">
                                         </div>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Cuando un host pasa de UP a DOWN.</p>
-                                    </div>
-                                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
-                                        <input type="checkbox" id="notify_on_down" name="notify_on_down" class="sr-only peer" <?php echo $telegram_config['notify_on_down'] ? 'checked' : ''; ?>>
-                                        <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
                                     </label>
                                 </li>
 
@@ -1439,9 +1457,11 @@
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center gap-2">
                                             <i class="fas fa-gauge-high text-amber-500 text-xs"></i>
-                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar por latencia alta</span>
+                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar
+                                                por latencia alta</span>
                                         </div>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Envía alerta cuando la latencia supera el umbral (ms).</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Envía alerta cuando
+                                            la latencia supera el umbral (ms).</p>
                                     </div>
 
                                     <div class="flex items-center justify-between gap-3 sm:justify-end">
@@ -1452,16 +1472,39 @@
                                             <span class="text-xs text-gray-500 dark:text-gray-400">ms</span>
                                         </div>
 
-                                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
-                                            <input type="checkbox" id="notify_on_latency" name="notify_on_latency" class="sr-only peer" <?php echo $telegram_config['notify_on_latency'] ? 'checked' : ''; ?>>
-                                            <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500"></div>
+                                        <label
+                                            class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
+                                            <input type="checkbox" id="notify_on_latency" name="notify_on_latency"
+                                                class="sr-only peer" <?php echo $telegram_config['notify_on_latency'] ? 'checked' : ''; ?>>
+                                            <div
+                                                class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500">
+                                            </div>
                                         </label>
                                     </div>
+                                </li>
+
+                                <li class="px-4 py-3 flex items-start justify-between gap-4">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-user-secret text-purple-500 text-xs"></i>
+                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar
+                                                de intrusos (Solo Red Privada) ¡PRECAUCIÓN!</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Detecta IPs nuevas y envía un aviso. Ralentiza la red, usar con un intervalo de tiempo alto.</p>
+                                    </div>
+                                    <label
+                                        class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
+                                        <input type="checkbox" id="notify_on_intruder" name="notify_on_intruder"
+                                            class="sr-only peer" <?php echo !empty($telegram_config['notify_on_intruder']) ? 'checked' : ''; ?>>
+                                        <div
+                                            class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600">
+                                        </div>
+                                    </label>
                                 </li>
                             </ul>
                         </div>
 
-                <!--<div class="md:col-span-2">
+                        <!--<div class="md:col-span-2">
                     <label for="message_template" class="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                         <i class="fas fa-comment-dots text-blue-500 mr-1"></i>Plantilla
                     </label>
@@ -1474,77 +1517,82 @@
 
                         <div
                             class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-                    <div
-                        class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                                <i class="fas fa-clock-rotate-left text-blue-500"></i>
-                                Histórico de alertas
-                            </h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Últimas alertas enviadas
-                                correctamente a Telegram.</p>
-                        </div>
-                        <span
-                            class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                            <?php echo count($telegram_alert_history); ?> registros
-                        </span>
-                    </div>
-                    <div class="overflow-x-auto max-h-64">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-gray-50 dark:bg-gray-900 sticky top-0">
-                                <tr class="text-gray-500 dark:text-gray-400 uppercase">
-                                    <th class="px-3 py-2 font-bold">Fecha</th>
-                                    <th class="px-3 py-2 font-bold">Servicio</th>
-                                    <th class="px-3 py-2 font-bold">IP</th>
-                                    <th class="px-3 py-2 font-bold">Cambio</th>
-                                    <th class="px-3 py-2 font-bold">Latencia</th>
-                                </tr>
-                            </thead>
-                            <tbody id="telegramAlertHistoryBody" class="divide-y divide-gray-100 dark:divide-gray-700">
-                                <?php if (empty($telegram_alert_history)): ?>
-                                    <tr>
-                                        <td colspan="5" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">
-                                            Aún no hay alertas enviadas.
-                                        </td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php foreach ($telegram_alert_history as $alert): ?>
-                                        <?php
-                                        $new_status = $alert['new_status'] ?? '-';
-                                        if ($new_status === 'UP') {
-                                            $status_class = 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300';
-                                        } elseif ($new_status === 'LATENCY_HIGH') {
-                                            $status_class = 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300';
-                                        } else {
-                                            $status_class = 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
-                                        }
-                                        ?>
-                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                                            <td class="px-3 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                                                <?php echo htmlspecialchars($alert['timestamp'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>
-                                            </td>
-                                            <td class="px-3 py-2 text-gray-700 dark:text-gray-300 max-w-[140px] truncate">
-                                                <?php echo htmlspecialchars($alert['service'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>
-                                            </td>
-                                            <td class="px-3 py-2 text-gray-600 dark:text-gray-400 font-mono whitespace-nowrap">
-                                                <?php echo htmlspecialchars($alert['ip'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>
-                                            </td>
-                                            <td class="px-3 py-2 whitespace-nowrap">
-                                                <span
-                                                    class="inline-flex items-center px-2 py-0.5 rounded font-bold <?php echo $status_class; ?>">
-                                                    <?php echo htmlspecialchars(($alert['old_status'] ?? '-') . ' → ' . $new_status, ENT_QUOTES, 'UTF-8'); ?>
-                                                </span>
-                                            </td>
-                                            <td class="px-3 py-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                                                <?php echo htmlspecialchars($alert['response_time'] ?? 'N/A', ENT_QUOTES, 'UTF-8'); ?>
-                                            </td>
+                            <div
+                                class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                                <div>
+                                    <h3
+                                        class="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                        <i class="fas fa-clock-rotate-left text-blue-500"></i>
+                                        Histórico de alertas
+                                    </h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Últimas alertas enviadas
+                                        correctamente a Telegram.</p>
+                                </div>
+                                <span
+                                    class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                                    <?php echo count($telegram_alert_history); ?> registros
+                                </span>
+                            </div>
+                            <div class="overflow-x-auto max-h-32">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-gray-50 dark:bg-gray-900 sticky top-0">
+                                        <tr class="text-gray-500 dark:text-gray-400 uppercase">
+                                            <th class="px-3 py-2 font-bold">Fecha</th>
+                                            <th class="px-3 py-2 font-bold">Servicio</th>
+                                            <th class="px-3 py-2 font-bold">IP</th>
+                                            <th class="px-3 py-2 font-bold">Cambio</th>
+                                            <th class="px-3 py-2 font-bold">Latencia</th>
                                         </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                                    </thead>
+                                    <tbody id="telegramAlertHistoryBody"
+                                        class="divide-y divide-gray-100 dark:divide-gray-700">
+                                        <?php if (empty($telegram_alert_history)): ?>
+                                            <tr>
+                                                <td colspan="5"
+                                                    class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">
+                                                    Aún no hay alertas enviadas.
+                                                </td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php foreach ($telegram_alert_history as $alert): ?>
+                                                <?php
+                                                $new_status = $alert['new_status'] ?? '-';
+                                                if ($new_status === 'UP') {
+                                                    $status_class = 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300';
+                                                } elseif ($new_status === 'LATENCY_HIGH') {
+                                                    $status_class = 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300';
+                                                } else {
+                                                    $status_class = 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+                                                }
+                                                ?>
+                                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                                                    <td class="px-3 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                                        <?php echo htmlspecialchars($alert['timestamp'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>
+                                                    </td>
+                                                    <td
+                                                        class="px-3 py-2 text-gray-700 dark:text-gray-300 max-w-[140px] truncate">
+                                                        <?php echo htmlspecialchars($alert['service'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>
+                                                    </td>
+                                                    <td
+                                                        class="px-3 py-2 text-gray-600 dark:text-gray-400 font-mono whitespace-nowrap">
+                                                        <?php echo htmlspecialchars($alert['ip'] ?? '-', ENT_QUOTES, 'UTF-8'); ?>
+                                                    </td>
+                                                    <td class="px-3 py-2 whitespace-nowrap">
+                                                        <span
+                                                            class="inline-flex items-center px-2 py-0.5 rounded font-bold <?php echo $status_class; ?>">
+                                                            <?php echo htmlspecialchars(($alert['old_status'] ?? '-') . ' → ' . $new_status, ENT_QUOTES, 'UTF-8'); ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-3 py-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                                        <?php echo htmlspecialchars($alert['response_time'] ?? 'N/A', ENT_QUOTES, 'UTF-8'); ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
