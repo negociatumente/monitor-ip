@@ -39,9 +39,9 @@ Si buscas una solución personalizada para tu empresa ofrezco versiones **Enterp
 ✅ **Trazabilidad de Red**: Analiza los saltos de la red para identificar problemas.  
 ✅ **Detección de CGNAT**: Identifica si estás detrás de una NAT compartida.  
 ✅ **Reporte de Red**: Genera un reporte de la calidad de tu red.  
-✅ **Alertas de Conectividad**: Recibe notificaciones en tiempo real sobre problemas de red. 
-✅ **Alertas por alta latencia**: Recibe notificaciones en tiempo real sobre latencias anormalmente altas en la red.
-✅ **Alertas de Intrusos**: Recibe notificaciones en tiempo real sobre dispositivos desconocidos conectados a la red. 
+✅ **Alertas de Conectividad**: Recibe notificaciones en tiempo real sobre problemas de red.  
+✅ **Alertas por alta latencia**: Recibe notificaciones en tiempo real sobre latencias anormalmente altas en la red.  
+✅ **Alertas de Intrusos**: Recibe notificaciones en tiempo real sobre dispositivos desconocidos conectados a la red.   
 
 
 ## 📁 Estructura del proyecto
@@ -330,12 +330,15 @@ Monitor-IP: prueba de alertas Telegram OK
 
 ---
 
-## 🕵️ Alertas de “Intrusos” en red local (Opcional)
-Si estás en la vista de red local (`?network=local`) y tienes Telegram habilitado, Monitor-IP puede hacer un escaneo con `nmap -sn` antes de los pings y avisarte cuando detecte una **IP nueva no registrada** en la tabla `devices` (red local).
+## 🕵️ Alertas de “Intrusos” en Red Privada (Opcional)
 
-- Mensaje (unificado): `Nuevo dispositivo desconocido conectado a tu red` + lista de IPs nuevas
-- Anti-spam: se envía **solo una vez por IP** (queda registrado en `telegram_alerts` con `service=INTRUDER`)
-- No avisa por el propio host ni por el gateway
-- Se puede activar/desactivar desde **Alertas Telegram → Opciones de alerta → Avisar de intrusos (red local)**
-- Si el aviso de intrusos está desactivado, no se ejecuta `nmap`
-- Los intrusos detectados se guardan en SQLite (`devices`) con `type=intruder`
+### 1️⃣ Configurar alertas de intrusos
+En el panel de configuración, activa la opción de alertas de intrusos y guarda los cambios.
+
+### 2️⃣ Probar las alertas de intrusos
+Conecta un nuevo dispositivo a tu red (puede ser un móvil, tablet, etc).
+Deberías recibir una alerta en Telegram con un mensaje parecido a:
+
+```text
+Monitor-IP: Nuevo dispositivo detectado en la red: "Nombre del dispositivo" (IP: 192.168.1.100)
+```
