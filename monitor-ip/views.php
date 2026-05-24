@@ -619,6 +619,11 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                 </tr>
                             </thead>
                             <tbody id="monitoringTableBody" class='divide-y divide-gray-200 dark:divide-gray-700'>
+                                <?php
+                                // Ensure pagination vars exist even when there are no monitored hosts.
+                                // (Prevents "Undefined variable $total_ips" when rendering pagination controls.)
+                                $total_ips = 0;
+                                ?>
                                 <?php if (empty($ips_to_monitor)): ?>
                                     <tr>
                                         <td colspan='<?php echo 8 + $max_pings_to_show; ?>'

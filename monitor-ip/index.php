@@ -335,7 +335,6 @@ if (isset($_GET['action'])) {
 
     if ($_GET['action'] === 'save_telegram_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $config = load_config($is_local_network);
-        $frequency = max(60, (int) ($_POST['frequency'] ?? 300));
         $message_template = trim($_POST['message_template'] ?? '');
 
         $config['telegram'] = [
@@ -346,7 +345,6 @@ if (isset($_GET['action'])) {
             'notify_on_down' => isset($_POST['notify_on_down']) ? 'true' : 'false',
             'notify_on_latency' => isset($_POST['notify_on_latency']) ? 'true' : 'false',
             'latency_threshold' => (string) max(1, (int) ($_POST['latency_threshold'] ?? 100)),
-            'frequency' => (string) $frequency,
             'message_template' => $message_template !== ''
                 ? $message_template
                 : "{status_icon} IP {ip} ({service}) is {status} at {timestamp}"
@@ -769,7 +767,6 @@ $telegram_config_json = json_encode([
     'notify_on_down' => $telegram_config['notify_on_down'],
     'notify_on_latency' => $telegram_config['notify_on_latency'],
     'latency_threshold' => $telegram_config['latency_threshold'],
-    'frequency' => $telegram_config['frequency'],
     'message_template' => $telegram_config['message_template'],
 ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 $telegram_alert_history_json = json_encode($telegram_alert_history, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);

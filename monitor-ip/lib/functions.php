@@ -1550,7 +1550,6 @@ function ensure_config_structure($config, $is_local_network = false)
         'notify_on_down' => $telegram['notify_on_down'] ? 'true' : 'false',
         'notify_on_latency' => $telegram['notify_on_latency'] ? 'true' : 'false',
         'latency_threshold' => (string) $telegram['latency_threshold'],
-        'frequency' => (string) $telegram['frequency'],
         'message_template' => $telegram['message_template'],
     ];
 
@@ -1567,7 +1566,6 @@ function get_telegram_config($config)
         'notify_on_down' => 'true',
         'notify_on_latency' => 'false',
         'latency_threshold' => '100',
-        'frequency' => '300',
         'message_template' => 'Dispositivo: {service} ({ip}) ha cambiado a estado {status}',
     ];
 
@@ -1582,7 +1580,6 @@ function get_telegram_config($config)
         'notify_on_down' => filter_var($telegram['notify_on_down'], FILTER_VALIDATE_BOOLEAN),
         'notify_on_latency' => filter_var($telegram['notify_on_latency'], FILTER_VALIDATE_BOOLEAN),
         'latency_threshold' => max(1, (int) $telegram['latency_threshold']),
-        'frequency' => max(0, (int) $telegram['frequency']),
         'message_template' => trim($message_template) !== ''
             ? $message_template
             : $defaults['message_template'],
@@ -1630,7 +1627,9 @@ function send_telegram_message($text, $telegram_cfg)
         $response = curl_exec($ch);
         $error = curl_error($ch);
         $status_code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
+        // In PHP 8+, CurlHandle is an object; releasing the reference closes the handle.
+        // Avoid calling curl_close() to silence deprecation warnings reported by some PHP 8.5 stubs/linters.
+        $ch = null;
 
         if ($response === false || $status_code < 200 || $status_code >= 300) {
             error_log('Telegram alert failed: ' . ($error ?: 'HTTP ' . $status_code . ' ' . (string) $response));

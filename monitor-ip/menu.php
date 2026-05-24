@@ -530,54 +530,54 @@
                     Select the frequency at which the system will check the status of IP addresses.
                 </p>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <!-- Critical Services - 30 seconds -->
+                    <!-- Critical Services - 60 seconds -->
                     <div class="group">
-                        <button type="button" id="timer-btn-30"
-                            class="timer-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_interval == 30 ? 'bg-red-500 text-white border-red-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-red-50 hover:border-red-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-red-900/20'); ?>"
-                            onclick="setTimerValue(30)">
+                        <button type="button" id="timer-btn-60"
+                            class="timer-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_interval == 60 ? 'bg-red-500 text-white border-red-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-red-50 hover:border-red-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-red-900/20'); ?>"
+                            onclick="setTimerValue(60)">
                             <div class="flex flex-col items-center">
                                 <div
-                                    class="mb-3 p-3 rounded-full <?php echo ($ping_interval == 30 ? 'bg-white/20' : 'bg-red-100 dark:bg-red-900/30'); ?>">
+                                    class="mb-3 p-3 rounded-full <?php echo ($ping_interval == 60 ? 'bg-white/20' : 'bg-red-100 dark:bg-red-900/30'); ?>">
                                     <i
-                                        class="fas fa-exclamation-triangle text-2xl <?php echo ($ping_interval == 30 ? 'text-white' : 'text-red-500'); ?>"></i>
+                                        class="fas fa-exclamation-triangle text-2xl <?php echo ($ping_interval == 60 ? 'text-white' : 'text-red-500'); ?>"></i>
                                 </div>
-                                <div class="text-2xl font-bold mb-1">30s</div>
+                                <div class="text-2xl font-bold mb-1">60s</div>
                                 <div class="text-sm font-medium">Critical Services</div>
                                 <div class="text-xs opacity-75 mt-1">High priority monitoring</div>
                             </div>
                         </button>
                     </div>
 
-                    <!-- Standard Services - 90 seconds -->
+                    <!-- Standard Services - 5 minutes -->
                     <div class="group">
-                        <button type="button" id="timer-btn-90"
-                            class="timer-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_interval == 90 ? 'bg-blue-500 text-white border-blue-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-blue-900/20'); ?>"
-                            onclick="setTimerValue(90)">
+                        <button type="button" id="timer-btn-300"
+                            class="timer-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_interval == 300 ? 'bg-blue-500 text-white border-blue-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-blue-900/20'); ?>"
+                            onclick="setTimerValue(300)">
                             <div class="flex flex-col items-center">
                                 <div
-                                    class="mb-3 p-3 rounded-full <?php echo ($ping_interval == 90 ? 'bg-white/20' : 'bg-blue-100 dark:bg-blue-900/30'); ?>">
+                                    class="mb-3 p-3 rounded-full <?php echo ($ping_interval == 300 ? 'bg-white/20' : 'bg-blue-100 dark:bg-blue-900/30'); ?>">
                                     <i
-                                        class="fas fa-server text-2xl <?php echo ($ping_interval == 90 ? 'text-white' : 'text-blue-500'); ?>"></i>
+                                        class="fas fa-server text-2xl <?php echo ($ping_interval == 300 ? 'text-white' : 'text-blue-500'); ?>"></i>
                                 </div>
-                                <div class="text-2xl font-bold mb-1">90s</div>
+                                <div class="text-2xl font-bold mb-1">5m</div>
                                 <div class="text-sm font-medium">Standard Services</div>
                                 <div class="text-xs opacity-75 mt-1">Balanced monitoring</div>
                             </div>
                         </button>
                     </div>
 
-                    <!-- Non-Critical Services - 300 seconds -->
+                    <!-- Non-Critical Services - 15 minutos -->
                     <div class="group">
-                        <button type="button" id="timer-btn-300"
-                            class="timer-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_interval == 300 ? 'bg-green-500 text-white border-green-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-green-50 hover:border-green-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-green-900/20'); ?>"
-                            onclick="setTimerValue(300)">
+                        <button type="button" id="timer-btn-900"
+                            class="timer-btn w-full p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 <?php echo ($ping_interval == 900 ? 'bg-green-500 text-white border-green-500 shadow-lg' : 'bg-white text-gray-700 border-gray-200 hover:bg-green-50 hover:border-green-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-green-900/20'); ?>"
+                            onclick="setTimerValue(900)">
                             <div class="flex flex-col items-center">
                                 <div
-                                    class="mb-3 p-3 rounded-full <?php echo ($ping_interval == 300 ? 'bg-white/20' : 'bg-green-100 dark:bg-green-900/30'); ?>">
+                                    class="mb-3 p-3 rounded-full <?php echo ($ping_interval == 900 ? 'bg-white/20' : 'bg-green-100 dark:bg-green-900/30'); ?>">
                                     <i
-                                        class="fas fa-leaf text-2xl <?php echo ($ping_interval == 300 ? 'text-green' : 'text-green-500'); ?>"></i>
+                                        class="fas fa-leaf text-2xl <?php echo ($ping_interval == 900 ? 'text-green' : 'text-green-500'); ?>"></i>
                                 </div>
-                                <div class="text-2xl font-bold mb-1">5m</div>
+                                <div class="text-2xl font-bold mb-1">15m</div>
                                 <div class="text-sm font-medium">Non-Critical Services</div>
                                 <div class="text-xs opacity-75 mt-1">Light monitoring</div>
                             </div>
@@ -597,16 +597,16 @@
                             <div class="text-sm text-yellow-700 dark:text-yellow-200 space-y-1">
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-red-500 text-xs mr-2"></i>
-                                    <span><strong>30 seconds:</strong> Critical infrastructure, databases, core
+                                    <span><strong>60 seconds:</strong> Critical infrastructure, databases, core
                                         services</span>
                                 </div>
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-blue-500 text-xs mr-2"></i>
-                                    <span><strong>90 seconds:</strong> Web servers, APIs, standard applications</span>
+                                    <span><strong>5 minutes:</strong> Web servers, APIs, standard applications</span>
                                 </div>
                                 <div class="flex items-center">
                                     <i class="fas fa-circle text-green-500 text-xs mr-2"></i>
-                                    <span><strong>5 minutes:</strong> Background services, development
+                                    <span><strong>15 minutes:</strong> Background services, development
                                         environments</span>
                                 </div>
                             </div>
@@ -1370,7 +1370,7 @@
                     </label>
                 </div>
 
-                <div class="md:col-span-2">
+                <div>
                     <label for="bot_token" class="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                         <i class="fas fa-key text-blue-500 mr-1"></i>Bot Token
                     </label>
@@ -1396,72 +1396,72 @@
                         placeholder="123456789">
                 </div>
 
-                <div>
-                    <label for="frequency" class="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        <i class="fas fa-clock text-blue-500 mr-1"></i>Frecuencia de comprobación
-                    </label>
-                    <div class="flex items-center gap-2">
-                        <input type="number" id="frequency" name="frequency" min="60"
-                            value="<?php echo htmlspecialchars((string) $telegram_config['frequency'], ENT_QUOTES, 'UTF-8'); ?>"
-                            class="w-full p-3 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:text-white">
-                        <span class="text-xs text-gray-500 dark:text-gray-400">seg.</span>
-                    </div>
-                </div>
+                <div id="telegramOptionsWrapper"
+                    class="md:col-span-2 overflow-hidden transition-all duration-300 ease-in-out max-h-0 opacity-0 pointer-events-none">
+                    <div class="space-y-4">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                    <i class="fas fa-sliders-h text-blue-500"></i>
+                                    Opciones de alerta
+                                </h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Selecciona qué eventos quieres recibir.</p>
+                            </div>
 
-                <div
-                    class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-arrow-up text-green-500 text-xs"></i>
-                        <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar al recuperar</span>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="notify_on_up" name="notify_on_up" class="sr-only peer" <?php echo $telegram_config['notify_on_up'] ? 'checked' : ''; ?>>
-                        <div
-                            class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-green-600">
-                        </div>
-                    </label>
-                </div>
+                            <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+                                <li class="px-4 py-3 flex items-start justify-between gap-4">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-arrow-up text-green-500 text-xs"></i>
+                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar al recuperar</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Cuando un host pasa de DOWN a UP.</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
+                                        <input type="checkbox" id="notify_on_up" name="notify_on_up" class="sr-only peer" <?php echo $telegram_config['notify_on_up'] ? 'checked' : ''; ?>>
+                                        <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                                    </label>
+                                </li>
 
-                <div
-                    class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-arrow-down text-red-500 text-xs"></i>
-                        <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar al caer</span>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="notify_on_down" name="notify_on_down" class="sr-only peer" <?php echo $telegram_config['notify_on_down'] ? 'checked' : ''; ?>>
-                        <div
-                            class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-red-600">
-                        </div>
-                    </label>
-                </div>
+                                <li class="px-4 py-3 flex items-start justify-between gap-4">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-arrow-down text-red-500 text-xs"></i>
+                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar al caer</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Cuando un host pasa de UP a DOWN.</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
+                                        <input type="checkbox" id="notify_on_down" name="notify_on_down" class="sr-only peer" <?php echo $telegram_config['notify_on_down'] ? 'checked' : ''; ?>>
+                                        <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
+                                    </label>
+                                </li>
 
-                <div
-                    class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <i class="fas fa-gauge-high text-amber-500 text-xs"></i>
-                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar por latencia
-                                alta</span>
-                        </div>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                        <input type="checkbox" id="notify_on_latency" name="notify_on_latency" class="sr-only peer"
-                            <?php echo $telegram_config['notify_on_latency'] ? 'checked' : ''; ?>>
-                        <div
-                            class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500">
-                        </div>
-                    </label>
-                </div>
+                                <li class="px-4 py-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-gauge-high text-amber-500 text-xs"></i>
+                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar por latencia alta</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Envía alerta cuando la latencia supera el umbral (ms).</p>
+                                    </div>
 
-                <div>
-                    <div class="flex items-center gap-2 p-1">
-                        <input type="number" id="latency_threshold" name="latency_threshold" min="1"
-                            value="<?php echo htmlspecialchars((string) $telegram_config['latency_threshold'], ENT_QUOTES, 'UTF-8'); ?>"
-                            class="w-full p-3 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:text-white">
-                        <span class="text-xs text-gray-500 dark:text-gray-400">ms</span>
-                    </div>
-                </div>
+                                    <div class="flex items-center justify-between gap-3 sm:justify-end">
+                                        <div class="flex items-center gap-2">
+                                            <input type="number" id="latency_threshold" name="latency_threshold" min="1"
+                                                value="<?php echo htmlspecialchars((string) $telegram_config['latency_threshold'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                class="w-28 p-2 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none dark:text-white">
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">ms</span>
+                                        </div>
+
+                                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
+                                            <input type="checkbox" id="notify_on_latency" name="notify_on_latency" class="sr-only peer" <?php echo $telegram_config['notify_on_latency'] ? 'checked' : ''; ?>>
+                                            <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500"></div>
+                                        </label>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
 
                 <!--<div class="md:col-span-2">
                     <label for="message_template" class="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
@@ -1474,8 +1474,8 @@
                 </div>
                 -->
 
-                <div
-                    class="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                        <div
+                            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                     <div
                         class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <div>
@@ -1545,6 +1545,8 @@
                                 <?php endif; ?>
                             </tbody>
                         </table>
+                    </div>
+                </div>
                     </div>
                 </div>
 

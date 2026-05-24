@@ -446,11 +446,11 @@ function setTimerValue(val) {
     // Reset all timer buttons
     document.querySelectorAll('.timer-btn').forEach(btn => {
         btn.className = btn.className.replace(/bg-(red|blue|green)-500|text-white|border-(red|blue|green)-500|shadow-lg/g, '');
-        if (btn.id === 'timer-btn-30') {
+        if (btn.id === 'timer-btn-60') {
             btn.className = btn.className + ' bg-white text-gray-700 border-gray-200 hover:bg-red-50 hover:border-red-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-red-900/20';
-        } else if (btn.id === 'timer-btn-90') {
-            btn.className = btn.className + ' bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-blue-900/20';
         } else if (btn.id === 'timer-btn-300') {
+            btn.className = btn.className + ' bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-blue-900/20';
+        } else if (btn.id === 'timer-btn-900') {
             btn.className = btn.className + ' bg-white text-gray-700 border-gray-200 hover:bg-green-50 hover:border-green-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-green-900/20';
         }
     });
@@ -459,11 +459,11 @@ function setTimerValue(val) {
     var activeBtn = document.getElementById('timer-btn-' + val);
     if (activeBtn) {
         activeBtn.className = activeBtn.className.replace(/bg-white|text-gray-700|border-gray-200|hover:bg-\w+-50|hover:border-\w+-300|dark:bg-gray-700|dark:text-gray-200|dark:border-gray-600|dark:hover:bg-\w+-900\/20/g, '');
-        if (val == 30) {
+        if (val == 60) {
             activeBtn.className = activeBtn.className + ' bg-red-500 text-white border-red-500 shadow-lg';
-        } else if (val == 90) {
-            activeBtn.className = activeBtn.className + ' bg-blue-500 text-white border-blue-500 shadow-lg';
         } else if (val == 300) {
+            activeBtn.className = activeBtn.className + ' bg-blue-500 text-white border-blue-500 shadow-lg';
+        } else if (val == 900) {
             activeBtn.className = activeBtn.className + ' bg-green-500 text-white border-green-500 shadow-lg';
         }
     }
@@ -1408,12 +1408,32 @@ function applyTelegramConfigToForm(telegram) {
     setTelegramCheckboxValue('notify_on_down', telegram.notify_on_down);
     setTelegramCheckboxValue('notify_on_latency', telegram.notify_on_latency);
     setTelegramFieldValue('latency_threshold', telegram.latency_threshold);
-    setTelegramFieldValue('frequency', telegram.frequency);
     setTelegramFieldValue('message_template', telegram.message_template);
+}
+
+function setTelegramOptionsExpanded(expanded) {
+    const wrapper = document.getElementById('telegramOptionsWrapper');
+    if (!wrapper) return;
+
+    if (expanded) {
+        wrapper.classList.remove('max-h-0', 'opacity-0', 'pointer-events-none');
+        wrapper.classList.add('max-h-[1200px]', 'opacity-100');
+    } else {
+        wrapper.classList.remove('max-h-[1200px]', 'opacity-100');
+        wrapper.classList.add('max-h-0', 'opacity-0', 'pointer-events-none');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
     applyTelegramConfigToForm(window.telegramConfig);
+
+    const enabledField = document.getElementById('enabled');
+    if (enabledField) {
+        setTelegramOptionsExpanded(enabledField.checked);
+        enabledField.addEventListener('change', function () {
+            setTelegramOptionsExpanded(enabledField.checked);
+        });
+    }
 });
 
 function testTelegramConnection() {
