@@ -1555,7 +1555,7 @@ async function runLocalDiagnosticsDetail(ip) {
     if (!container) return;
 
     const deviceType = window.currentIpData?.type || 'other';
-    container.innerHTML = `<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4 text-blue-500"></i><p class="text-sm text-gray-400">Running local diagnostics...</p><p class="text-sm text-gray-400">Esto podría tardar unos segundos</p</div>`;
+    container.innerHTML = `<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4 text-blue-500"></i><p class="text-sm text-gray-400">Running local diagnostics...</p><p class="text-sm text-gray-400">It might take a few seconds</p></div>`;
 
     try {
         const formData = new FormData();
@@ -1564,18 +1564,33 @@ async function runLocalDiagnosticsDetail(ip) {
         formData.append('device_type', deviceType);
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 7000);
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
         let response;
         try {
             response = await fetch('?action=diagnose', { method: 'POST', body: formData, signal: controller.signal });
         } finally {
             clearTimeout(timeoutId);
         }
-        const data = await response.json();
+        const raw = await response.text();
+        let data = null;
+        try {
+            data = raw ? JSON.parse(raw) : null;
+        } catch (parseError) {
+            throw new Error(`Invalid JSON response from server: ${raw ? raw.slice(0, 240) : 'empty response'}`);
+        }
+        if (!data) {
+            throw new Error('Empty response from server');
+        }
         const r = data.result || {};
         if (!data.success || r.status !== 'success') {
             const headline = r.message || data.message || 'Local diagnostics failed';
-            const details = Array.isArray(r.errors) && r.errors.length ? r.errors.join(' · ') : '';
+            let details = Array.isArray(r.errors) && r.errors.length ? r.errors.join(' · ') : '';
+            if (!details && data.error) {
+                details = data.error;
+                if (data.file && data.line) {
+                    details += ` (${data.file}:${data.line})`;
+                }
+            }
             container.innerHTML = `
                 <div class="col-span-2 py-10 text-center">
                     <div class="text-rose-600 dark:text-rose-400 text-lg font-black">

@@ -3073,20 +3073,33 @@ function get_local_ip_diagnostics($ip, $device_type = 'other')
     }
 
     $is_windows = (PHP_OS_FAMILY === 'Windows');
-    $escaped_ip = escapeshellarg($ip);
-    // Windows ping can be noticeably slower and tends to hit request timeouts when using many probes.
-    $count = 5;
+    // The IP is already validated as IPv4/IPv6, so we can safely pass it directly on Windows.
+    // cmd.exe quoting rules are different and shell escaping may break built-in commands there.
+    $command_ip = $is_windows ? $ip : escapeshellarg($ip);
+    // Keep this endpoint fast for UI requests.
+    $count = $is_windows ? 3 : 5;
     $errors = [];
 
     if ($is_windows) {
-        // -w is per-echo timeout (ms). Keep the overall request fast for the UI diagnostics call.
-        $ping_command = "ping -n $count -w 700 $escaped_ip";
+        // -w is per-echo timeout (ms). Lower value to avoid UI request timeouts on Windows.
+        $ping_command = "ping -n $count -w 400 $command_ip";
     } else {
         $sudo_prefix = is_running_in_container() ? 'sudo ' : '';
-        $ping_command = $sudo_prefix . "/bin/ping -c $count -W 1 $escaped_ip 2>&1";
+        $ping_command = $sudo_prefix . "/bin/ping -c $count -W 1 $command_ip 2>&1";
     }
 
     $ping_output = shell_exec($ping_command) ?? '';
+    if ($is_windows && $ping_output !== '') {
+        $converted = @iconv('CP850', 'UTF-8//IGNORE', $ping_output);
+        if ($converted !== false && $converted !== '') {
+            $ping_output = $converted;
+        } else {
+            $converted = @iconv('Windows-1252', 'UTF-8//IGNORE', $ping_output);
+            if ($converted !== false && $converted !== '') {
+                $ping_output = $converted;
+            }
+        }
+    }
     if (trim($ping_output) === '') {
         $errors[] = 'ping command returned no output';
     } elseif ($is_windows && (stripos($ping_output, 'no se reconoce como un comando') !== false || stripos($ping_output, 'not recognized as an internal or external command') !== false)) {
@@ -3125,14 +3138,33 @@ function get_local_ip_diagnostics($ip, $device_type = 'other')
         $jitter = round(array_sum($diffs) / count($diffs), 2);
     }
 
-    $hostname = gethostbyaddr($ip);
-    if ($hostname === $ip) {
-        $hostname = null;
+    // Reverse DNS can block for several seconds on Windows; avoid stalling the diagnostics request.
+    $hostname = null;
+    if (!$is_windows) {
+        $hostname = gethostbyaddr($ip);
+        if ($hostname === $ip) {
+            $hostname = null;
+        }
     }
 
-    $arp_output = shell_exec(($is_windows ? 'arp -a ' : 'arp -n ') . $escaped_ip . ' 2>&1') ?? '';
+    $arp_output = shell_exec(($is_windows ? 'arp -a ' : 'arp -n ') . $command_ip . ' 2>&1') ?? '';
+    if ($is_windows && $arp_output !== '') {
+        $converted = @iconv('CP850', 'UTF-8//IGNORE', $arp_output);
+        if ($converted !== false && $converted !== '') {
+            $arp_output = $converted;
+        } else {
+            $converted = @iconv('Windows-1252', 'UTF-8//IGNORE', $arp_output);
+            if ($converted !== false && $converted !== '') {
+                $arp_output = $converted;
+            }
+        }
+    }
     if (trim($arp_output) === '') {
-        $errors[] = 'arp command returned no output';
+        // On Windows this is common when ARP cache has no entry for the host yet.
+        // Keep diagnostics successful and just return null MAC.
+        if (!$is_windows) {
+            $errors[] = 'arp command returned no output';
+        }
     } elseif ($is_windows && (stripos($arp_output, 'no se reconoce como un comando') !== false || stripos($arp_output, 'not recognized as an internal or external command') !== false)) {
         $errors[] = 'arp command not available';
     } elseif (!$is_windows && (stripos($arp_output, 'permission denied') !== false || stripos($arp_output, 'operation not permitted') !== false)) {
@@ -3169,7 +3201,7 @@ function get_local_ip_diagnostics($ip, $device_type = 'other')
             return true;
         });
         try {
-            $conn = fsockopen($ip, $port, $errno, $errstr, 0.2);
+        $conn = fsockopen($ip, $port, $errno, $errstr, $is_windows ? 0.12 : 0.2);
         } finally {
             restore_error_handler();
             if ($prevHandler !== null) {

@@ -138,7 +138,7 @@ if (isset($_GET['action'])) {
             $db->exec("DELETE FROM speedtest_results");
 
             echo json_encode(['success' => true]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
         exit;
@@ -147,6 +147,25 @@ if (isset($_GET['action'])) {
 
     if ($_GET['action'] === 'diagnose' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json');
+        ob_start();
+        register_shutdown_function(function () {
+            $last = error_get_last();
+            if ($last && in_array($last['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+                if (!headers_sent()) {
+                    header('Content-Type: application/json');
+                }
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Fatal error in diagnostics endpoint',
+                    'error' => $last['message'] ?? 'Unknown fatal error',
+                    'file' => $last['file'] ?? null,
+                    'line' => $last['line'] ?? null
+                ]);
+            }
+        });
         $ip = $_POST['ip'] ?? '';
         $type = $_POST['type'] ?? 'all';
 
@@ -170,9 +189,23 @@ if (isset($_GET['action'])) {
                 $response['result'] = get_network_health();
             }
 
-            echo json_encode($response);
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            if (ob_get_level() > 0) {
+                ob_clean();
+            }
+            $json = json_encode($response, JSON_INVALID_UTF8_SUBSTITUTE);
+            if ($json === false) {
+                $json = json_encode([
+                    'success' => false,
+                    'message' => 'JSON encoding failed in diagnostics endpoint',
+                    'error' => json_last_error_msg()
+                ]);
+            }
+            echo $json;
+        } catch (Throwable $e) {
+            if (ob_get_level() > 0) {
+                ob_clean();
+            }
+            echo json_encode(['success' => false, 'message' => $e->getMessage()], JSON_INVALID_UTF8_SUBSTITUTE);
         }
         exit;
     }
