@@ -1233,7 +1233,7 @@ function renderTopologyMap() {
                 <div class="w-16 h-16 md:w-20 md:h-20 bg-blue-500 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 z-10 border-4 border-white dark:border-gray-800 rotate-45 group hover:rotate-0 transition-transform duration-500">
                     <i class="fas fa-cloud text-2xl md:text-3xl -rotate-45 group-hover:rotate-0 transition-transform"></i>
                 </div>
-                <div class="text-[8px] md:text-[10px] font-black mt-4 uppercase text-blue-500 tracking-widest">WAN / INTERNET</div>
+                <div class="text-[10px] md:text-xs font-black mt-4 uppercase text-blue-500 tracking-widest">WAN / INTERNET</div>
             </div>
 
             <!-- Connection: WAN -> Gateway -->
@@ -1259,8 +1259,8 @@ function renderTopologyMap() {
                             <i class="fas fa-check text-[10px]"></i>
                         </div>
                         <i class="fas fa-server text-3xl mb-3"></i>
-                        <div class="text-xs font-black uppercase tracking-tight">${gateway ? gateway.service : 'Router'}</div>
-                        <div class="text-[10px] font-mono opacity-60">${gateway ? gateway.ip : '192.168.18.1'}</div>
+                        <div class="text-sm font-black uppercase tracking-tight">${gateway ? gateway.service : 'Router'}</div>
+                        <div class="text-xs font-mono opacity-70">${gateway ? gateway.ip : '192.168.18.1'}</div>
                     </div>
                 </div>
             </div>
@@ -1381,10 +1381,10 @@ function renderRepeaterNode(repeater, allOthers) {
                         <div class="w-24 h-24 bg-red-600 text-white rounded-xl shadow-xl border-4 border-white dark:border-gray-800 flex flex-col items-center justify-center z-10 hover:scale-110 transition-all cursor-pointer relative" 
                              onclick="handleTopologyClick('${repeater.ip}')">
                             <i class="fas fa-broadcast-tower text-2xl mb-1"></i>
-                            <div class="text-[10px] font-black uppercase tracking-tighter text-center leading-tight px-2">${repeater.service}</div>
-                            <div class="text-[8px] font-mono opacity-60 mt-0.5">${repeater.ip}</div>
-                        </div>
+                        <div class="text-xs font-black uppercase tracking-tighter text-center leading-tight px-2">${repeater.service}</div>
+                        <div class="text-[10px] font-mono opacity-70 mt-0.5">${repeater.ip}</div>
                     </div>
+                </div>
                     
                     ${repeaterDevices.length > 0 ? `
                         <!-- Connection line from repeater -->
@@ -1463,17 +1463,17 @@ function renderDeviceSkin(dev) {
                 
                 <div class="flex flex-col overflow-hidden">
                     <div class="flex items-center gap-2">
-                        <span class="text-[12px] font-black tracking-tight truncate text-gray-800 dark:text-gray-100">${dev.service}</span>
+                        <span class="text-[13px] font-black tracking-tight truncate text-gray-800 dark:text-gray-100">${dev.service}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
                         <span class="w-2 h-2 ${statusColor} rounded-full animate-pulse"></span>
-                        <span class="text-[10px] font-mono text-gray-500">${dev.ip}</span>
+                        <span class="text-xs font-mono text-gray-500">${dev.ip}</span>
                     </div>
                 </div>
                 
                 <div class="ml-auto flex flex-col items-end border-l border-gray-100 dark:border-gray-700 pl-4">
-                     <span class="text-[12px] font-black ${latencyColor}">${responseTimeDisplay}</span>
-                     <span class="text-[8px] text-gray-400 uppercase font-black tracking-tighter">ms</span>
+                     <span class="text-[13px] font-black ${latencyColor}">${responseTimeDisplay}</span>
+                     <span class="text-[10px] text-gray-400 uppercase font-black tracking-tighter">ms</span>
                 </div>
             </div>
         </div>
@@ -1522,11 +1522,11 @@ async function runGeoIPDetail(ip) {
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                     <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-widest">ISP Provider</p>
-                    <p class="text-xs font-bold text-indigo-600 dark:text-indigo-400 truncate" title="${r.isp}">${r.isp}</p>
+                    <p class="text-base font-black text-indigo-600 dark:text-indigo-400 truncate" title="${r.isp}">${r.isp}</p>
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                     <p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-widest">ASN / Org</p>
-                    <p class="text-[10px] font-mono font-bold text-gray-500 truncate" title="${r.as}">${r.as}</p>
+                    <p class="text-sm font-mono font-bold text-gray-600 dark:text-gray-300 truncate" title="${r.as}">${r.as}</p>
                 </div>
             `;
         } else {
@@ -1555,7 +1555,7 @@ async function runLocalDiagnosticsDetail(ip) {
     if (!container) return;
 
     const deviceType = window.currentIpData?.type || 'other';
-    container.innerHTML = `<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4 text-blue-500"></i><p class="text-sm text-gray-400">Running local diagnostics...</p></div>`;
+    container.innerHTML = `<div class="col-span-2 py-10 flex flex-col items-center"><i class="fas fa-spinner fa-spin text-2xl mb-4 text-blue-500"></i><p class="text-sm text-gray-400">Running local diagnostics...</p><p class="text-sm text-gray-400">Esto podría tardar unos segundos</p</div>`;
 
     try {
         const formData = new FormData();
@@ -1563,11 +1563,27 @@ async function runLocalDiagnosticsDetail(ip) {
         formData.append('type', 'local_diagnostics');
         formData.append('device_type', deviceType);
 
-        const response = await fetch('?action=diagnose', { method: 'POST', body: formData });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
+        let response;
+        try {
+            response = await fetch('?action=diagnose', { method: 'POST', body: formData, signal: controller.signal });
+        } finally {
+            clearTimeout(timeoutId);
+        }
         const data = await response.json();
         const r = data.result || {};
         if (!data.success || r.status !== 'success') {
-            container.innerHTML = `<div class="col-span-2 py-10 text-center text-red-500 text-xs font-bold"><i class="fas fa-exclamation-triangle mr-1"></i>${r.message || data.message || 'Local diagnostics failed'}</div>`;
+            const headline = r.message || data.message || 'Local diagnostics failed';
+            const details = Array.isArray(r.errors) && r.errors.length ? r.errors.join(' · ') : '';
+            container.innerHTML = `
+                <div class="col-span-2 py-10 text-center">
+                    <div class="text-rose-600 dark:text-rose-400 text-lg font-black">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>${headline}
+                    </div>
+                    ${details ? `<div class="mt-2 text-sm font-mono text-rose-600/80 dark:text-rose-300/80">${details}</div>` : ''}
+                </div>
+            `;
             return;
         }
 
@@ -1670,7 +1686,17 @@ async function runLocalDiagnosticsDetail(ip) {
             </div>
         `;
     } catch (e) {
-        container.innerHTML = `<div class="col-span-2 py-10 text-red-500/70 text-center text-[10px]"><i class="fas fa-exclamation-triangle mr-1"></i> Local diagnostics timeout</div>`;
+        const isAbort = e && (e.name === 'AbortError' || String(e.message || '').toLowerCase().includes('aborted'));
+        const headline = isAbort ? 'Local diagnostics timeout' : 'Local diagnostics error';
+        const details = isAbort ? 'The request exceeded the time limit.' : (e?.message || String(e));
+        container.innerHTML = `
+            <div class="col-span-2 py-10 text-center">
+                <div class="text-rose-600 dark:text-rose-400 text-lg font-black">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>${headline}
+                </div>
+                <div class="mt-2 text-sm font-mono text-rose-600/80 dark:text-rose-300/80">${details}</div>
+            </div>
+        `;
     }
 }
 
@@ -2427,12 +2453,12 @@ async function showQuickTopologyModal() {
                         </div>
                         <div class="text-center bg-purple-50 dark:bg-purple-900/10 p-3 rounded-xl border border-purple-100 dark:border-purple-800/30 w-full shadow-sm">
                             <div class="mb-2">
-                                <h4 class="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-0.5">LAN IP (Private)</h4>
-                                <p class="text-xs font-black text-gray-800 dark:text-gray-100 font-mono">${data.gateway_ip}</p>
+                                <h4 class="text-[10px] font-bold text-purple-500 uppercase tracking-widest mb-0.5">LAN IP (Private)</h4>
+                                <p class="text-sm font-black text-gray-800 dark:text-gray-100 font-mono">${data.gateway_ip}</p>
                             </div>
                             <div class="pt-2 border-t border-purple-100 dark:border-purple-800/30">
-                                <h4 class="text-[9px] font-bold text-blue-500 uppercase tracking-widest mb-0.5">WAN IP (Public)</h4>
-                                <p class="text-xs font-black text-blue-600 dark:text-blue-400 font-mono">${data.public_ip}</p>
+                                <h4 class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-0.5">WAN IP (Public)</h4>
+                                <p class="text-sm font-black text-blue-600 dark:text-blue-400 font-mono">${data.public_ip}</p>
                             </div>
                         </div>
                     </div>
@@ -2450,7 +2476,7 @@ async function showQuickTopologyModal() {
                         </div>
                         <div class="text-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700 w-full">
                             <h4 class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Provider</h4>
-                            <p class="text-xs font-black text-gray-800 dark:text-gray-100 truncate w-full" title="${data.isp}">${data.isp}</p>
+                            <p class="text-sm font-black text-gray-800 dark:text-gray-100 truncate w-full" title="${data.isp}">${data.isp}</p>
                         </div>
                     </div>
 

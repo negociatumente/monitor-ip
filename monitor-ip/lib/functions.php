@@ -3074,16 +3074,26 @@ function get_local_ip_diagnostics($ip, $device_type = 'other')
 
     $is_windows = (PHP_OS_FAMILY === 'Windows');
     $escaped_ip = escapeshellarg($ip);
-    $count = 10;
+    // Windows ping can be noticeably slower and tends to hit request timeouts when using many probes.
+    $count = 5;
+    $errors = [];
 
     if ($is_windows) {
-        $ping_command = "ping -n $count -w 1000 $escaped_ip";
+        // -w is per-echo timeout (ms). Keep the overall request fast for the UI diagnostics call.
+        $ping_command = "ping -n $count -w 700 $escaped_ip";
     } else {
         $sudo_prefix = is_running_in_container() ? 'sudo ' : '';
         $ping_command = $sudo_prefix . "/bin/ping -c $count -W 1 $escaped_ip 2>&1";
     }
 
     $ping_output = shell_exec($ping_command) ?? '';
+    if (trim($ping_output) === '') {
+        $errors[] = 'ping command returned no output';
+    } elseif ($is_windows && (stripos($ping_output, 'no se reconoce como un comando') !== false || stripos($ping_output, 'not recognized as an internal or external command') !== false)) {
+        $errors[] = 'ping command not available';
+    } elseif (!$is_windows && (stripos($ping_output, 'not found') !== false || stripos($ping_output, 'permission denied') !== false || stripos($ping_output, 'operation not permitted') !== false)) {
+        $errors[] = 'ping command failed (permission or missing binary)';
+    }
     $latencies = [];
     if (preg_match_all('/time[=<]\s*([\d\.]+)\s*ms/i', $ping_output, $matches)) {
         $latencies = array_map('floatval', $matches[1]);
@@ -3121,6 +3131,13 @@ function get_local_ip_diagnostics($ip, $device_type = 'other')
     }
 
     $arp_output = shell_exec(($is_windows ? 'arp -a ' : 'arp -n ') . $escaped_ip . ' 2>&1') ?? '';
+    if (trim($arp_output) === '') {
+        $errors[] = 'arp command returned no output';
+    } elseif ($is_windows && (stripos($arp_output, 'no se reconoce como un comando') !== false || stripos($arp_output, 'not recognized as an internal or external command') !== false)) {
+        $errors[] = 'arp command not available';
+    } elseif (!$is_windows && (stripos($arp_output, 'permission denied') !== false || stripos($arp_output, 'operation not permitted') !== false)) {
+        $errors[] = 'arp command failed (permission)';
+    }
     $mac = null;
     if (preg_match('/([0-9a-f]{2}(?:[:-][0-9a-f]{2}){5})/i', $arp_output, $mac_match)) {
         $mac = strtoupper(str_replace('-', ':', $mac_match[1]));
@@ -3146,7 +3163,19 @@ function get_local_ip_diagnostics($ip, $device_type = 'other')
         $errno = 0;
         $errstr = '';
         $start = microtime(true);
-        $conn = @fsockopen($ip, $port, $errno, $errstr, 0.35);
+        // Some PHP environments still surface fsockopen() warnings (e.g. when an IDE/debugger traps them)
+        // even when using @. Swallow them explicitly to avoid breaking the diagnostics UI.
+        $prevHandler = set_error_handler(static function () {
+            return true;
+        });
+        try {
+            $conn = fsockopen($ip, $port, $errno, $errstr, 0.2);
+        } finally {
+            restore_error_handler();
+            if ($prevHandler !== null) {
+                // restore_error_handler() restores the previous handler already; keep symmetry if null.
+            }
+        }
         $elapsed = round((microtime(true) - $start) * 1000, 1);
         if ($conn) {
             fclose($conn);
@@ -3156,6 +3185,20 @@ function get_local_ip_diagnostics($ip, $device_type = 'other')
             'protocol' => $port_info['protocol'],
             'open' => (bool) $conn,
             'latency_ms' => $conn ? $elapsed : null,
+        ];
+    }
+
+    if (!empty($errors)) {
+        return [
+            'status' => 'fail',
+            'message' => 'Local diagnostics failed to run one or more commands',
+            'errors' => $errors,
+            'ip' => $ip,
+            'hostname' => $hostname,
+            'mac' => $mac,
+            'ports' => $port_results,
+            'raw_ping' => $ping_output,
+            'raw_arp' => $arp_output,
         ];
     }
 

@@ -42,7 +42,7 @@ Si buscas una solución personalizada para tu empresa ofrezco versiones **Enterp
 ✅ **Alertas de Conectividad**: Recibe notificaciones en tiempo real sobre problemas de red.  
 ✅ **Alertas por alta latencia**: Recibe notificaciones en tiempo real sobre latencias anormalmente altas en la red.  
 ✅ **Alertas de Intrusos**: Recibe notificaciones en tiempo real sobre dispositivos desconocidos conectados a la red.   
-
+✅ **Solución de Problemas**: Recibe recomendaciones hechas por IA para corregir problemas de red.   
 
 ## 📁 Estructura del proyecto
 ```
@@ -84,7 +84,7 @@ monitor-ip/
 | Escaneo de dispositivos de la red | `nmap` | `nmap` | `nmap` | ✔️* | ✔️* | ✔️ | ❌ |
 | Alertas de Conectividad | `Telegram` | `Telegram` | `Telegram` | ✔️* | ✔️* | ✔️* | ✔️* |
 | Alertas por alta latencia | `Telegram` | `Telegram` | `Telegram` | ✔️* | ✔️* | ✔️* | ✔️* |
-| Alertas de Intrusos | `Telegram` | `Telegram` | `Telegram` | ✔️* | ✔️* | ✔️* | ✔️* |
+| Alertas de Intrusos | `nmap/Telegram` | `nmap/Telegram` | `nmap/Telegram` | ✔️* | ✔️* | ✔️* | ✔️* |
 
     
 **Leyenda:**
