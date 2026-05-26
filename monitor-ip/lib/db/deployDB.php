@@ -1,6 +1,6 @@
 <?php
 
-$version = '1.2.0'; // Versión actual del esquema de la base de datos
+$version = '1.2.1'; // Versión actual del esquema de la base de datos
 $ping_interval = 300; // Intervalo de ping en segundos (valor por defecto)
 $security_enabled = true; // Habilitar seguridad (valor por defecto)
 $security_username = ''; // Nombre de usuario para autenticación (vacío por defecto)

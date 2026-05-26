@@ -1,5 +1,8 @@
 # Historial de Cambios - Monitor IP
 
+## [1.2.1] - 2026-05-27
+- **Diagnosis Red Privada**: Se ha corregido un error que impedía la correcta diagnosis de redes privadas, mejorando la precisión de los resultados y la detección de dispositivos en estas redes.
+
 ## [1.2.0] - 2026-05-24
 - **Alertas por alta latencia**: Monitor-IP ahora puede detectar y alertar sobre latencias anormalmente altas en la red, enviando notificaciones automáticas a Telegram.
 - **Generacion de reportes**: Se ha implementado la capacidad de generar reportes detallados sobre el estado de la red y los dispositivos conectados.
