@@ -892,6 +892,22 @@ function closeTopologyModal() {
 window.showTopologyMapModal = showTopologyMapModal;
 window.closeTopologyModal = closeTopologyModal;
 
+function openReportInAI(reportText) {
+    const text = (reportText || '').trim();
+    if (!text) {
+        alert('Please generate the AI report first.');
+        return;
+    }
+
+    const chatgptUrl = typeof window.buildChatGPTUrlForPrompt === 'function'
+        ? window.buildChatGPTUrlForPrompt(text)
+        : `https://chatgpt.com/?q=${encodeURIComponent(text)}`;
+    const popup = window.open(chatgptUrl, '_blank', 'noopener,noreferrer');
+    if (!popup) {
+        alert('Popup blocked by browser. Allow popups or use Copy first.');
+    }
+}
+
 
 /**
  * Generates a text report from the network health data for AI analysis
@@ -958,9 +974,14 @@ function generateNetworkHealthAIReport() {
             <h4 class="text-sm font-bold uppercase tracking-wider text-emerald-500">
                 <i class="fas fa-robot mr-2"></i>Text Report for AI
             </h4>
-            <button onclick="copyNetworkHealthToClipboard()" id="btnCopyHealth" class="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:bg-emerald-600 transition-all flex items-center gap-2">
-                <i class="fas fa-copy"></i> COPY TO CLIPBOARD
-            </button>
+            <div class="flex items-center gap-2">
+                <button onclick="openNetworkHealthAI()" class="px-4 py-2 bg-violet-600 text-white text-xs font-bold rounded-lg hover:bg-violet-700 transition-all flex items-center gap-2">
+                    <i class="fas fa-external-link-alt"></i> OPEN IN AI CHAT
+                </button>
+                <button onclick="copyNetworkHealthToClipboard()" id="btnCopyHealth" class="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:bg-emerald-600 transition-all flex items-center gap-2">
+                    <i class="fas fa-copy"></i> COPY TO CLIPBOARD
+                </button>
+            </div>
         </div>
         <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 shadow-inner">
             <pre class="whitespace-pre-wrap font-mono text-xs text-emerald-400/90 leading-relaxed" id="healthTextReport">${report}</pre>
@@ -998,8 +1019,13 @@ function copyNetworkHealthToClipboard() {
     });
 }
 
+function openNetworkHealthAI() {
+    openReportInAI(window.currentNetworkHealthAIReport);
+}
+
 window.generateNetworkHealthAIReport = generateNetworkHealthAIReport;
 window.copyNetworkHealthToClipboard = copyNetworkHealthToClipboard;
+window.openNetworkHealthAI = openNetworkHealthAI;
 
 /**
  * Renders a graphical topology map of the local network in HORIZONTAL layout
@@ -1949,11 +1975,16 @@ function copyAIReportDetail() {
     });
 }
 
+function openAIReport() {
+    openReportInAI(window.currentAIReportDetail);
+}
+
 window.runGeoIPDetail = runGeoIPDetail;
 window.setDetailTracerouteView = setDetailTracerouteView;
 window.runDetailTraceroute = runDetailTraceroute;
 window.generateAIReportDetail = generateAIReportDetail;
 window.copyAIReportDetail = copyAIReportDetail;
+window.openAIReport = openAIReport;
 
 /**
  * Shows the network speed configuration modal.

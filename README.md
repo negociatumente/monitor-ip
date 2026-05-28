@@ -10,8 +10,8 @@ Este proyecto permite **monitorear la conectividad** a servidores desde tu red l
 
 🎯 Esta herramienta te **ayudará a**:  
 ✅ **Detectar bloqueos** de tu operador de Internet  
-✅ **Diagnosticar problemas** de tu red privada
-✅ **Detectar intrusos** en tu red privada
+✅ **Diagnosticar problemas** de tu red privada  
+✅ **Detectar intrusos** en tu red privada  
 ✅ **Optimizar tu red** para un máximo rendimiento  
 ✅ **Generar reportes** de la calidad de tu red  
 ✅ **Ahorrar dinero** evitando técnicos innecesarios  
@@ -57,14 +57,12 @@ monitor-ip/
 ├── auth/                             # Archivos de configuración y resultados
 │   ├── login.php                     # Página de login y autenticación
 │   └── logout.php                    # Página de cierre de sesión
-├── database/                         # Almacén SQLite de la aplicación
+├── db/                               # Almacén SQLite de la aplicación
 │   └── monitor.db                    # Base de datos SQLite
 └── lib/                              # Librerías y recursos del proyecto
     ├── Speedtest++/                  # Librería speedtest++ para tests de velocidad
     │   └── Speedtest                 # Script speedtest para tests de velocidad
-    ├── db/                           # Scripts de inicialización de SQLite
-    │   ├── deployDB.php              # Inicializa y conecta monitor.db
-    │   └── migrateDB.php             # Script para migrar la base de datos
+    ├── deployDB.php                  # Inicializa y conecta monitor.db
     ├── functions.php                 # Funciones PHP reutilizables
     ├── network_scan.js               # Lógica de escaneo de red y speedtest
     ├── script.js                     # Scripts JavaScript principales
@@ -156,11 +154,11 @@ sudo mv ./monitor-ip /var/www/html/monitor-ip
 
 **🔹Da permisos de escritura a las carpetas necesarias:**
 ```bash
-sudo chown -R www-data:www-data /var/www/html/monitor-ip/database
-sudo chmod -R 775 /var/www/html/monitor-ip/database
+sudo chown -R www-data:www-data /var/www/html/monitor-ip/db
+sudo chmod -R 775 /var/www/html/monitor-ip/db
 ```
 
-**Nota:** El archivo con la base de datos se creará en `/var/www/html/monitor-ip/database/monitor.db`
+**Nota:** El archivo con la base de datos se creará en `/var/www/html/monitor-ip/db/monitor.db`
 
 ### 3️⃣ Ejecución
 **🔹Levanta el servidor Apache local:**
@@ -220,7 +218,7 @@ http://localhost/monitor-ip
 ## ⚒️ Gestionar la base de datos (Opcional)
 - Instala el programa DB Browser for SQLite en tu sistema.
 - Abre la aplicación y selecciona `Open Database`.
-- Navega hasta ` monitor-ip\database\monitor.db` y seleccionalo.
+- Navega hasta ` monitor-ip\db\monitor.db` y seleccionalo.
 - Explora las tablas `devices`, `ping_results`, `settings`, `services`, `telegram_alerts` y `speedtest_results`.
 
 

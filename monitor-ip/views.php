@@ -14,13 +14,14 @@ if (!is_array($ping_data)) {
 // Manejo de importación/exportación de configuración
 $import_export_message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_config'])) {
-    $success = import_monitor_db($_FILES['import_config']);
-    if ($success) {
+    $import_result = import_monitor_db($_FILES['import_config']);
+    if (!empty($import_result['success'])) {
         $network_param = isset($_GET['network']) ? '&network=' . urlencode($_GET['network']) : '';
-        header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '?imported=1' . $network_param);
+        $type = urlencode((string) ($import_result['type'] ?? 'db'));
+        header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '?imported=1&type=' . $type . $network_param);
         exit;
     }
-    $import_export_message = 'Error al importar la base de datos.';
+    $import_export_message = $import_result['message'] ?? 'Error al importar el archivo.';
 }
 if (isset($_GET['export_config'])) {
     export_monitor_db();
@@ -35,7 +36,12 @@ if (isset($_GET['export_report']) && $_GET['export_report'] === 'pdf') {
     exit;
 }
 if (isset($_GET['imported'])) {
-    $import_export_message = 'Base de datos importada correctamente.';
+    $imported_type = $_GET['type'] ?? 'db';
+    if ($imported_type === 'ini') {
+        $import_export_message = 'Configuración config.ini importada correctamente.';
+    } else {
+        $import_export_message = 'Base de datos importada correctamente.';
+    }
 }
 
 
@@ -1158,11 +1164,18 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                     class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
                                     <h4 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-500">AI
                                         Diagnostic Report</h4>
-                                    <button type="button" onclick="copyAIReportDetail()"
-                                        class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 whitespace-nowrap">
-                                        <i class="fas fa-copy mr-2"></i> <span class="hidden sm:inline">Copy
-                                            Report</span><span class="sm:hidden">Copy</span>
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" onclick="openAIReport()"
+                                            class="btn px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 whitespace-nowrap">
+                                            <i class="fas fa-external-link-alt mr-2"></i> <span class="hidden sm:inline">Open in
+                                                AI Chat</span><span class="sm:hidden">AI</span>
+                                        </button>
+                                        <button type="button" onclick="copyAIReportDetail()"
+                                            class="btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 whitespace-nowrap">
+                                            <i class="fas fa-copy mr-2"></i> <span class="hidden sm:inline">Copy
+                                                Report</span><span class="sm:hidden">Copy</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div
                                     class="flex-1 bg-gray-900 rounded-2xl border border-gray-800 p-3 sm:p-6 overflow-y-auto custom-scrollbar font-mono text-[10px] sm:text-xs text-emerald-400/90 leading-relaxed shadow-inner min-h-[300px]">

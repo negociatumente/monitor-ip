@@ -5,12 +5,14 @@ $ping_interval = 300; // Intervalo de ping en segundos (valor por defecto)
 $security_enabled = true; // Habilitar seguridad (valor por defecto)
 $security_username = ''; // Nombre de usuario para autenticación (vacío por defecto)
 $security_password = ''; // Contraseña para autenticación (vacío por defecto)
+$network_color = '#012c81'; // Color por defecto para redes (red privada)
+$host_color = '#6b7280'; // Color por defecto para hosts (red privada)
 
 if (!extension_loaded('pdo_sqlite')) {
     die("Error: La extensión pdo_sqlite de PHP no está disponible en este servidor.");
 }
 
-$db_dir = __DIR__ . '/../../database';
+$db_dir = __DIR__ . '/../db';
 if (!is_dir($db_dir)) {
     mkdir($db_dir, 0775, true);
 }
@@ -55,6 +57,11 @@ try {
     $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('security', 'enabled', '" . ($security_enabled ? '1' : '0') . "')");
     $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('security', 'username', '$security_username')");
     $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('security', 'password', '$security_password')");
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('ai', 'provider', 'chatgpt')");
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('ai', 'base_url', 'https://chatgpt.com')");
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('ai', 'gpt_path', '')");
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('services', 'host_color', '$host_color')");
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('services', 'network_color', '$network_color')");
 
     // 4. Crear tabla de servicios de la red pública
     $db->exec("CREATE TABLE IF NOT EXISTS services (

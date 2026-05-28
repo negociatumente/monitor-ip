@@ -1,9 +1,6 @@
 <?php
-require_once __DIR__ . '/db/deployDB.php';
-/**
- * Detecta si el script se está ejecutando dentro de un contenedor Docker/Podman
- * @return bool True si está en un contenedor, false en caso contrario
- */
+require_once __DIR__ . '/deployDB.php';
+
 function is_running_in_container()
 {
     // Método 1: Verificar archivo .dockerenv (Docker)
@@ -488,7 +485,7 @@ function add_ip($ip, $service, $method = 'icmp', $type = '')
 
 function get_monitor_db_path()
 {
-    return __DIR__ . '/../database/monitor.db';
+    return __DIR__ . '/../db/monitor.db';
 }
 
 function get_report_window_start_30d()
@@ -1191,32 +1188,130 @@ function export_monitor_db()
     exit;
 }
 
-// Importa un archivo monitor.db subido y reemplaza la base de datos actual
+function import_monitor_config_ini($ini_path)
+{
+    global $db;
+
+    $config_ini = @parse_ini_file($ini_path, true);
+    if (!is_array($config_ini)) {
+        return ['success' => false, 'message' => 'El archivo INI no es válido.'];
+    }
+
+    if (!($db instanceof PDO)) {
+        return ['success' => false, 'message' => 'No hay conexión activa con la base de datos.'];
+    }
+
+    $local_count = 0;
+    $external_count = 0;
+    $skipped_count = 0;
+
+    try {
+        $db->beginTransaction();
+
+        $general_sections = ['settings', 'telegram', 'security', 'ai'];
+        $stmt_setting = $db->prepare("INSERT OR REPLACE INTO settings (section, key, value) VALUES (?, ?, ?)");
+        foreach ($general_sections as $section) {
+            if (!isset($config_ini[$section]) || !is_array($config_ini[$section])) {
+                continue;
+            }
+            foreach ($config_ini[$section] as $key => $val) {
+                $stmt_setting->execute([$section, $key, (string) $val]);
+            }
+        }
+
+        $services_colors = $config_ini['services-colors'] ?? [];
+        $services_methods = $config_ini['services-methods'] ?? [];
+        $all_service_names = array_unique(array_merge(array_keys($services_colors), array_keys($services_methods)));
+        if (!empty($all_service_names)) {
+            $stmt_service = $db->prepare("INSERT OR REPLACE INTO services (name, method, color) VALUES (?, ?, ?)");
+            foreach ($all_service_names as $name) {
+                $color = $services_colors[$name] ?? '#6b7280';
+                $method = $services_methods[$name] ?? 'icmp';
+                $stmt_service->execute([$name, $method, $color]);
+            }
+        }
+
+        $stmt_select_device = $db->prepare("SELECT id FROM devices WHERE ip = ?");
+        $stmt_insert_device = $db->prepare("INSERT INTO devices (ip, host, type, network, is_local) VALUES (?, ?, ?, ?, ?)");
+
+        if (isset($config_ini['ips-host']) && is_array($config_ini['ips-host'])) {
+            foreach ($config_ini['ips-host'] as $ip => $host) {
+                $type = $config_ini['ips-type'][$ip] ?? 'other';
+                $network = $config_ini['ips-network'][$ip] ?? 'Ethernet';
+                $stmt_select_device->execute([$ip]);
+                $exists = $stmt_select_device->fetchColumn();
+                if ($exists !== false) {
+                    $skipped_count++;
+                } else {
+                    $stmt_insert_device->execute([$ip, $host, $type, $network, 1]);
+                    $local_count++;
+                }
+            }
+        }
+
+        if (isset($config_ini['ips-services']) && is_array($config_ini['ips-services'])) {
+            foreach ($config_ini['ips-services'] as $ip => $host) {
+                $type = $config_ini['ips-type'][$ip] ?? 'other';
+                $network = $config_ini['ips-network'][$ip] ?? 'Ethernet';
+                $stmt_select_device->execute([$ip]);
+                $exists = $stmt_select_device->fetchColumn();
+                if ($exists !== false) {
+                    $skipped_count++;
+                } else {
+                    $stmt_insert_device->execute([$ip, $host, $type, $network, 0]);
+                    $external_count++;
+                }
+            }
+        }
+
+        $db->commit();
+        $total = $local_count + $external_count;
+        return ['success' => true, 'type' => 'ini', 'message' => "Configuración importada sin borrar datos previos: $total IPs nuevas ($local_count locales, $external_count externas), $skipped_count ya existentes."];
+    } catch (Exception $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log("Failed to import config.ini into SQLite: " . $e->getMessage());
+        return ['success' => false, 'message' => 'No se pudo importar el archivo config.ini.'];
+    }
+}
+
+// Importa monitor.db o config.ini
 function import_monitor_db($uploaded_file)
 {
     $tmp_path = is_array($uploaded_file) ? ($uploaded_file['tmp_name'] ?? '') : $uploaded_file;
+    $original_name = is_array($uploaded_file) ? ($uploaded_file['name'] ?? '') : '';
     $destination = get_monitor_db_path();
     $db_dir = dirname($destination);
 
     if (!$tmp_path || !is_uploaded_file($tmp_path)) {
-        return false;
+        return ['success' => false, 'message' => 'No se recibió ningún archivo válido.'];
+    }
+
+    $extension = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
+    if ($extension === 'ini') {
+        return import_monitor_config_ini($tmp_path);
+    }
+
+    if ($extension !== 'db') {
+        return ['success' => false, 'message' => 'Formato no soportado. Usa monitor.db o config.ini.'];
     }
 
     if (!is_dir($db_dir)) {
         if (!mkdir($db_dir, 0775, true) && !is_dir($db_dir)) {
-            return false;
+            return ['success' => false, 'message' => 'No se pudo crear el directorio de la base de datos.'];
         }
     }
 
     if (!move_uploaded_file($tmp_path, $destination)) {
-        return false;
+        return ['success' => false, 'message' => 'No se pudo reemplazar monitor.db.'];
     }
 
     if (!file_exists($destination) || filesize($destination) === 0) {
-        return false;
+        return ['success' => false, 'message' => 'El archivo monitor.db importado es inválido o está vacío.'];
     }
 
-    return true;
+    return ['success' => true, 'type' => 'db', 'message' => 'Base de datos importada correctamente.'];
 }
 
 // Función para eliminar un servicio y todas sus IPs asociadas
@@ -1389,7 +1484,7 @@ function save_config_file($config, $file_path = '')
         $db->beginTransaction();
 
         // 1. Sync settings, security, telegram to settings database table
-        $general_sections = ['settings', 'telegram', 'security'];
+        $general_sections = ['settings', 'telegram', 'security', 'ai'];
         $stmt_setting_check = $db->prepare("SELECT 1 FROM settings WHERE section = ? AND key = ?");
         $stmt_setting_insert = $db->prepare("INSERT INTO settings (section, key, value) VALUES (?, ?, ?)");
         $stmt_setting_update = $db->prepare("UPDATE settings SET value = ? WHERE section = ? AND key = ?");
@@ -1555,7 +1650,42 @@ function ensure_config_structure($config, $is_local_network = false)
         'message_template' => $telegram['message_template'],
     ];
 
+    $ai = get_ai_config($config);
+    $config['ai'] = [
+        'provider' => $ai['provider'],
+        'base_url' => $ai['base_url'],
+        'gpt_path' => $ai['gpt_path'],
+    ];
+
     return $config;
+}
+
+function get_ai_config($config)
+{
+    $defaults = [
+        'provider' => 'chatgpt',
+        'base_url' => 'https://chatgpt.com',
+        'gpt_path' => '',
+    ];
+
+    $ai = array_merge($defaults, $config['ai'] ?? []);
+    $provider = trim((string) $ai['provider']);
+    $base_url = trim((string) $ai['base_url']);
+    $gpt_path = trim((string) $ai['gpt_path']);
+
+    if ($provider === '') {
+        $provider = $defaults['provider'];
+    }
+
+    if ($base_url === '') {
+        $base_url = $defaults['base_url'];
+    }
+
+    return [
+        'provider' => $provider,
+        'base_url' => rtrim($base_url, '/'),
+        'gpt_path' => $gpt_path,
+    ];
 }
 
 function get_telegram_config($config)

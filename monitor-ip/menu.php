@@ -12,6 +12,7 @@
     ?>;
     window.telegramConfig = <?php echo $telegram_config_json; ?>;
     window.telegramAlertHistory = <?php echo $telegram_alert_history_json; ?>;
+    window.aiConfig = <?php echo $ai_config_json; ?>;
 </script>
 <div class="mb-4">
     <!-- Monitoring Controls Panel - Single Row Layout (Responsive) -->
@@ -147,20 +148,37 @@
                     </button>
                 </div>
 
-                <!-- Alertas Telegram -->
+                <!-- Telegram Alerts -->
                 <div class="flex items-center gap-2 bg-blue-50/80 dark:bg-blue-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-blue-200/50 dark:border-blue-700/40 hover:bg-blue-100/80 dark:hover:bg-blue-900/30 transition-all group cursor-pointer flex-shrink-0"
                     onclick="showTelegramConfigModal();">
                     <i class="fab fa-telegram-plane text-blue-500 text-xs sm:text-sm"></i>
                     <div>
                         <p
                             class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">
-                            Alertas</p>
+                            Alerts</p>
                         <span class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200">Telegram</span>
                     </div>
                     <button onclick="showTelegramConfigModal(); event.stopPropagation();"
                         class="ml-1 p-1 rounded hover:bg-blue-200/50 dark:hover:bg-blue-800/40 transition-all opacity-0 group-hover:opacity-100"
-                        title="Alertas Telegram">
+                        title="Telegram Alerts">
                         <i class="fas fa-edit text-blue-600 dark:text-blue-400 text-[10px] sm:text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- AI Settings -->
+                <div class="flex items-center gap-2 bg-violet-50/80 dark:bg-violet-900/20 rounded-lg p-2 sm:p-2.5 shadow-sm border border-violet-200/50 dark:border-violet-700/40 hover:bg-violet-100/80 dark:hover:bg-violet-900/30 transition-all group cursor-pointer flex-shrink-0"
+                    onclick="showAIConfigModal();">
+                    <i class="fas fa-robot text-violet-500 text-xs sm:text-sm"></i>
+                    <div>
+                        <p
+                            class="text-[9px] sm:text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase leading-tight">
+                            HELP</p>
+                        <span class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200">IA</span>
+                    </div>
+                    <button onclick="showAIConfigModal(); event.stopPropagation();"
+                        class="ml-1 p-1 rounded hover:bg-violet-200/50 dark:hover:bg-violet-800/40 transition-all opacity-0 group-hover:opacity-100"
+                        title="Configure AI">
+                        <i class="fas fa-edit text-violet-600 dark:text-violet-400 text-[10px] sm:text-xs"></i>
                     </button>
                 </div>
 
@@ -213,6 +231,58 @@
     </div>
 </div>
 
+<!-- Modal: AI Config -->
+<div id="aiConfigModal" class="modal">
+    <div class="modal-content p-0 max-w-lg shadow-2xl border-0 bg-white dark:bg-gray-800 overflow-hidden">
+        <div class="bg-gradient-to-r from-violet-600 to-indigo-700 p-5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 rounded-full p-2.5 flex items-center justify-center shadow-inner">
+                    <i class="fas fa-robot text-xl text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-extrabold text-white tracking-tight">AI Settings</h2>
+                    <p class="text-violet-100 text-xs">Set your custom GPT path for opening reports.</p>
+                </div>
+            </div>
+            <button type="button" onclick="hideAIConfigModal();"
+                class="text-white/70 hover:text-white transition-colors text-2xl ml-4">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-5 bg-gray-50 dark:bg-gray-900 space-y-4">
+            <div>
+                <label for="aiProviderSelect" class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                    Choose AI Provider
+                </label>
+                <select id="aiProviderSelect"
+                    class="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100">
+                    <option value="chatgpt">ChatGPT</option>
+                </select>
+            </div>
+            <div>
+                <label for="aiGptPathInput" class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                    GPT path (optional)
+                </label>
+                <input type="text" id="aiGptPathInput" placeholder="g/g-xxxx-mi-gpt"
+                    class="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100">
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Example: <code>g/g-xxxx-my-gpt</code>. If left empty, standard ChatGPT opens.
+                </p>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="hideAIConfigModal();"
+                    class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                    Cancel
+                </button>
+                <button type="button" onclick="saveAIConfig();"
+                    class="btn px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal: Database Import / Export -->
 <div id="configModal" class="modal">
     <div class="modal-content p-0 max-w-4xl shadow-2xl border-0 bg-white dark:bg-gray-800">
@@ -223,8 +293,8 @@
                 </div>
                 <div>
                     <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Database Import / Export</h2>
-                    <p class="text-indigo-100 text-xs font-medium">Importa o exporta el archivo SQLite (monitor.db)
-                        directamente.</p>
+                    <p class="text-indigo-100 text-xs font-medium">Import or export the SQLite file (monitor.db)
+                        directly.</p>
                 </div>
             </div>
             <button type="button" onclick="hideConfigModal();"
@@ -241,33 +311,32 @@
                 </div>
             <?php endif; ?>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Importar -->
+                <!-- Import -->
                 <form method="POST" enctype="multipart/form-data"
                     class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center gap-3 mb-2">
                         <i class="fas fa-file-import text-indigo-500 text-2xl"></i>
-                        <span class="font-bold text-gray-700 dark:text-gray-200">Import Database</span>
+                        <span class="font-bold text-gray-700 dark:text-gray-200">Import Database / Config</span>
                     </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">*Importará la base de datos SQLite actual
-                        (monitor.db).</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Import (monitor.db or config.ini). <br> </p>
                     <input type="hidden" name="network"
                         value="<?php echo isset($network_type) ? $network_type : 'external'; ?>">
-                    <input type="file" name="import_config" accept=".db" required
+                    <input type="file" name="import_config" accept=".db,.ini" required
                         class="block w-full text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2">
                     <button type="submit"
                         class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
                         <i class="fas fa-upload"></i> Import
                     </button>
                 </form>
-                <!-- Exportar -->
+                <!-- Export -->
                 <div
                     class="bg-white dark:bg-gray-800 rounded-2xl shadow p-5 flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center gap-3 mb-2">
                         <i class="fas fa-file-export text-green-500 text-2xl"></i>
                         <span class="font-bold text-gray-700 dark:text-gray-200">Export Database</span>
                     </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Exporta una copia del archivo (monitor.db)
-                        actual.</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Export a copy of the current file
+                        (monitor.db).</p>
                     <a href="?export_config=1<?php echo isset($network_type) ? '&network=' . $network_type : ''; ?>"
                         class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
                         <i class="fas fa-download"></i> Export
@@ -281,7 +350,7 @@
                         <span class="font-bold text-gray-700 dark:text-gray-200">Generate Report (30d)</span>
                     </div>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                        Incluye estado general del sistema y latencias agregadas (últimos 30 días).</p>
+                        Includes overall system status and aggregated latencies (last 30 days).</p>
                     <div class="grid grid-cols-2 gap-2">
                         <a href="?export_report=pdf<?php echo isset($network_type) ? '&network=' . $network_type : ''; ?>"
                             class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 transition-all">
@@ -742,7 +811,7 @@
                 </div>
                 <div>
                     <h2 class="text-2xl font-extrabold text-white tracking-tight mb-1">Manage Services</h2>
-                    <p class="text-indigo-100 text-xs font-medium">Personaliza y gestiona los servicios monitorizados
+                    <p class="text-indigo-100 text-xs font-medium">Add, edit or delete monitoring services and their associated colors
                     </p>
                 </div>
             </div>
@@ -1342,7 +1411,7 @@
                     <i class="fab fa-telegram-plane text-2xl text-white drop-shadow"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-extrabold text-white tracking-tight">Alertas Telegram</h2>
+                    <h2 class="text-xl font-extrabold text-white tracking-tight">Telegram Alerts</h2>
                     <p class="text-blue-100 text-xs font-medium mt-1">Notifica cambios reales de estado UP/DOWN.</p>
                 </div>
             </div>
@@ -1360,10 +1429,9 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <i class="fas fa-bell text-blue-500 text-sm"></i>
-                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Activar alertas</span>
+                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Enable alerts</span>
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Solo envía mensajes cuando un host
-                            cambia de estado.</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Only send messages when a host changes state.</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
                         <input type="checkbox" id="enabled" name="enabled" class="sr-only peer" <?php echo $telegram_config['enabled'] ? 'checked' : ''; ?>>
@@ -1391,7 +1459,7 @@
 
                 <div>
                     <label for="chat_id" class="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        <i class="fas fa-user text-blue-500 mr-1"></i>Chat ID (Usuario o grupo)
+                        <i class="fas fa-user text-blue-500 mr-1"></i>Chat ID (user or group)
                     </label>
                     <input type="text" id="chat_id" name="chat_id"
                         value="<?php echo htmlspecialchars($telegram_config['chat_id'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -1407,21 +1475,20 @@
                             <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                                 <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                     <i class="fas fa-sliders-h text-blue-500"></i>
-                                    Opciones de alerta
+                                    Alert options
                                 </h3>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Selecciona qué eventos
-                                    quieres recibir.</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Choose which events you want to receive.</p>
                             </div>
 
                             <li class="px-4 py-3 flex items-start justify-between gap-4">
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-2">
                                         <i class="fas fa-arrow-down text-red-500 text-xs"></i>
-                                        <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar al
-                                            caer</span>
+                                        <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Notify on
+                                            down</span>
                                     </div>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Cuando un host pasa de UP
-                                        a DOWN.</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">When a host changes from UP
+                                        to DOWN.</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
                                     <input type="checkbox" id="notify_on_down" name="notify_on_down"
@@ -1437,11 +1504,11 @@
                                     <div class="min-w-0">
                                         <div class="flex items-center gap-2">
                                             <i class="fas fa-arrow-up text-green-500 text-xs"></i>
-                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar
-                                                al recuperar</span>
+                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Notify
+                                                on recovery</span>
                                         </div>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Cuando un host pasa
-                                            de DOWN a UP.</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">When a host changes
+                                            from DOWN to UP.</p>
                                     </div>
                                     <label
                                         class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
@@ -1457,11 +1524,11 @@
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center gap-2">
                                             <i class="fas fa-gauge-high text-amber-500 text-xs"></i>
-                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar
-                                                por latencia alta</span>
+                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Notify
+                                                on high latency</span>
                                         </div>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Envía alerta cuando
-                                            la latencia supera el umbral (ms).</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Send an alert when
+                                            latency exceeds the threshold (ms).</p>
                                     </div>
 
                                     <div class="flex items-center justify-between gap-3 sm:justify-end">
@@ -1487,10 +1554,10 @@
                                     <div class="min-w-0">
                                         <div class="flex items-center gap-2">
                                             <i class="fas fa-user-secret text-purple-500 text-xs"></i>
-                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Avisar
-                                                de intrusos (Solo Red Privada) ¡PRECAUCIÓN!</span>
+                                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Notify
+                                                on intruders (Private Network only) WARNING!</span>
                                         </div>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Detecta IPs nuevas y envía un aviso. Ralentiza la red, usar con un intervalo de tiempo alto.</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Detect new IPs and send a warning. This may slow down the network; use with a higher interval.</p>
                                     </div>
                                     <label
                                         class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
@@ -1523,25 +1590,24 @@
                                     <h3
                                         class="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                         <i class="fas fa-clock-rotate-left text-blue-500"></i>
-                                        Histórico de alertas
+                                        Alert history
                                     </h3>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Últimas alertas enviadas
-                                        correctamente a Telegram.</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Latest alerts sent successfully to Telegram.</p>
                                 </div>
                                 <span
                                     class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                                    <?php echo count($telegram_alert_history); ?> registros
+                                    <?php echo count($telegram_alert_history); ?> records
                                 </span>
                             </div>
                             <div class="overflow-x-auto max-h-32">
                                 <table class="w-full text-left text-xs">
                                     <thead class="bg-gray-50 dark:bg-gray-900 sticky top-0">
                                         <tr class="text-gray-500 dark:text-gray-400 uppercase">
-                                            <th class="px-3 py-2 font-bold">Fecha</th>
-                                            <th class="px-3 py-2 font-bold">Servicio</th>
+                                            <th class="px-3 py-2 font-bold">Date</th>
+                                            <th class="px-3 py-2 font-bold">Service</th>
                                             <th class="px-3 py-2 font-bold">IP</th>
-                                            <th class="px-3 py-2 font-bold">Cambio</th>
-                                            <th class="px-3 py-2 font-bold">Latencia</th>
+                                            <th class="px-3 py-2 font-bold">Change</th>
+                                            <th class="px-3 py-2 font-bold">Latency</th>
                                         </tr>
                                     </thead>
                                     <tbody id="telegramAlertHistoryBody"
@@ -1550,7 +1616,7 @@
                                             <tr>
                                                 <td colspan="5"
                                                     class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">
-                                                    Aún no hay alertas enviadas.
+                                                    No alerts have been sent yet.
                                                 </td>
                                             </tr>
                                         <?php else: ?>
@@ -1602,15 +1668,15 @@
                 class="px-5 py-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:justify-end gap-2 rounded-b-2xl">
                 <button type="button" onclick="testTelegramConnection();"
                     class="btn px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold">
-                    <i class="fas fa-paper-plane"></i> Probar conexión
+                    <i class="fas fa-paper-plane"></i> Test connection
                 </button>
                 <button type="button" onclick="hideTelegramConfigModal();"
                     class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 text-sm font-semibold">
-                    <i class="fas fa-times"></i> Cancelar
+                    <i class="fas fa-times"></i> Cancel
                 </button>
                 <button type="submit"
                     class="btn px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold">
-                    <i class="fas fa-save"></i> Guardar
+                    <i class="fas fa-save"></i> Save
                 </button>
             </div>
         </form>

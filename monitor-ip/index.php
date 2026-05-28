@@ -392,6 +392,41 @@ if (isset($_GET['action'])) {
         exit;
     }
 
+    if ($_GET['action'] === 'get_ai_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        header('Content-Type: application/json');
+        $config = load_config($is_local_network);
+        $ai_cfg = get_ai_config($config);
+        echo json_encode(['success' => true, 'config' => $ai_cfg]);
+        exit;
+    }
+
+    if ($_GET['action'] === 'save_ai_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+        try {
+            $json = file_get_contents('php://input');
+            $data = json_decode($json, true);
+            if (!is_array($data)) {
+                throw new Exception('Invalid payload');
+            }
+
+            $config = load_config($is_local_network);
+            $config['ai'] = [
+                'provider' => trim((string) ($data['provider'] ?? 'chatgpt')),
+                'base_url' => trim((string) ($data['base_url'] ?? 'https://chatgpt.com')),
+                'gpt_path' => trim((string) ($data['gpt_path'] ?? '')),
+            ];
+
+            if (!save_config_file($config, $config_path)) {
+                throw new Exception('Failed to persist AI config');
+            }
+
+            echo json_encode(['success' => true, 'config' => get_ai_config($config)]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
     if ($_GET['action'] === 'test_telegram' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Content-Type: application/json');
         $config = load_config($is_local_network);
@@ -819,6 +854,7 @@ $telegram_config_json = json_encode([
     'message_template' => $telegram_config['message_template'],
 ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 $telegram_alert_history_json = json_encode($telegram_alert_history, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
+$ai_config_json = json_encode(get_ai_config($config), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 
 // Cargar la vista al final, con los datos actualizados
 require_once __DIR__ . '/views.php';

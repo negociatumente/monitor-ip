@@ -1,7 +1,6 @@
 /**
  * IP Monitor - Main JavaScript
  */
-
 /**
  * Theme Toggle Functionality
  */
@@ -111,6 +110,11 @@ const modalFunctions = {
         this.showModal('telegramConfigModal');
     },
     hideTelegramConfigModal: function () { this.hideModal('telegramConfigModal'); },
+    showAIConfigModal: function () {
+        loadAIConfigIntoForm();
+        this.showModal('aiConfigModal');
+    },
+    hideAIConfigModal: function () { this.hideModal('aiConfigModal'); },
 };
 
 /**
@@ -295,6 +299,108 @@ window.showChangePasswordModal = function () { modalFunctions.showChangePassword
 window.hideChangePasswordModal = function () { modalFunctions.hideChangePasswordModal(); };
 window.showTelegramConfigModal = function () { modalFunctions.showTelegramConfigModal(); };
 window.hideTelegramConfigModal = function () { modalFunctions.hideTelegramConfigModal(); };
+window.showAIConfigModal = function () { modalFunctions.showAIConfigModal(); };
+window.hideAIConfigModal = function () { modalFunctions.hideAIConfigModal(); };
+
+function getAIConfigPath() {
+    return (window.aiConfig?.gpt_path || '').trim();
+}
+
+function getAIProvider() {
+    return (window.aiConfig?.provider || 'chatgpt').trim();
+}
+
+function getAIBaseUrl() {
+    return (window.aiConfig?.base_url || 'https://chatgpt.com').trim();
+}
+
+function normalizeAIConfigPath(rawValue) {
+    let value = (rawValue || '').trim();
+    value = value.replace(/^https?:\/\/(www\.)?chatgpt\.com\//i, '');
+    value = value.replace(/^\/+/, '');
+    if (/^g-[a-zA-Z0-9]+/.test(value)) {
+        value = `g/${value}`;
+    }
+    return value;
+}
+
+function normalizeAIBaseUrl(rawValue) {
+    let value = (rawValue || '').trim();
+    if (!value) return 'https://chatgpt.com';
+    if (!/^https?:\/\//i.test(value)) {
+        value = `https://${value}`;
+    }
+    return value.replace(/\/+$/, '');
+}
+
+async function loadAIConfigIntoForm() {
+    try {
+        const response = await fetch('?action=get_ai_config');
+        const data = await response.json();
+        if (data?.success && data.config) {
+            window.aiConfig = data.config;
+        }
+    } catch (error) {
+        console.error('Failed to load AI config from DB:', error);
+    }
+
+    const providerSelect = document.getElementById('aiProviderSelect');
+    const urlInput = document.getElementById('aiBaseUrlInput');
+    const input = document.getElementById('aiGptPathInput');
+    if (providerSelect) providerSelect.value = getAIProvider();
+    if (urlInput) urlInput.value = getAIBaseUrl();
+    if (!input) return;
+    input.value = getAIConfigPath();
+}
+
+async function saveAIConfig() {
+    const providerSelect = document.getElementById('aiProviderSelect');
+    const urlInput = document.getElementById('aiBaseUrlInput');
+    const input = document.getElementById('aiGptPathInput');
+    if (!input || !providerSelect) return;
+    const provider = providerSelect.value || 'chatgpt';
+    const baseUrl = normalizeAIBaseUrl(urlInput ? urlInput.value : getAIBaseUrl());
+    const normalized = normalizeAIConfigPath(input.value);
+
+    try {
+        const response = await fetch('?action=save_ai_config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                provider,
+                base_url: baseUrl,
+                gpt_path: normalized
+            })
+        });
+        const data = await response.json();
+        if (!data?.success) {
+            throw new Error(data?.message || 'Failed to save AI configuration');
+        }
+        window.aiConfig = data.config || { provider, base_url: baseUrl, gpt_path: normalized };
+        modalFunctions.hideAIConfigModal();
+        modalFunctions.showAlert('Configuración IA guardada en base de datos.', 'success');
+    } catch (error) {
+        console.error('Failed to save AI config:', error);
+        modalFunctions.showAlert('No se pudo guardar la configuración IA.', 'error');
+    }
+}
+
+function buildChatGPTUrlForPrompt(promptText) {
+    const prompt = encodeURIComponent(promptText || '');
+    const path = getAIConfigPath();
+    const base = getAIBaseUrl() || 'https://chatgpt.com';
+
+    if (!path) {
+        return `${base}/?q=${prompt}`;
+    }
+
+    const target = `${base}/${path}`;
+    const separator = target.includes('?') ? '&' : '?';
+    return `${target}${separator}q=${prompt}&prompt=${prompt}`;
+}
+
+window.saveAIConfig = saveAIConfig;
+window.buildChatGPTUrlForPrompt = buildChatGPTUrlForPrompt;
 
 /**
  * User account dropdown in the header.
