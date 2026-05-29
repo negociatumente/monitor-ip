@@ -24,7 +24,7 @@ Este proyecto permite **monitorear la conectividad** a servidores desde tu red l
 
 ## 💼 ¿Necesitas una versión personalizada para tu empresa?
 Si buscas una solución personalizada para tu empresa ofrezco versiones **Enterprise**:
-- 🛠️ **Personalización completa** (Logo, colores y funciones específicas).
+**Personalización completa** (Logo, colores y funciones específicas).
 
 👉 **[Ponte en contacto para una consultoría](https://negociatumente.com/#contacto)** 👈
 
@@ -199,20 +199,20 @@ https://www.tiktok.com/@negociatumente/video/7504332909923568919
 -Descomenta la línea `extension=sqlite3` y `extension=pdo_sqlite` si está comentada.  
 -Reinicia Apache en el panel de XAMPP.
 
-**🔹Instalar Nmap:**  
--Descarga el instalador desde la página oficial.  
--Ejecuta el instalador y sigue los pasos.
-
-**🔹Instalar Speedtest:**  
--Descarga el instalador desde la página oficial.  
--Pon el ejecutable speedtest.exe en la carpeta /monitor-ip/lib del proyecto 
-
 ### 3️⃣ Descargar y configurar el proyecto
 **🔹Descargar el código ZIP:**  
 https://github.com/negociatumente/monitor-ip
 
 **🔹Mueve la carpeta /monitor-ip que hay dentro de la carpeta /monitor-ip-main a la carpeta de htdocs:**  
 C:\xampp\htdocs\monitor-ip
+
+**🔹Instalar Nmap (Opcional):**  
+-Descarga el instalador desde la página oficial.  
+-Ejecuta el instalador y sigue los pasos.
+
+**🔹Instalar Speedtest (Opcional):**  
+-Descarga el instalador desde la página oficial.  
+-Pon el ejecutable speedtest.exe en la carpeta /monitor-ip/lib del proyecto 
 
 ### 4️⃣ Resultados
 **🔹Finalmente, abre en tu navegador la siguiente url:**    
