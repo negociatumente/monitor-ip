@@ -1,6 +1,9 @@
 # 🌐 IP Monitor  
 Este proyecto permite **monitorear la conectividad** a servidores desde tu red local y **corregir problemas en tu red**. Es útil para diagnosticar bloqueos de tu proveedor de Internet (ISP) y verificar la disponibilidad de estos servicios. Ademas, puedes realizar un escaneo de red local para descubrir dispositivos conectados a tu red y medir latencias y velocidades de tu red. Finalmente, puedes generar un reporte de la calidad de tu red.
 
+![IP Monitor](monitor-ip/assets/monitor-v1.0.png)
+
+
 **Tutorial Completo**  
 👉 **[VIDEO YOUTUBE: Aprende a Monitorizar IPs](https://www.youtube.com/watch?v=B5o-eO8cS7Q)** 👈
 
@@ -23,10 +26,7 @@ Este proyecto permite **monitorear la conectividad** a servidores desde tu red l
 Si buscas una solución personalizada para tu empresa ofrezco versiones **Enterprise**:
 - 🛠️ **Personalización completa** (Logo, colores y funciones específicas).
 
-👉 **[Ponte en contacto para una consultoría](https://negociatumente.com/#contacto)**
-
-
-![IP Monitor](monitor-ip/assets/monitor-v1.0.png)
+👉 **[Ponte en contacto para una consultoría](https://negociatumente.com/#contacto)** 👈
 
 ## ⚠️ Aviso  
 - Este proyecto es solo para **uso personal y diagnóstico de red**.  
@@ -51,9 +51,12 @@ monitor-ip/
 ├── menu.php                          # Menú de navegación y acciones rápidas
 ├── views.php                         # Vista principal del dashboard
 ├── assets/                           # Archivos de configuración y resultados
+│   ├── bd_sqlite.png                 # Captura de pantalla de BD
 │   ├── favicon.png                   # Icono del proyecto
 │   ├── logo.png                      # Logo del proyecto
-│   └── monitor-v1.0.png              # Captura de pantalla del proyecto
+│   ├── monitor-v1.0.png              # Captura de pantalla del proyecto
+│   ├── telegram_alerts.png           # Captura de pantalla de alertas de Telegram
+│   └── telegram_intruders.png        # Captura de pantalla de intrusos de Telegram
 ├── auth/                             # Archivos de configuración y resultados
 │   ├── login.php                     # Página de login y autenticación
 │   └── logout.php                    # Página de cierre de sesión
@@ -65,6 +68,7 @@ monitor-ip/
     ├── deployDB.php                  # Inicializa y conecta monitor.db
     ├── functions.php                 # Funciones PHP reutilizables
     ├── network_scan.js               # Lógica de escaneo de red y speedtest
+    ├── requestHandler.php            # Maneja las peticiones del frontend
     ├── script.js                     # Scripts JavaScript principales
     └── styles.css                    # Estilos CSS personalizados
 
@@ -216,6 +220,9 @@ http://localhost/monitor-ip
 
 
 ## ⚒️ Gestionar la base de datos (Opcional)
+
+![BD SQLITE](monitor-ip/assets/bd_sqlite.png)
+
 - Instala el programa DB Browser for SQLite en tu sistema.
 - Abre la aplicación y selecciona `Open Database`.
 - Navega hasta ` monitor-ip\db\monitor.db` y seleccionalo.
@@ -223,6 +230,9 @@ http://localhost/monitor-ip
 
 
 ## 🚨 Configurar Alertas Telegram (Opcional)
+
+![Alertas Telegram](monitor-ip/assets/telegram_alerts.png)
+
 ### 1️⃣ Crear un bot de Telegram
 
 Abrir este bot de Telegram:  
@@ -329,6 +339,8 @@ Monitor-IP: prueba de alertas Telegram OK
 ---
 
 ## 🕵️ Alertas de “Intrusos” en Red Privada (Opcional)
+
+![Intrusos Telegram](monitor-ip/assets/telegram_intruders.png)
 
 ### 1️⃣ Configurar alertas de intrusos
 En el panel de configuración, activa la opción de alertas de intrusos y guarda los cambios.
