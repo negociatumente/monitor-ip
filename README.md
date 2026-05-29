@@ -1,7 +1,7 @@
 # 🌐 IP Monitor  
 Este proyecto permite **monitorear la conectividad** a servidores desde tu red local y **corregir problemas en tu red**. Es útil para diagnosticar bloqueos de tu proveedor de Internet (ISP) y verificar la disponibilidad de estos servicios. Ademas, puedes realizar un escaneo de red local para descubrir dispositivos conectados a tu red y medir latencias y velocidades de tu red. Finalmente, puedes generar un reporte de la calidad de tu red.
 
-![IP Monitor](monitor-ip/assets/monitor-v1.0.png)
+![IP Monitor](monitor-ip/assets/monitor-v1.2.1.png)
 
 
 **Tutorial Completo**  
