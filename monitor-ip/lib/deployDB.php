@@ -93,6 +93,10 @@ try {
         packet_loss REAL
     )");
 
+    // Performance indexes for monitor queries
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_ping_results_device_timestamp ON ping_results(device_id, timestamp)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_devices_ip_is_local ON devices(ip, is_local)");
+
 } catch (PDOException $e) {
     die("Error al conectar con SQLite: " . $e->getMessage());
 }
