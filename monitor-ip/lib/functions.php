@@ -2797,6 +2797,312 @@ function calculate_packet_loss($ip, $count = 10)
     return 0;
 }
 
+/**
+ * Return configured platform endpoints for the selected gaming region.
+ */
+function get_gaming_latency_catalog($region = 'europe')
+{
+    global $db;
+    $regions = [
+        'europe' => ['label' => 'Europa', 'column' => 'target_europe'],
+        'north_america' => ['label' => 'Norteamérica', 'column' => 'target_north_america'],
+        'asia_pacific' => ['label' => 'Asia-Pacífico', 'column' => 'target_asia_pacific'],
+    ];
+    if (!isset($regions[$region])) {
+        throw new InvalidArgumentException('Región de juego no válida.');
+    }
+
+    $column = $regions[$region]['column'];
+    $games = $db->query("SELECT id, slug, name, platform, $column AS target FROM gaming_games ORDER BY name COLLATE NOCASE")->fetchAll(PDO::FETCH_ASSOC);
+    return array_map(static function ($game) use ($regions, $region) {
+        return [
+            'id' => $game['slug'],
+            'database_id' => (int) $game['id'],
+            'name' => $game['name'],
+            'platform' => $game['platform'],
+            'region' => $regions[$region]['label'],
+            'target' => $game['target'],
+        ];
+    }, $games);
+}
+
+function get_gaming_games()
+{
+    global $db;
+    return $db->query('SELECT id, slug, name, platform, target_europe, target_north_america, target_asia_pacific FROM gaming_games ORDER BY name COLLATE NOCASE')->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function validate_catalog_target($target)
+{
+    $target = strtolower(trim((string) $target));
+    $is_ip = filter_var($target, FILTER_VALIDATE_IP) !== false;
+    $is_host = preg_match('/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i', $target) === 1;
+    if (!$is_ip && !$is_host) {
+        throw new InvalidArgumentException('El destino debe ser una IP o un dominio válido.');
+    }
+    return $target;
+}
+
+function add_gaming_game(array $data)
+{
+    global $db;
+    $name = trim((string) ($data['name'] ?? ''));
+    $platform = trim((string) ($data['platform'] ?? ''));
+    if ($name === '' || strlen($name) > 80 || strlen($platform) > 80) {
+        throw new InvalidArgumentException('El nombre y la plataforma no son válidos.');
+    }
+
+    $slug = trim(strtolower((string) preg_replace('/[^a-z0-9]+/i', '-', $name)), '-');
+    $slug = $slug !== '' ? $slug : 'game';
+    $base_slug = $slug;
+    $suffix = 2;
+    $slug_exists = $db->prepare('SELECT 1 FROM gaming_games WHERE slug = ?');
+    while (true) {
+        $slug_exists->execute([$slug]);
+        if (!$slug_exists->fetchColumn()) {
+            break;
+        }
+        $slug = $base_slug . '-' . $suffix++;
+    }
+
+    $targets = [
+        validate_catalog_target($data['target_europe'] ?? ''),
+        validate_catalog_target($data['target_north_america'] ?? ''),
+        validate_catalog_target($data['target_asia_pacific'] ?? ''),
+    ];
+    $insert = $db->prepare('INSERT INTO gaming_games (slug, name, platform, target_europe, target_north_america, target_asia_pacific) VALUES (?, ?, ?, ?, ?, ?)');
+    $insert->execute([$slug, $name, $platform, ...$targets]);
+    return ['id' => (int) $db->lastInsertId(), 'slug' => $slug];
+}
+
+function delete_gaming_game($id)
+{
+    global $db;
+    $delete = $db->prepare('DELETE FROM gaming_games WHERE id = ?');
+    $delete->execute([(int) $id]);
+    return $delete->rowCount() > 0;
+}
+
+/**
+ * Parse a five-packet ping output into latency metrics for one game.
+ */
+function parse_gaming_latency_result($output, array $game)
+{
+    preg_match_all('/(?:time|tiempo)[=<]\\s*([\\d.,]+)\\s*ms/i', $output, $matches);
+    $samples = array_map(
+        static fn($value) => (float) str_replace(',', '.', $value),
+        $matches[1] ?? []
+    );
+
+    $loss = 100;
+    if (preg_match('/(\\d+(?:[.,]\\d+)?)%\\s*(?:packet\\s+loss|loss|de\\s+pérdida)/iu', $output, $loss_match)) {
+        $loss = (float) str_replace(',', '.', $loss_match[1]);
+    } elseif ($samples) {
+        $loss = round((1 - (count($samples) / 5)) * 100, 2);
+    }
+
+    $result = [
+        'id' => $game['id'],
+        'name' => $game['name'],
+        'platform' => $game['platform'],
+        'region' => $game['region'],
+        'available' => count($samples) > 0,
+        'samples' => count($samples),
+        'packet_loss' => $loss,
+        'average' => null,
+        'minimum' => null,
+        'maximum' => null,
+        'jitter' => null,
+    ];
+
+    if (!$samples) {
+        return $result;
+    }
+
+    $differences = [];
+    for ($index = 1, $total = count($samples); $index < $total; $index++) {
+        $differences[] = abs($samples[$index] - $samples[$index - 1]);
+    }
+
+    $result['average'] = round(array_sum($samples) / count($samples), 2);
+    $result['minimum'] = round(min($samples), 2);
+    $result['maximum'] = round(max($samples), 2);
+    $result['jitter'] = $differences ? round(array_sum($differences) / count($differences), 2) : 0.0;
+
+    return $result;
+}
+
+/**
+ * Measure every catalogued endpoint concurrently so the UI is not held up by
+ * one unavailable platform.
+ */
+function run_gaming_latency_test($region = 'europe')
+{
+    $is_windows = PHP_OS_FAMILY === 'Windows';
+    $processes = [];
+
+    foreach (get_gaming_latency_catalog($region) as $game) {
+        $target = escapeshellarg($game['target']);
+        $command = $is_windows
+            ? "ping -n 5 -w 1000 $target"
+            : (is_running_in_container() ? 'sudo ' : '') . "/bin/ping -n -c 5 -W 1 $target";
+        $pipes = [];
+        $process = proc_open($command, [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ], $pipes);
+
+        if (is_resource($process)) {
+            fclose($pipes[0]);
+            $processes[] = ['game' => $game, 'process' => $process, 'pipes' => $pipes];
+        } else {
+            $processes[] = ['game' => $game, 'process' => null, 'pipes' => null];
+        }
+    }
+
+    $results = [];
+    foreach ($processes as $entry) {
+        if (!is_resource($entry['process'])) {
+            $results[] = parse_gaming_latency_result('', $entry['game']);
+            continue;
+        }
+
+        $output = stream_get_contents($entry['pipes'][1]);
+        $error_output = stream_get_contents($entry['pipes'][2]);
+        fclose($entry['pipes'][1]);
+        fclose($entry['pipes'][2]);
+        proc_close($entry['process']);
+        $results[] = parse_gaming_latency_result($output . "\n" . $error_output, $entry['game']);
+    }
+
+    return ['success' => true, 'region' => $results[0]['region'] ?? null, 'results' => $results];
+}
+
+/**
+ * Return the editable DNS resolver catalog.
+ */
+function get_dns_benchmark_catalog()
+{
+    global $db;
+    return $db->query('SELECT id, name, ip FROM dns_resolvers ORDER BY name COLLATE NOCASE')->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function add_dns_resolver(array $data)
+{
+    global $db;
+    $name = trim((string) ($data['name'] ?? ''));
+    $ip = trim((string) ($data['ip'] ?? ''));
+    if ($name === '' || strlen($name) > 80 || !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        throw new InvalidArgumentException('El nombre o la IP IPv4 del DNS no son válidos.');
+    }
+
+    $insert = $db->prepare('INSERT INTO dns_resolvers (name, ip) VALUES (?, ?)');
+    $insert->execute([$name, $ip]);
+    return ['id' => (int) $db->lastInsertId()];
+}
+
+function delete_dns_resolver($id)
+{
+    global $db;
+    $delete = $db->prepare('DELETE FROM dns_resolvers WHERE id = ?');
+    $delete->execute([(int) $id]);
+    return $delete->rowCount() > 0;
+}
+
+/**
+ * Extract benchmark metrics from dig or Windows PowerShell DNS output.
+ */
+function parse_dns_benchmark_result($output, array $resolver)
+{
+    preg_match_all('/Query time:\s*([\d.,]+)\s*msec/i', $output, $dig_matches);
+    preg_match_all('/QUERY_TIME_MS:([\d.,]+)/i', $output, $powershell_matches);
+    $values = array_merge($dig_matches[1] ?? [], $powershell_matches[1] ?? []);
+    $samples = array_map(
+        static fn($value) => (float) str_replace(',', '.', $value),
+        $values
+    );
+
+    $result = [
+        'id' => $resolver['id'],
+        'name' => $resolver['name'],
+        'ip' => $resolver['ip'],
+        'available' => count($samples) > 0,
+        'samples' => count($samples),
+        'failure_rate' => round((1 - (count($samples) / 5)) * 100, 2),
+        'average' => null,
+        'minimum' => null,
+        'maximum' => null,
+        'jitter' => null,
+    ];
+
+    if (!$samples) {
+        return $result;
+    }
+
+    $differences = [];
+    for ($index = 1, $total = count($samples); $index < $total; $index++) {
+        $differences[] = abs($samples[$index] - $samples[$index - 1]);
+    }
+
+    $result['average'] = round(array_sum($samples) / count($samples), 2);
+    $result['minimum'] = round(min($samples), 2);
+    $result['maximum'] = round(max($samples), 2);
+    $result['jitter'] = $differences ? round(array_sum($differences) / count($differences), 2) : 0.0;
+
+    return $result;
+}
+
+/**
+ * Run five direct A-record lookups for every catalogued resolver in parallel.
+ */
+function run_dns_benchmark()
+{
+    $is_windows = PHP_OS_FAMILY === 'Windows';
+    $processes = [];
+
+    foreach (get_dns_benchmark_catalog() as $resolver) {
+        if ($is_windows) {
+            $script = '$ErrorActionPreference = \'Stop\'; 1..5 | ForEach-Object { $timer = [System.Diagnostics.Stopwatch]::StartNew(); try { Resolve-DnsName -Name example.com -Type A -Server ' . $resolver['ip'] . ' -DnsOnly | Out-Null; $timer.Stop(); Write-Output (\'QUERY_TIME_MS:\' + [math]::Round($timer.Elapsed.TotalMilliseconds, 2)) } catch { Write-Output \'QUERY_FAILED\' } }';
+            $command = 'powershell -NoProfile -Command ' . escapeshellarg($script);
+        } else {
+            $server = escapeshellarg('@' . $resolver['ip']);
+            $command = "for attempt in 1 2 3 4 5; do dig +time=2 +tries=1 +stats $server example.com A; done";
+        }
+
+        $pipes = [];
+        $process = proc_open($command, [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ], $pipes);
+
+        if (is_resource($process)) {
+            fclose($pipes[0]);
+            $processes[] = ['resolver' => $resolver, 'process' => $process, 'pipes' => $pipes];
+        } else {
+            $processes[] = ['resolver' => $resolver, 'process' => null, 'pipes' => null];
+        }
+    }
+
+    $results = [];
+    foreach ($processes as $entry) {
+        if (!is_resource($entry['process'])) {
+            $results[] = parse_dns_benchmark_result('', $entry['resolver']);
+            continue;
+        }
+
+        $output = stream_get_contents($entry['pipes'][1]);
+        $error_output = stream_get_contents($entry['pipes'][2]);
+        fclose($entry['pipes'][1]);
+        fclose($entry['pipes'][2]);
+        proc_close($entry['process']);
+        $results[] = parse_dns_benchmark_result($output . "\n" . $error_output, $entry['resolver']);
+    }
+
+    return ['success' => true, 'query' => 'example.com', 'results' => $results];
+}
+
 
 /**
  * Run complete speedtest and return all results

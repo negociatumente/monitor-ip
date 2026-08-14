@@ -1032,6 +1032,125 @@
     </div>
 </div>
 
+<!-- Modal: Gaming Latency Test -->
+<div id="gamingLatencyModal" class="modal">
+    <div class="modal-content p-0 max-w-5xl shadow-2xl border-0 bg-white dark:bg-gray-800 overflow-hidden">
+        <div class="bg-gradient-to-r from-orange-600 to-orange-700 p-5 sm:p-6 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
+                    <i class="fas fa-gamepad text-2xl sm:text-3xl text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Latencia gaming</h2>
+                    <p class="text-orange-100 text-xs font-medium">Estimación por región de servidores y plataformas</p>
+                </div>
+            </div>
+            <button type="button" onclick="hideGamingLatencyModal();" class="text-white/70 hover:text-white transition-colors text-2xl ml-4" aria-label="Cerrar test de latencia gaming">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-4 sm:p-6">
+            <div class="mb-5 rounded-xl border border-orange-200 bg-orange-50 p-3 text-xs text-orange-800 dark:border-orange-800 dark:bg-orange-900/25 dark:text-orange-200">
+                <i class="fas fa-info-circle mr-1.5"></i>
+                Esta prueba es una estimación regional. La latencia real puede variar según la partida, el servidor asignado y la infraestructura de cada juego.
+            </div>
+            <div class="mb-5">
+                <button type="button" onclick="toggleGamingCatalogManager();" class="text-sm font-bold text-orange-600 hover:text-orange-700 dark:text-orange-300">
+                    <i class="fas fa-list mr-1.5"></i>Gestionar juegos
+                </button>
+                <div id="gamingCatalogManager" class="hidden mt-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+                    <div id="gamingCatalogList" class="mb-4 space-y-2 text-sm"></div>
+                    <form id="addGamingGameForm" onsubmit="addGamingGame(event);" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input name="name" required maxlength="80" placeholder="Nombre del juego" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700">
+                        <input name="platform" required maxlength="80" placeholder="Plataforma o editor" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700">
+                        <input name="target_europe" required placeholder="Destino Europa (dominio o IP)" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700">
+                        <input name="target_north_america" required placeholder="Destino Norteamérica" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700">
+                        <input name="target_asia_pacific" required placeholder="Destino Asia-Pacífico" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700">
+                        <button type="submit" class="btn bg-orange-600 text-white rounded-lg px-3 py-2 text-sm hover:bg-orange-700"><i class="fas fa-plus mr-1.5"></i>Añadir juego</button>
+                    </form>
+                </div>
+            </div>
+            <div class="mb-5">
+                <label for="gamingLatencyRegion" class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-200">
+                    <i class="fas fa-globe-europe mr-1.5 text-orange-500"></i>Región de juego
+                </label>
+                <select id="gamingLatencyRegion" class="w-full sm:w-72 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-orange-500 focus:ring-orange-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+                    <option value="europe">Europa</option>
+                    <option value="north_america">Norteamérica</option>
+                    <option value="asia_pacific">Asia-Pacífico</option>
+                </select>
+            </div>
+            <div id="gamingLatencyStatus" class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/25 dark:text-blue-200">
+                <i class="fas fa-info-circle mr-2"></i> Pulsa «Iniciar test» para medir la latencia de los principales juegos competitivos.
+            </div>
+            <div id="gamingLatencyResults" class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3" aria-live="polite"></div>
+        </div>
+
+        <div class="flex justify-end gap-3 p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+            <button type="button" onclick="hideGamingLatencyModal();" class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+                <i class="fas fa-times mr-2"></i>Cerrar
+            </button>
+            <button type="button" id="startGamingLatencyBtn" onclick="startGamingLatencyTest();" class="btn px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                <i class="fas fa-play mr-2"></i>Iniciar test
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: DNS Benchmark -->
+<div id="dnsBenchmarkModal" class="modal">
+    <div class="modal-content p-0 max-w-5xl shadow-2xl border-0 bg-white dark:bg-gray-800 overflow-hidden">
+        <div class="bg-gradient-to-r from-cyan-600 to-blue-700 p-5 sm:p-6 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 rounded-full p-3 flex items-center justify-center shadow-inner">
+                    <i class="fas fa-server text-2xl sm:text-3xl text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Comparador DNS</h2>
+                    <p class="text-cyan-100 text-xs font-medium">Cloudflare, Google, Quad9 y OpenDNS</p>
+                </div>
+            </div>
+            <button type="button" onclick="hideDnsBenchmarkModal();" class="text-white/70 hover:text-white transition-colors text-2xl ml-4" aria-label="Cerrar comparador DNS">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-4 sm:p-6">
+            <div class="mb-5 rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-xs text-cyan-800 dark:border-cyan-800 dark:bg-cyan-900/25 dark:text-cyan-200">
+                <i class="fas fa-info-circle mr-1.5"></i>
+                Se realizan cinco consultas directas a cada DNS para <strong>example.com</strong>. Los resultados se ordenan por latencia media y no cambian la configuración de tu red.
+            </div>
+            <div class="mb-5">
+                <button type="button" onclick="toggleDnsResolversManager();" class="text-sm font-bold text-cyan-600 hover:text-cyan-700 dark:text-cyan-300">
+                    <i class="fas fa-list mr-1.5"></i>Gestionar DNS
+                </button>
+                <div id="dnsResolversManager" class="hidden mt-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+                    <div id="dnsResolversList" class="mb-4 space-y-2 text-sm"></div>
+                    <form id="addDnsResolverForm" onsubmit="addDnsResolver(event);" class="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3">
+                        <input name="name" required maxlength="80" placeholder="Proveedor DNS" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700">
+                        <input name="ip" required inputmode="decimal" placeholder="IP IPv4, ej. 1.1.1.1" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700">
+                        <button type="submit" class="btn bg-cyan-600 text-white rounded-lg px-3 py-2 text-sm hover:bg-cyan-700"><i class="fas fa-plus mr-1.5"></i>Añadir DNS</button>
+                    </form>
+                </div>
+            </div>
+            <div id="dnsBenchmarkStatus" class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/25 dark:text-blue-200">
+                <i class="fas fa-spinner fa-spin mr-2"></i> Preparando la comparativa de DNS públicos.
+            </div>
+            <div id="dnsBenchmarkResults" class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3" aria-live="polite"></div>
+        </div>
+
+        <div class="flex justify-end gap-3 p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+            <button type="button" onclick="hideDnsBenchmarkModal();" class="btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+                <i class="fas fa-times mr-2"></i>Cerrar
+            </button>
+            <button type="button" id="startDnsBenchmarkBtn" onclick="startDnsBenchmark();" class="btn px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700">
+                <i class="fas fa-redo mr-2"></i>Repetir comparativa
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal: Speed Test -->
 <div id="speedTestModal" class="modal">
     <div class="modal-content p-0 max-w-4xl shadow-2xl border-0 bg-white dark:bg-gray-800">

@@ -398,6 +398,367 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
+// Gaming Latency Test Functions
+function showGamingLatencyModal() {
+    modalFunctions.showModal('gamingLatencyModal');
+}
+
+function hideGamingLatencyModal() {
+    modalFunctions.hideModal('gamingLatencyModal');
+}
+
+function escapeGamingLatencyHtml(value) {
+    const container = document.createElement('div');
+    container.textContent = String(value ?? '');
+    return container.innerHTML;
+}
+
+function getGamingLatencyQuality(result) {
+    if (!result.available) {
+        return { label: 'No disponible', classes: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', icon: 'fa-circle-xmark' };
+    }
+    if (result.packet_loss > 2 || result.average > 100) {
+        return { label: 'Mejorable', classes: 'bg-red-100 text-red-700 dark:bg-red-900/35 dark:text-red-300', icon: 'fa-triangle-exclamation' };
+    }
+    if (result.average > 50 || result.jitter > 10) {
+        return { label: 'Aceptable', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/35 dark:text-amber-300', icon: 'fa-circle-exclamation' };
+    }
+    return { label: 'Óptima', classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-300', icon: 'fa-circle-check' };
+}
+
+function formatGamingLatencyMetric(value) {
+    return Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '--';
+}
+
+const gamingGameImages = {
+    league_of_legends: 'assets/games/league-of-legends.jpg',
+    valorant: 'assets/games/valorant.webp',
+    fortnite: 'assets/games/fortnite.jpg',
+    cs2: 'assets/games/counter-strike-2.jpg',
+    overwatch_2: 'assets/games/overwatch-2.jpg',
+    rocket_league: 'assets/games/rocket-league.jpg',
+    apex_legends: 'assets/games/apex-legends.jpg',
+    minecraft: 'assets/games/minecraft.jpg',
+};
+
+function renderGamingLatencyResults(results) {
+    const resultsContainer = document.getElementById('gamingLatencyResults');
+    resultsContainer.innerHTML = results.map(result => {
+        const quality = getGamingLatencyQuality(result);
+        const name = escapeGamingLatencyHtml(result.name);
+        const platform = escapeGamingLatencyHtml(result.platform);
+        const region = escapeGamingLatencyHtml(result.region);
+        const imagePath = gamingGameImages[result.id];
+        const image = imagePath
+            ? `<img src="${imagePath}" alt="${name}" class="w-12 h-12 rounded-xl object-cover border border-white/20 shadow-sm" loading="lazy">`
+            : '<div class="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center text-violet-500"><i class="fas fa-gamepad"></i></div>';
+
+        if (!result.available) {
+            return `
+                <article class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">${image}<div class="min-w-0"><h3 class="font-bold text-gray-800 dark:text-gray-100 truncate">${name}</h3><p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">${platform} · ${region}</p></div></div>
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-full ${quality.classes}"><i class="fas ${quality.icon} mr-1"></i>${quality.label}</span>
+                    </div>
+                    <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">El destino no respondió a ICMP. No se muestra una latencia estimada.</p>
+                </article>`;
+        }
+
+        return `
+            <article class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">${image}<div class="min-w-0"><h3 class="font-bold text-gray-800 dark:text-gray-100 truncate">${name}</h3><p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">${platform} · ${region}</p></div></div>
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-full ${quality.classes}"><i class="fas ${quality.icon} mr-1"></i>${quality.label}</span>
+                </div>
+                <div class="mt-4 grid grid-cols-4 gap-2 text-center">
+                    <div><div class="text-lg font-black text-violet-600 dark:text-violet-300">${formatGamingLatencyMetric(result.average)}</div><div class="text-[10px] uppercase text-gray-500">Media ms</div></div>
+                    <div><div class="text-sm font-bold text-gray-700 dark:text-gray-200">${formatGamingLatencyMetric(result.minimum)}</div><div class="text-[10px] uppercase text-gray-500">Mín. ms</div></div>
+                    <div><div class="text-sm font-bold text-gray-700 dark:text-gray-200">${formatGamingLatencyMetric(result.maximum)}</div><div class="text-[10px] uppercase text-gray-500">Máx. ms</div></div>
+                    <div><div class="text-sm font-bold text-gray-700 dark:text-gray-200">${formatGamingLatencyMetric(result.jitter)}</div><div class="text-[10px] uppercase text-gray-500">Jitter ms</div></div>
+                </div>
+                <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">Pérdida: <strong>${formatGamingLatencyMetric(result.packet_loss)}%</strong> · ${escapeGamingLatencyHtml(result.samples)}/5 respuestas</p>
+            </article>`;
+    }).join('');
+}
+
+async function startGamingLatencyTest() {
+    const startButton = document.getElementById('startGamingLatencyBtn');
+    const status = document.getElementById('gamingLatencyStatus');
+    const resultsContainer = document.getElementById('gamingLatencyResults');
+    const regionSelect = document.getElementById('gamingLatencyRegion');
+    const regionName = regionSelect.options[regionSelect.selectedIndex].text;
+    startButton.disabled = true;
+    regionSelect.disabled = true;
+    startButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Midiendo...';
+    status.className = 'rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/25 dark:text-amber-200';
+    status.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Midiendo ocho destinos de ${escapeGamingLatencyHtml(regionName)} en paralelo. Puede tardar unos segundos.`;
+    resultsContainer.innerHTML = '';
+
+    try {
+        const response = await fetch('?action=gaming_latency_test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ region: regionSelect.value }).toString(),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success || !Array.isArray(data.results)) {
+            throw new Error(data.message || 'No se pudo completar el test.');
+        }
+
+        renderGamingLatencyResults(data.results);
+        const available = data.results.filter(result => result.available).length;
+        status.className = 'rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/25 dark:text-emerald-200';
+        status.innerHTML = `<i class="fas fa-check-circle mr-2"></i>Test completado: ${available} de ${data.results.length} destinos respondieron.`;
+    } catch (error) {
+        status.className = 'rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/25 dark:text-red-200';
+        status.textContent = `No se pudo completar el test: ${error.message}`;
+    } finally {
+        startButton.disabled = false;
+        regionSelect.disabled = false;
+        startButton.innerHTML = '<i class="fas fa-redo mr-2"></i>Repetir test';
+    }
+}
+
+window.showGamingLatencyModal = showGamingLatencyModal;
+window.hideGamingLatencyModal = hideGamingLatencyModal;
+window.startGamingLatencyTest = startGamingLatencyTest;
+
+async function loadGamingCatalog() {
+    const list = document.getElementById('gamingCatalogList');
+    list.innerHTML = '<p class="text-xs text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>Cargando juegos...</p>';
+    try {
+        const response = await fetch('?action=gaming_catalog');
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || 'No se pudo cargar el catálogo.');
+        if (!data.games.length) {
+            list.innerHTML = '<p class="text-xs text-gray-500 dark:text-gray-400">No hay juegos configurados.</p>';
+            return;
+        }
+        list.innerHTML = data.games.map(game => `
+            <div class="flex items-center justify-between gap-3 rounded-lg bg-white p-2.5 dark:bg-gray-800">
+                <div class="min-w-0"><p class="font-semibold text-gray-800 dark:text-gray-100 truncate">${escapeGamingLatencyHtml(game.name)} <span class="font-normal text-xs text-gray-500">· ${escapeGamingLatencyHtml(game.platform)}</span></p><p class="text-[11px] font-mono text-gray-500 dark:text-gray-400 truncate" title="EU: ${escapeGamingLatencyHtml(game.target_europe)} | NA: ${escapeGamingLatencyHtml(game.target_north_america)} | AP: ${escapeGamingLatencyHtml(game.target_asia_pacific)}">EU: ${escapeGamingLatencyHtml(game.target_europe)} · NA: ${escapeGamingLatencyHtml(game.target_north_america)} · AP: ${escapeGamingLatencyHtml(game.target_asia_pacific)}</p></div>
+                <button type="button" onclick="deleteGamingGame(${Number(game.id)});" class="shrink-0 text-red-500 hover:text-red-700" title="Eliminar juego"><i class="fas fa-trash-alt"></i></button>
+            </div>`).join('');
+    } catch (error) {
+        list.textContent = `No se pudo cargar el catálogo: ${error.message}`;
+    }
+}
+
+function toggleGamingCatalogManager() {
+    const manager = document.getElementById('gamingCatalogManager');
+    manager.classList.toggle('hidden');
+    if (!manager.classList.contains('hidden')) loadGamingCatalog();
+}
+
+async function addGamingGame(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const response = await fetch('?action=add_gaming_game', { method: 'POST', body: new FormData(form) });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        modalFunctions.showAlert(data.message || 'No se pudo añadir el juego.', 'error');
+        return;
+    }
+    form.reset();
+    loadGamingCatalog();
+}
+
+async function deleteGamingGame(id) {
+    if (!window.confirm('¿Eliminar este juego de la prueba de latencia?')) return;
+    const body = new URLSearchParams({ id: String(id) });
+    const response = await fetch('?action=delete_gaming_game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        modalFunctions.showAlert(data.message || 'No se pudo eliminar el juego.', 'error');
+        return;
+    }
+    loadGamingCatalog();
+}
+
+window.toggleGamingCatalogManager = toggleGamingCatalogManager;
+window.addGamingGame = addGamingGame;
+window.deleteGamingGame = deleteGamingGame;
+
+// DNS Benchmark Functions
+let dnsBenchmarkRunning = false;
+
+function showDnsBenchmarkModal() {
+    modalFunctions.showModal('dnsBenchmarkModal');
+    startDnsBenchmark();
+}
+
+function hideDnsBenchmarkModal() {
+    modalFunctions.hideModal('dnsBenchmarkModal');
+}
+
+function getDnsBenchmarkQuality(result) {
+    if (!result.available) {
+        return { label: 'No disponible', classes: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', icon: 'fa-circle-xmark' };
+    }
+    if (result.failure_rate > 0 || result.average > 100) {
+        return { label: 'Inestable', classes: 'bg-red-100 text-red-700 dark:bg-red-900/35 dark:text-red-300', icon: 'fa-triangle-exclamation' };
+    }
+    if (result.average > 50 || result.jitter > 10) {
+        return { label: 'Aceptable', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/35 dark:text-amber-300', icon: 'fa-circle-exclamation' };
+    }
+    return { label: 'Estable', classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-300', icon: 'fa-circle-check' };
+}
+
+function formatDnsBenchmarkMetric(value) {
+    return Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '--';
+}
+
+function escapeDnsBenchmarkHtml(value) {
+    const container = document.createElement('div');
+    container.textContent = String(value ?? '');
+    return container.innerHTML;
+}
+
+function renderDnsBenchmarkResults(results) {
+    const resultsContainer = document.getElementById('dnsBenchmarkResults');
+    const sortedResults = [...results].sort((first, second) => {
+        if (first.available !== second.available) return first.available ? -1 : 1;
+        return (first.average ?? Number.POSITIVE_INFINITY) - (second.average ?? Number.POSITIVE_INFINITY);
+    });
+
+    resultsContainer.innerHTML = sortedResults.map((result, index) => {
+        const quality = getDnsBenchmarkQuality(result);
+        const name = escapeDnsBenchmarkHtml(result.name);
+        const ip = escapeDnsBenchmarkHtml(result.ip);
+        const position = index + 1;
+
+        if (!result.available) {
+            return `
+                <article class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-2"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-xs font-black text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200">#${position}</span><div><h3 class="font-bold text-gray-800 dark:text-gray-100">${name}</h3><p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">${ip}</p></div></div>
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-full ${quality.classes}"><i class="fas ${quality.icon} mr-1"></i>${quality.label}</span>
+                    </div>
+                    <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">El resolutor no respondió a las consultas DNS.</p>
+                </article>`;
+        }
+
+        return `
+            <article class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-2"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-xs font-black text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200">#${position}</span><div><h3 class="font-bold text-gray-800 dark:text-gray-100">${name}</h3><p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-mono">${ip}</p></div></div>
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-full ${quality.classes}"><i class="fas ${quality.icon} mr-1"></i>${quality.label}</span>
+                </div>
+                <div class="mt-4 grid grid-cols-4 gap-2 text-center">
+                    <div><div class="text-lg font-black text-cyan-600 dark:text-cyan-300">${formatDnsBenchmarkMetric(result.average)}</div><div class="text-[10px] uppercase text-gray-500">Media ms</div></div>
+                    <div><div class="text-sm font-bold text-gray-700 dark:text-gray-200">${formatDnsBenchmarkMetric(result.minimum)}</div><div class="text-[10px] uppercase text-gray-500">Mín. ms</div></div>
+                    <div><div class="text-sm font-bold text-gray-700 dark:text-gray-200">${formatDnsBenchmarkMetric(result.maximum)}</div><div class="text-[10px] uppercase text-gray-500">Máx. ms</div></div>
+                    <div><div class="text-sm font-bold text-gray-700 dark:text-gray-200">${formatDnsBenchmarkMetric(result.jitter)}</div><div class="text-[10px] uppercase text-gray-500">Jitter ms</div></div>
+                </div>
+                <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">Fallos: <strong>${formatDnsBenchmarkMetric(result.failure_rate)}%</strong> · ${escapeDnsBenchmarkHtml(result.samples)}/5 respuestas</p>
+            </article>`;
+    }).join('');
+}
+
+async function startDnsBenchmark() {
+    if (dnsBenchmarkRunning) {
+        return;
+    }
+
+    const startButton = document.getElementById('startDnsBenchmarkBtn');
+    const status = document.getElementById('dnsBenchmarkStatus');
+    const resultsContainer = document.getElementById('dnsBenchmarkResults');
+    dnsBenchmarkRunning = true;
+    startButton.disabled = true;
+    startButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Midiendo...';
+    status.className = 'rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/25 dark:text-amber-200';
+    status.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Midiendo cuatro DNS públicos en paralelo. Puede tardar unos segundos.';
+    resultsContainer.innerHTML = '';
+
+    try {
+        const response = await fetch('?action=dns_benchmark', { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok || !data.success || !Array.isArray(data.results)) {
+            throw new Error(data.message || 'No se pudo completar la comparativa.');
+        }
+
+        renderDnsBenchmarkResults(data.results);
+        const available = data.results.filter(result => result.available).length;
+        status.className = 'rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/25 dark:text-emerald-200';
+        status.innerHTML = `<i class="fas fa-check-circle mr-2"></i>Comparativa completada: ${available} de ${data.results.length} DNS respondieron.`;
+    } catch (error) {
+        status.className = 'rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/25 dark:text-red-200';
+        status.textContent = `No se pudo completar la comparativa: ${error.message}`;
+    } finally {
+        dnsBenchmarkRunning = false;
+        startButton.disabled = false;
+        startButton.innerHTML = '<i class="fas fa-redo mr-2"></i>Repetir comparativa';
+    }
+}
+
+window.showDnsBenchmarkModal = showDnsBenchmarkModal;
+window.hideDnsBenchmarkModal = hideDnsBenchmarkModal;
+window.startDnsBenchmark = startDnsBenchmark;
+
+async function loadDnsResolvers() {
+    const list = document.getElementById('dnsResolversList');
+    list.innerHTML = '<p class="text-xs text-gray-500 dark:text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>Cargando DNS...</p>';
+    try {
+        const response = await fetch('?action=dns_resolvers');
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || 'No se pudo cargar el catálogo.');
+        if (!data.resolvers.length) {
+            list.innerHTML = '<p class="text-xs text-gray-500 dark:text-gray-400">No hay DNS configurados.</p>';
+            return;
+        }
+        list.innerHTML = data.resolvers.map(resolver => `
+            <div class="flex items-center justify-between gap-3 rounded-lg bg-white p-2.5 dark:bg-gray-800">
+                <div><p class="font-semibold text-gray-800 dark:text-gray-100">${escapeDnsBenchmarkHtml(resolver.name)}</p><p class="text-[11px] font-mono text-gray-500 dark:text-gray-400">${escapeDnsBenchmarkHtml(resolver.ip)}</p></div>
+                <button type="button" onclick="deleteDnsResolver(${Number(resolver.id)});" class="shrink-0 text-red-500 hover:text-red-700" title="Eliminar DNS"><i class="fas fa-trash-alt"></i></button>
+            </div>`).join('');
+    } catch (error) {
+        list.textContent = `No se pudo cargar el catálogo: ${error.message}`;
+    }
+}
+
+function toggleDnsResolversManager() {
+    const manager = document.getElementById('dnsResolversManager');
+    manager.classList.toggle('hidden');
+    if (!manager.classList.contains('hidden')) loadDnsResolvers();
+}
+
+async function addDnsResolver(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const response = await fetch('?action=add_dns_resolver', { method: 'POST', body: new FormData(form) });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        modalFunctions.showAlert(data.message || 'No se pudo añadir el DNS.', 'error');
+        return;
+    }
+    form.reset();
+    loadDnsResolvers();
+}
+
+async function deleteDnsResolver(id) {
+    if (!window.confirm('¿Eliminar este DNS de la comparativa?')) return;
+    const body = new URLSearchParams({ id: String(id) });
+    const response = await fetch('?action=delete_dns_resolver', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        modalFunctions.showAlert(data.message || 'No se pudo eliminar el DNS.', 'error');
+        return;
+    }
+    loadDnsResolvers();
+}
+
+window.toggleDnsResolversManager = toggleDnsResolversManager;
+window.addDnsResolver = addDnsResolver;
+window.deleteDnsResolver = deleteDnsResolver;
+
 // Speed Test Functions
 function showSpeedTestModal() {
     modalFunctions.showModal('speedTestModal');

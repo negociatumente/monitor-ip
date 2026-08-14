@@ -353,13 +353,13 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                     </h3>
                     <div class="space-y-2">
                         <button onclick="switchNetworkType('external')" id="externalTab"
-                            class="btn-sidebar network-selector-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm sm:text-base <?php echo !$is_local_network ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'; ?>"
+                            class="btn-sidebar network-selector-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm sm:text-base <?php echo !$is_local_network ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'; ?>"
                             title="Public Network">
                             <i class="fas fa-globe text-lg"></i>
                             <span class="font-medium sidebar-label">Public Network</span>
                         </button>
                         <button onclick="switchNetworkType('local')" id="localTab"
-                            class="btn-sidebar network-selector-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm sm:text-base <?php echo $is_local_network ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'; ?>"
+                            class="btn-sidebar network-selector-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm sm:text-base <?php echo $is_local_network ? 'bg-emerald-600 text-white shadow-md hover:bg-emerald-700' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'; ?>"
                             title="Private Network">
                             <i class="fas fa-home text-lg"></i>
                             <span class="font-medium sidebar-label">Private Network</span>
@@ -376,14 +376,24 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                         </h3>
                         <div class="space-y-2">
                             <button onclick="showPublicIPModal(); toggleSidebar();"
-                                class="btn-sidebar bg-blue-600 text-white" title="Public IP & ISP">
+                                class="btn-sidebar bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" title="Public IP & ISP">
                                 <i class="fas fa-info-circle"></i>
                                 <span class="sidebar-label">Whats My IP</span>
                             </button>
                             <button onclick="showQuickTopologyModal(); toggleSidebar();"
-                                class="btn-sidebar bg-purple-600 text-white" title="Network Topology">
+                                class="btn-sidebar bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" title="Network Topology">
                                 <i class="fas fa-project-diagram"></i>
                                 <span class="sidebar-label">Topology</span>
+                            </button>
+                            <button onclick="showGamingLatencyModal(); toggleSidebar();"
+                                class="btn-sidebar bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" title="Latencia gaming europea">
+                                <i class="fas fa-gamepad"></i>
+                                <span class="sidebar-label">Game Latency</span>
+                            </button>
+                            <button onclick="showDnsBenchmarkModal(); toggleSidebar();"
+                                class="btn-sidebar bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" title="Comparar DNS públicos">
+                                <i class="fas fa-server"></i>
+                                <span class="sidebar-label">DNS Latency</span>
                             </button>
                         </div>
                     </div>
@@ -396,13 +406,13 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                             Network Tools
                         </h3>
                         <div class="space-y-2">
-                            <button onclick="showNetworkHealth(); toggleSidebar();" class="btn-sidebar btn-primary"
+                            <button onclick="showNetworkHealth(); toggleSidebar();" class="btn-sidebar bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                                 title="Network Health">
                                 <i class="fas fa-heartbeat"></i>
                                 <span class="sidebar-label">Network Health</span>
                             </button>
                             <button onclick="showTopologyMapModal(); toggleSidebar();"
-                                class="btn-sidebar bg-purple-600 text-white" title="Topology Map">
+                                class="btn-sidebar bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" title="Topology Map">
                                 <i class="fas fa-sitemap"></i>
                                 <span class="sidebar-label">Topology Map</span>
                             </button>

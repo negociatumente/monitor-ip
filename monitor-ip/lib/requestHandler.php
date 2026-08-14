@@ -74,6 +74,90 @@ class requestHandler
             return true;
         }
 
+        if ($action === 'gaming_latency_test') {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                $this->jsonResponse(['success' => false, 'message' => 'Método no permitido.'], 405);
+            }
+            try {
+                $region = (string) ($_POST['region'] ?? 'europe');
+                $this->jsonResponse(run_gaming_latency_test($region));
+            } catch (InvalidArgumentException $e) {
+                $this->jsonResponse(['success' => false, 'message' => 'La región seleccionada no es válida.'], 422);
+            } catch (Throwable $e) {
+                error_log('Gaming latency test failed: ' . $e->getMessage());
+                $this->jsonResponse(['success' => false, 'message' => 'No se pudo completar el test de latencia gaming.']);
+            }
+            return true;
+        }
+
+        if ($action === 'gaming_catalog' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+            $this->jsonResponse(['success' => true, 'games' => get_gaming_games()]);
+            return true;
+        }
+
+        if ($action === 'add_gaming_game' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                $this->jsonResponse(['success' => true, 'game' => add_gaming_game($_POST)]);
+            } catch (InvalidArgumentException $e) {
+                $this->jsonResponse(['success' => false, 'message' => $e->getMessage()], 422);
+            } catch (Throwable $e) {
+                error_log('Unable to add gaming game: ' . $e->getMessage());
+                $this->jsonResponse(['success' => false, 'message' => 'No se pudo añadir el juego. Revisa que no esté duplicado.'], 422);
+            }
+            return true;
+        }
+
+        if ($action === 'delete_gaming_game' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
+            if (!$id || !delete_gaming_game($id)) {
+                $this->jsonResponse(['success' => false, 'message' => 'Juego no encontrado.'], 404);
+            }
+            $this->jsonResponse(['success' => true]);
+            return true;
+        }
+
+        if ($action === 'dns_benchmark') {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                $this->jsonResponse(['success' => false, 'message' => 'Método no permitido.'], 405);
+            }
+            if (!empty($_POST)) {
+                $this->jsonResponse(['success' => false, 'message' => 'Esta prueba no admite parámetros.'], 422);
+            }
+            try {
+                $this->jsonResponse(run_dns_benchmark());
+            } catch (Throwable $e) {
+                error_log('DNS benchmark failed: ' . $e->getMessage());
+                $this->jsonResponse(['success' => false, 'message' => 'No se pudo completar la comparativa DNS.']);
+            }
+            return true;
+        }
+
+        if ($action === 'dns_resolvers' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+            $this->jsonResponse(['success' => true, 'resolvers' => get_dns_benchmark_catalog()]);
+            return true;
+        }
+
+        if ($action === 'add_dns_resolver' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                $this->jsonResponse(['success' => true, 'resolver' => add_dns_resolver($_POST)]);
+            } catch (InvalidArgumentException $e) {
+                $this->jsonResponse(['success' => false, 'message' => $e->getMessage()], 422);
+            } catch (Throwable $e) {
+                error_log('Unable to add DNS resolver: ' . $e->getMessage());
+                $this->jsonResponse(['success' => false, 'message' => 'No se pudo añadir el DNS. Revisa que no esté duplicado.'], 422);
+            }
+            return true;
+        }
+
+        if ($action === 'delete_dns_resolver' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
+            if (!$id || !delete_dns_resolver($id)) {
+                $this->jsonResponse(['success' => false, 'message' => 'DNS no encontrado.'], 404);
+            }
+            $this->jsonResponse(['success' => true]);
+            return true;
+        }
+
         if ($action === 'speed_test_history' && $_SERVER['REQUEST_METHOD'] === 'GET') {
             global $db;
             $history = [];

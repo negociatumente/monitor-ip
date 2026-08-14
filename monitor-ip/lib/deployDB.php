@@ -93,6 +93,62 @@ try {
         packet_loss REAL
     )");
 
+    // 7. Catálogo editable de pruebas de latencia gaming
+    $db->exec("CREATE TABLE IF NOT EXISTS gaming_games (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT UNIQUE NOT NULL,
+        name TEXT UNIQUE NOT NULL,
+        platform TEXT NOT NULL DEFAULT '',
+        target_europe TEXT NOT NULL,
+        target_north_america TEXT NOT NULL,
+        target_asia_pacific TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )");
+
+    // 8. Catálogo editable de resolutores para el comparador DNS
+    $db->exec("CREATE TABLE IF NOT EXISTS dns_resolvers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        ip TEXT UNIQUE NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )");
+
+    // Seed the catalog only once. A deleted item must not reappear on restart.
+    $catalog_seeded = $db->prepare("SELECT value FROM settings WHERE section = 'catalogs' AND key = ?");
+    $catalog_seeded->execute(['gaming_games_seeded']);
+    if ($catalog_seeded->fetchColumn() === false) {
+        $games = [
+            ['league_of_legends', 'League of Legends', 'Riot Games', 'euw1.api.riotgames.com', 'na1.api.riotgames.com', 'oc1.api.riotgames.com'],
+            ['valorant', 'Valorant', 'Riot Games', 'euw1.api.riotgames.com', 'na1.api.riotgames.com', 'oc1.api.riotgames.com'],
+            ['fortnite', 'Fortnite', 'Epic Games', 'ping-eu.ds.on.epicgames.com', 'ping-nae.ds.on.epicgames.com', 'ping-asia.ds.on.epicgames.com'],
+            ['cs2', 'Counter-Strike 2', 'Steam', 'cm0-fra1.cm.steampowered.com', 'cm0-ord1.cm.steampowered.com', 'cm0-sin1.cm.steampowered.com'],
+            ['overwatch_2', 'Overwatch 2', 'Battle.net', 'eu.actual.battle.net', 'us.actual.battle.net', 'kr.actual.battle.net'],
+            ['rocket_league', 'Rocket League', 'Epic Games', 'ping-eu.ds.on.epicgames.com', 'ping-nae.ds.on.epicgames.com', 'ping-asia.ds.on.epicgames.com'],
+            ['apex_legends', 'Apex Legends', 'EA', 'easo.ea.com', 'easo.ea.com', 'easo.ea.com'],
+            ['minecraft', 'Minecraft', 'Minecraft Services', 'api.minecraftservices.com', 'api.minecraftservices.com', 'api.minecraftservices.com'],
+        ];
+        $insert_game = $db->prepare('INSERT OR IGNORE INTO gaming_games (slug, name, platform, target_europe, target_north_america, target_asia_pacific) VALUES (?, ?, ?, ?, ?, ?)');
+        foreach ($games as $game) {
+            $insert_game->execute($game);
+        }
+        $db->prepare("INSERT INTO settings (section, key, value) VALUES ('catalogs', 'gaming_games_seeded', '1')")->execute();
+    }
+
+    $catalog_seeded->execute(['dns_resolvers_seeded']);
+    if ($catalog_seeded->fetchColumn() === false) {
+        $resolvers = [
+            ['Cloudflare', '1.1.1.1'],
+            ['Google Public DNS', '8.8.8.8'],
+            ['Quad9', '9.9.9.9'],
+            ['OpenDNS', '208.67.222.222'],
+        ];
+        $insert_resolver = $db->prepare('INSERT OR IGNORE INTO dns_resolvers (name, ip) VALUES (?, ?)');
+        foreach ($resolvers as $resolver) {
+            $insert_resolver->execute($resolver);
+        }
+        $db->prepare("INSERT INTO settings (section, key, value) VALUES ('catalogs', 'dns_resolvers_seeded', '1')")->execute();
+    }
+
     // Performance indexes for monitor queries
     $db->exec("CREATE INDEX IF NOT EXISTS idx_ping_results_device_timestamp ON ping_results(device_id, timestamp)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_devices_ip_is_local ON devices(ip, is_local)");
