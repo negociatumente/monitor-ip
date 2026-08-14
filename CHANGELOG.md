@@ -1,5 +1,9 @@
 # Historial de Cambios - Monitor IP
 
+## [1.2.2] - 2026-08-14
+- **Comparador de latencia gaming**: Nueva prueba de latencia para juegos competitivos, con selección de región y métricas de latencia media, mínima, máxima, jitter y pérdida de paquetes.
+- **Comparador DNS**: Nueva comparativa de resolutores DNS públicos mediante cinco consultas por servidor, con resultados ordenados por latencia media, jitter y tasa de fallos.
+
 ## [1.2.1] - 2026-05-27
 - **Diagnosis Red Privada**: Se ha corregido un error que impedía la correcta diagnosis de redes privadas, mejorando la precisión de los resultados y la detección de dispositivos en estas redes.
 
