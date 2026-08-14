@@ -716,3 +716,336 @@
             overflow-y: auto;
         }
     }
+
+    /* ==================== DASHBOARD REFRESH ==================== */
+    :root {
+        --dashboard-ink: #182b49;
+        --dashboard-muted: #71809a;
+        --dashboard-line: #e6ebf2;
+        --dashboard-surface: #ffffff;
+        --dashboard-page: #f7fafc;
+        --dashboard-teal: #008e9b;
+        --dashboard-teal-dark: #007783;
+        --dashboard-blue: #326ee8;
+    }
+
+    .app-header {
+        min-height: 5.6rem;
+        background: var(--dashboard-surface) !important;
+        color: var(--dashboard-ink) !important;
+        border-bottom: 1px solid var(--dashboard-line);
+        box-shadow: none !important;
+    }
+
+    .app-header > .absolute {
+        display: none;
+    }
+
+    .app-header-inner {
+        max-width: none !important;
+        min-height: 5.6rem;
+        padding-top: 0.85rem !important;
+        padding-bottom: 0.85rem !important;
+    }
+
+    .app-header h1 {
+        color: var(--dashboard-ink) !important;
+        font-size: 1.25rem !important;
+    }
+
+    .app-header h1 span:not(.hidden) {
+        color: #475773 !important;
+        border-color: #cbd5e1 !important;
+    }
+
+    .app-header p {
+        color: #8490a5 !important;
+    }
+
+    .app-header-links > .hidden a {
+        background: transparent !important;
+        color: #31435f !important;
+        padding: 0.55rem 0.8rem !important;
+        font-weight: 600;
+    }
+
+    .app-header-links > .hidden a:hover {
+        color: var(--dashboard-teal) !important;
+        background: #effafb !important;
+    }
+
+    .app-header #userMenuBtn,
+    .app-header #mobileUserMenuBtn {
+        background: #fff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #30425e !important;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .app-header #userMenuBtn span:first-child,
+    .app-header #mobileUserMenuBtn span:first-child {
+        background: #eef3f8 !important;
+        color: var(--dashboard-ink) !important;
+    }
+
+    .theme-toggle-button {
+        width: 2.5rem;
+        height: 2.5rem;
+        flex: 0 0 2.5rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #fff;
+        color: #f59e0b;
+        transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .theme-toggle-button:hover {
+        color: var(--dashboard-teal);
+        border-color: #a8dce0;
+        background: #f2fbfb;
+        transform: translateY(-1px);
+    }
+
+    .theme-toggle-button:focus-visible {
+        outline: 3px solid rgba(0, 142, 155, 0.2);
+        outline-offset: 2px;
+    }
+
+    .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.35rem 0.1rem 1.65rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--dashboard-line);
+    }
+
+    .sidebar-brand-logo {
+        width: 3.15rem;
+        height: 3.15rem;
+        object-fit: contain;
+        border-radius: 0.8rem;
+        box-shadow: 0 5px 12px rgba(0, 142, 155, 0.16);
+    }
+
+    .sidebar-brand-copy {
+        display: grid;
+        gap: 0.15rem;
+        line-height: 1.1;
+    }
+
+    .sidebar-brand-copy strong {
+        color: var(--dashboard-ink);
+        font-size: 1.25rem;
+        letter-spacing: -0.045em;
+    }
+
+    .sidebar-brand-copy span {
+        color: var(--dashboard-teal);
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .app-sidebar .btn-sidebar {
+        color: #40526d !important;
+        background: transparent !important;
+        border-radius: 0.55rem;
+        padding: 0.8rem 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .app-sidebar .btn-sidebar:hover {
+        color: var(--dashboard-teal) !important;
+        background: #edfafa !important;
+    }
+
+    .app-sidebar #externalTab.bg-blue-600,
+    .app-sidebar #localTab.bg-emerald-600 {
+        color: #fff !important;
+        background: linear-gradient(135deg, #0098a4, #007f8a) !important;
+        box-shadow: 0 8px 16px rgba(0, 142, 155, 0.18) !important;
+    }
+
+    .app-sidebar h3 {
+        color: #7a879b !important;
+        font-size: 0.68rem !important;
+        letter-spacing: 0.04em;
+    }
+
+    #desktopSidebarToggle {
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .host-identity {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        min-width: 8rem;
+    }
+
+    .host-device-icon {
+        display: inline-flex;
+        width: 2.15rem;
+        height: 2.15rem;
+        flex: 0 0 2.15rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0797a3, #007783);
+        color: #fff;
+        box-shadow: 0 3px 8px rgba(0, 142, 155, 0.2);
+    }
+
+    .host-device-icon i {
+        font-size: 0.85rem;
+    }
+
+    .host-device-icon.service-color-icon {
+        box-shadow: 0 3px 8px rgba(30, 41, 59, 0.18);
+    }
+
+    .host-device-name {
+        color: #253858;
+        font-size: 0.875rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .dark .app-header {
+        background: #172230 !important;
+        border-color: #29394b !important;
+    }
+
+    .dark .app-header h1,
+    .dark .sidebar-brand-copy strong {
+        color: #edf4fb !important;
+    }
+
+    .dark .app-header #userMenuBtn,
+    .dark .app-header #mobileUserMenuBtn {
+        background: #1c2938 !important;
+        border-color: #3a4b5f !important;
+        color: #e5edf6 !important;
+    }
+
+    .dark .theme-toggle-button {
+        background: #1c2938;
+        color: #8fb7ff;
+        border-color: #3a4b5f;
+    }
+
+    .dark .theme-toggle-button:hover {
+        background: #223547;
+        color: #d5e5ff;
+        border-color: #55708c;
+    }
+
+    .dark .app-header h1 span:not(.hidden) {
+        color: #b8c5d7 !important;
+        border-color: #3a4b5f !important;
+    }
+
+    .dark .sidebar-brand {
+        border-color: #29394b;
+    }
+
+    .dark .app-sidebar .btn-sidebar {
+        color: #b8c5d7 !important;
+    }
+
+    .dark .app-sidebar .btn-sidebar:hover {
+        background: #1d303c !important;
+    }
+
+    .dark .host-device-name {
+        color: #e5edf6;
+    }
+
+    @media (min-width: 1024px) {
+        .app-header,
+        .app-content {
+            margin-left: 16rem;
+        }
+
+        .app-sidebar {
+            position: fixed !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            height: 100vh !important;
+            background: #fff !important;
+            z-index: 70;
+        }
+
+        .app-sidebar-content {
+            height: 100vh;
+            max-height: none !important;
+            padding: 1.25rem 1rem !important;
+        }
+
+        .app-header-inner {
+            max-width: 1480px !important;
+        }
+
+        .app-shell:has(.app-sidebar.sidebar-collapsed) .app-header,
+        .app-shell:has(.app-sidebar.sidebar-collapsed) .app-content {
+            margin-left: 4.5rem;
+        }
+
+        .app-sidebar.sidebar-collapsed .sidebar-brand {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .app-sidebar.sidebar-collapsed .sidebar-brand-logo {
+            width: 2.55rem;
+            height: 2.55rem;
+        }
+
+        .app-shell:has(.app-sidebar.sidebar-collapsed) > footer {
+            margin-left: 4.5rem;
+        }
+
+        .app-shell > footer {
+            margin-left: 16rem;
+        }
+
+        .dark .app-sidebar {
+            background: #172230 !important;
+            border-color: #29394b !important;
+        }
+    }
+
+    @media (max-width: 1023px) {
+        .app-header {
+            min-height: auto;
+        }
+
+        .app-sidebar {
+            background: #fff !important;
+        }
+
+        .dark .app-sidebar {
+            background: #172230 !important;
+            border-color: #29394b !important;
+        }
+    }
+
+    @media (max-width: 639px) {
+        .app-header-inner {
+            padding: 0.75rem 1rem !important;
+        }
+
+        .app-header h1 {
+            font-size: 1.05rem !important;
+        }
+
+        .sidebar-brand {
+            padding-right: 2.25rem;
+        }
+
+    }

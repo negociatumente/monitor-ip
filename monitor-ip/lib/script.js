@@ -1041,20 +1041,18 @@ function filterTable() {
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         // Skip if it's the "No IPs" row (usually has colspan)
-        if (row.cells.length < 4) continue;
+        if (row.cells.length < 3) continue;
 
         const hostCell = row.cells[0];
-        const typeCell = row.cells[1];
-        const ipCell = row.cells[2];
+        const ipCell = row.cells[1];
 
-        // Status column is at index 4 for local network, 3 for external
-        const isLocal = document.body.contains(document.getElementById('scanNetworkModal')); // Simple check
-        const statusCell = isLocal ? row.cells[4] : row.cells[3];
+        // Without the visible Type column, Status is at index 3 in both network views.
+        const statusCell = row.cells[3];
 
-        if (!hostCell || !typeCell || !ipCell || !statusCell) continue;
+        if (!hostCell || !ipCell || !statusCell) continue;
 
         const hostText = hostCell.textContent.trim().toLowerCase();
-        const typeText = typeCell.textContent.trim().toLowerCase();
+        const typeText = (row.dataset.type || '').trim().toLowerCase();
         const ipText = ipCell.textContent.trim().toLowerCase();
         const statusText = statusCell.textContent.trim().toLowerCase();
 

@@ -1,5 +1,8 @@
 # Historial de Cambios - Monitor IP
 
+## [1.2.3] - 2026-08-14
+- **Renovación de interfaz**: Se ha actualizado el diseño del panel con una cabecera, barra lateral y navegación más limpias y consistentes.
+
 ## [1.2.2] - 2026-08-14
 - **Comparador de latencia gaming**: Nueva prueba de latencia para juegos competitivos, con selección de región y métricas de latencia media, mínima, máxima, jitter y pérdida de paquetes.
 - **Comparador DNS**: Nueva comparativa de resolutores DNS públicos mediante cinco consultas por servidor, con resultados ordenados por latencia media, jitter y tasa de fallos.

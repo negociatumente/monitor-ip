@@ -162,9 +162,9 @@ $header_icon = isset($is_local_network) && $is_local_network ? 'fa-house-signal'
 $network_label = isset($is_local_network) && $is_local_network ? 'Private Network' : 'Public Network';
 ?>
 
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+<body class="app-shell bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <!-- Header/Navigation Bar -->
-    <header class="bg-gradient-to-r <?php echo $header_bg; ?> text-white shadow-2xl relative z-50 overflow-visible">
+    <header class="app-header bg-gradient-to-r <?php echo $header_bg; ?> text-white shadow-2xl relative z-50 overflow-visible">
         <!-- Background pattern -->
         <div class="absolute inset-0 opacity-10 overflow-hidden pointer-events-none">
             <div
@@ -172,7 +172,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
             </div>
         </div>
 
-        <div class="container mx-auto py-3 px-4 sm:px-6 relative z-10">
+        <div class="app-header-inner container mx-auto py-3 px-4 sm:px-6 relative z-10">
             <!-- Top row with logo and actions -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                 <!-- Logo and title -->
@@ -184,8 +184,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                             aria-label="Open navigation menu">
                             <i class="fas fa-bars text-lg sm:text-xl leading-none"></i>
                         </button>
-                        <div
-                            class="bg-white p-1 sm:p-1 rounded-xl group-hover:scale-110 transition-all duration-300 shadow-lg">
+                        <div class="app-header-brand bg-white p-1 sm:p-1 rounded-xl group-hover:scale-110 transition-all duration-300 shadow-lg">
                             <img src="assets/logo.png" alt="Logo" class="w-8 h-8 sm:w-14 sm:h-14 object-contain">
                         </div>
                         <div>
@@ -247,7 +246,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                 </div>
 
                 <!-- Navigation links -->
-                <div class="hidden sm:flex flex-1 justify-end items-center ml-4 relative z-[60]">
+                <div class="app-header-links hidden sm:flex flex-1 justify-end items-center ml-4 relative z-[60]">
                     <!-- Left Group: External Links (Hidden on small/medium screens) -->
                     <!--<a href="https://nordvpn.com/es/pricing/" target="_blank"
                         class="bg-green-400 hover:bg-green-500 text-blue-900 font-bold px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 text-sm shadow-lg transform hover:scale-105">
@@ -312,6 +311,13 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>
+
+                      <button onclick="toggleTheme()" id="headerThemeToggleBtn"
+                        class="theme-toggle-button hidden lg:inline-flex ml-3"
+                        title="Cambiar modo claro/oscuro" aria-label="Cambiar modo claro/oscuro">
+                        <i class="fas fa-moon hidden dark:inline"></i>
+                        <i class="fas fa-sun inline dark:hidden"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -322,10 +328,10 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
     <div class="flex flex-col lg:flex-row">
         <!-- Sidebar - Hidden on mobile, visible on lg+ / Can be toggled -->
         <aside id="sidebarPanel"
-            class="sidebar-panel fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg lg:shadow-none lg:static lg:sticky lg:top-0 lg:block border-r border-gray-200 dark:border-gray-700 transform -translate-x-full lg:translate-x-0 transition-all duration-300 lg:w-64 lg:sidebar-expanded"
+            class="app-sidebar sidebar-panel fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg lg:shadow-none lg:static lg:sticky lg:top-0 lg:block border-r border-gray-200 dark:border-gray-700 transform -translate-x-full lg:translate-x-0 transition-all duration-300 lg:w-64 lg:sidebar-expanded"
             data-collapsed="false">
 
-            <div class="p-4 max-h-screen overflow-y-auto sidebar-content">
+            <div class="app-sidebar-content p-4 max-h-screen overflow-y-auto sidebar-content">
                 <!-- Close button on mobile -->
                 <button onclick="toggleSidebar()" id="sidebarCloseBtn"
                     class="lg:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -339,8 +345,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                     </button>
                     <!-- Theme Toggle -->
                     <button onclick="toggleTheme()" id="sidebarThemeToggleBtn"
-                        class=" rounded-lg text-gray-700 dark:text-gray-300 transition-all ml-auto"
-                        title="Toggle Dark/Light Mode">
+                        class="theme-toggle-button inline-flex lg:hidden ml-auto"
+                        title="Cambiar modo claro/oscuro" aria-label="Cambiar modo claro/oscuro">
                         <i class="fas fa-moon hidden dark:inline text-lg w-5 text-center"></i>
                         <i class="fas fa-sun inline dark:hidden text-yellow-500 text-lg w-5 text-center"></i>
                     </button>
@@ -431,8 +437,8 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
             class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
 
         <!-- Main Content Area -->
-        <div class="flex-1">
-            <div class="container mx-auto px-4 py-4">
+        <div class="app-content flex-1">
+            <div class="app-content-inner container mx-auto px-4 py-4">
                 <!-- Notifications -->
                 <?php if (isset($_GET['action'])): ?>
                     <?php echo renderNotification($_GET['action'], $_GET['msg'] ?? null); ?>
@@ -554,7 +560,6 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         echo "<th class='p-3 whitespace-nowrap'>Service</th>";
                                     }
                                     ?>
-                                    <th class='p-3 whitespace-nowrap'>Type</th>
                                     <th class='p-3 whitespace-nowrap cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600'
                                         onclick="window.location.href='?sort=ip&order=<?php echo (isset($_GET['sort']) && $_GET['sort'] === 'ip' && isset($_GET['order']) && $_GET['order'] === 'asc') ? 'desc' : 'asc'; ?><?php echo $network_param; ?>&no_ping=1'">
                                         <div class="flex items-center gap-1">
@@ -762,67 +767,50 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                         $method = $services_methods[$service] ?? ($services_methods['DEFAULT'] ?? 'icmp');
                                         $method_display = strtoupper($method);
                                         $method_icon = $method === 'icmp' ? 'network-wired' : ($method === 'curl' ? 'globe' : 'server');
+
+                                        $ip_type = trim((string) ($ips_types[$ip] ?? ''));
+                                        $normalized_type = strtolower($ip_type);
+                                        $type_details = [
+                                            'gateway' => ['icon' => 'globe', 'label' => 'Gateway'],
+                                            'router' => ['icon' => 'network-wired', 'label' => 'Router'],
+                                            'ap-mesh' => ['icon' => 'wifi', 'label' => 'AP/Mesh'],
+                                            'ap/mesh' => ['icon' => 'wifi', 'label' => 'AP/Mesh'],
+                                            'camera' => ['icon' => 'video', 'label' => 'Cámara'],
+                                            'mobile' => ['icon' => 'mobile-alt', 'label' => 'Móvil'],
+                                            'computer' => ['icon' => 'desktop', 'label' => 'Ordenador'],
+                                            'printer' => ['icon' => 'print', 'label' => 'Impresora'],
+                                            'web' => ['icon' => 'globe', 'label' => 'Web'],
+                                            'server' => ['icon' => 'server', 'label' => 'Servidor'],
+                                            'cdn' => ['icon' => 'exchange-alt', 'label' => 'CDN'],
+                                            'iot' => ['icon' => 'microchip', 'label' => 'IoT'],
+                                            'other' => ['icon' => 'cube', 'label' => 'Otro'],
+                                            'camara' => ['icon' => 'video', 'label' => 'Cámara'],
+                                            'movil' => ['icon' => 'mobile-alt', 'label' => 'Móvil'],
+                                            'ordenador' => ['icon' => 'desktop', 'label' => 'Ordenador'],
+                                            'impresora' => ['icon' => 'print', 'label' => 'Impresora'],
+                                            'servidor' => ['icon' => 'server', 'label' => 'Servidor'],
+                                            'otro' => ['icon' => 'cube', 'label' => 'Otro'],
+                                        ];
+                                        $type_info = $type_details[$normalized_type] ?? ['icon' => 'tag', 'label' => $ip_type];
+                                        $type_icon = $type_info['icon'];
+                                        $type_label = $type_info['label'];
+                                        $host_type_icon = $normalized_type === 'gateway' ? 'network-wired' : ($type_icon ?: 'cube');
+                                        $host_icon_color = !$is_local_network ? ($service_styling['color'] ?? '#6B7280') : null;
                                         ?>
                                         <tr class='hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-150 cursor-pointer'
                                             data-type="<?php echo htmlspecialchars($ips_types[$ip] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                             onclick="showIpDetailModal('<?php echo htmlspecialchars($ip, ENT_QUOTES, 'UTF-8'); ?>')">
                                             <td class='p-3 group'>
-                                                <div class='flex items-center gap-2'>
-                                                    <?php
-                                                    if ($is_local_network) {
-                                                        $device_type = strtolower(trim($ips_types[$ip] ?? ''));
-                                                        $is_network_category = ($device_type === 'gateway' || $device_type === 'router' || $device_type === 'ap-mesh' || $device_type === 'ap/mesh');
-                                                        $badge_color = $is_network_category ? ($network_color ?? '#3b82f6') : ($host_color ?? '#6b7280');
-                                                    } else {
-                                                        $badge_color = $service_styling['color'];
-                                                    }
-                                                    ?>
-                                                    <span class="text-sm font-bold text-white dark:text-gray-200"
-                                                        style="padding: 0.25rem 0.5rem; border-radius: 9999px; background-color: <?php echo htmlspecialchars($badge_color, ENT_QUOTES, 'UTF-8'); ?>;">
+                                                <div class="host-identity">
+                                                    <span class="host-device-icon<?php echo $host_icon_color !== null ? ' service-color-icon' : ''; ?>"
+                                                        <?php if ($host_icon_color !== null): ?>style="background: <?php echo htmlspecialchars($host_icon_color, ENT_QUOTES, 'UTF-8'); ?>;"<?php endif; ?>
+                                                        aria-hidden="true">
+                                                        <i class="fas fa-<?php echo htmlspecialchars($host_type_icon, ENT_QUOTES, 'UTF-8'); ?>"></i>
+                                                    </span>
+                                                    <span class="host-device-name">
                                                         <?php echo htmlspecialchars($service, ENT_QUOTES, 'UTF-8'); ?>
                                                     </span>
                                                 </div>
-                                            </td>
-                                            <td class='p-3'>
-                                                <?php
-                                                $ip_type = trim((string) ($ips_types[$ip] ?? ''));
-                                                if ($ip_type !== ''):
-                                                    $normalized_type = strtolower($ip_type);
-                                                    $type_details = [
-                                                        'gateway' => ['icon' => 'globe', 'label' => 'Gateway'],
-                                                        'router' => ['icon' => 'network-wired', 'label' => 'Router'],
-                                                        'ap-mesh' => ['icon' => 'wifi', 'label' => 'AP/Mesh'],
-                                                        'ap/mesh' => ['icon' => 'wifi', 'label' => 'AP/Mesh'],
-                                                        'camera' => ['icon' => 'video', 'label' => 'Cámara'],
-                                                        'mobile' => ['icon' => 'mobile-alt', 'label' => 'Móvil'],
-                                                        'computer' => ['icon' => 'desktop', 'label' => 'Ordenador'],
-                                                        'printer' => ['icon' => 'print', 'label' => 'Impresora'],
-                                                        'web' => ['icon' => 'globe', 'label' => 'Web'],
-                                                        'server' => ['icon' => 'server', 'label' => 'Servidor'],
-                                                        'cdn' => ['icon' => 'exchange-alt', 'label' => 'CDN'],
-                                                        'iot' => ['icon' => 'microchip', 'label' => 'IoT'],
-                                                        'other' => ['icon' => 'cube', 'label' => 'Otro'],
-
-                                                        // Legacy/Spanish keys for backward compatibility
-                                                        'camara' => ['icon' => 'video', 'label' => 'Cámara'],
-                                                        'movil' => ['icon' => 'mobile-alt', 'label' => 'Móvil'],
-                                                        'ordenador' => ['icon' => 'desktop', 'label' => 'Ordenador'],
-                                                        'impresora' => ['icon' => 'print', 'label' => 'Impresora'],
-                                                        'servidor' => ['icon' => 'server', 'label' => 'Servidor'],
-                                                        'otro' => ['icon' => 'cube', 'label' => 'Otro'],
-                                                    ];
-                                                    $type_info = $type_details[$normalized_type] ?? ['icon' => 'tag', 'label' => $ip_type];
-                                                    $type_icon = $type_info['icon'];
-                                                    $type_label = $type_info['label'];
-                                                    ?>
-                                                    <span
-                                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                                                        <i class="fas fa-<?php echo $type_icon; ?> mr-1 text-[10px]"></i>
-                                                        <?php echo htmlspecialchars($type_label, ENT_QUOTES, 'UTF-8'); ?>
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="text-gray-400 dark:text-gray-600 text-xs italic">N/A</span>
-                                                <?php endif; ?>
                                             </td>
                                             <td class='p-3 font-mono text-sm'>
                                                 <div class="flex items-center gap-2">
@@ -840,10 +828,24 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                                                 </div>
                                             </td>
                                             <?php if ($is_local_network): ?>
+                                                <?php
+                                                $network_name = trim((string) ($ips_network[$ip] ?? 'Unknown'));
+                                                $normalized_network = strtolower($network_name);
+                                                if (strpos($normalized_network, 'ap') !== false || strpos($normalized_network, 'mesh') !== false || strpos($normalized_network, 'repet') !== false) {
+                                                    $network_icon = 'tower-broadcast';
+                                                } elseif (strpos($normalized_network, 'wifi') !== false || strpos($normalized_network, 'wi-fi') !== false || strpos($normalized_network, 'wlan') !== false) {
+                                                    $network_icon = 'wifi';
+                                                } elseif (strpos($normalized_network, 'ethernet') !== false || strpos($normalized_network, 'cable') !== false || strpos($normalized_network, 'lan') !== false) {
+                                                    $network_icon = 'ethernet';
+                                                } else {
+                                                    $network_icon = 'network-wired';
+                                                }
+                                                ?>
                                                 <td class='p-3'>
                                                     <span
-                                                        class='inline-block px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300'>
-                                                        <?php echo $ips_network[$ip] ?? 'Unknown'; ?>
+                                                        class='inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300'>
+                                                        <i class='fas fa-<?php echo htmlspecialchars($network_icon, ENT_QUOTES, 'UTF-8'); ?> mr-1.5 text-teal-600 dark:text-teal-300'></i>
+                                                        <?php echo htmlspecialchars($network_name, ENT_QUOTES, 'UTF-8'); ?>
                                                     </span>
                                                 </td>
                                             <?php endif; ?>
