@@ -426,9 +426,6 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                     </div>
 
                 <?php endif; ?>
-
-
-
             </div>
         </aside>
 

@@ -14,11 +14,9 @@
     window.telegramAlertHistory = <?php echo $telegram_alert_history_json; ?>;
     window.aiConfig = <?php echo $ai_config_json; ?>;
 </script>
-<div class="mb-4">
+<div>
     <!-- Monitoring Controls Panel - Single Row Layout (Responsive) -->
-    <div
-        class="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/15 dark:to-purple-900/20 rounded-2xl shadow-lg border border-blue-200/40 dark:border-blue-800/30 p-3 sm:p-4 mb-2 overflow-x-auto">
-
+   
         <?php
         // Pre-calculate stats
         $stats = calculateSystemStats($ips_to_monitor);
@@ -280,7 +278,6 @@
                 </button>
             </div>
         </div>
-    </div>
 </div>
 
 <!-- Modal: Database Import / Export -->

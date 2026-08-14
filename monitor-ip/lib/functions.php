@@ -1504,35 +1504,40 @@ function save_config_file($config, $file_path = '')
             }
         }
 
-        // 2. Sync services to services database table
-        $services_colors = $config['services-colors'] ?? [];
-        $services_methods = $config['services-methods'] ?? [];
-        $all_service_names = array_unique(array_merge(array_keys($services_colors), array_keys($services_methods)));
+        // 2. Services only belong to the public-monitoring configuration.
+        // ensure_config_structure() deliberately removes these sections for
+        // the local view. Syncing them from that view used to empty the
+        // services table whenever a local host was added or edited.
+        if (!$is_local_network) {
+            $services_colors = $config['services-colors'] ?? [];
+            $services_methods = $config['services-methods'] ?? [];
+            $all_service_names = array_unique(array_merge(array_keys($services_colors), array_keys($services_methods)));
 
-        $stmt_service_check = $db->prepare("SELECT 1 FROM services WHERE name = ?");
-        $stmt_service_insert = $db->prepare("INSERT INTO services (name, method, color) VALUES (?, ?, ?)");
-        $stmt_service_update = $db->prepare("UPDATE services SET method = ?, color = ? WHERE name = ?");
+            $stmt_service_check = $db->prepare("SELECT 1 FROM services WHERE name = ?");
+            $stmt_service_insert = $db->prepare("INSERT INTO services (name, method, color) VALUES (?, ?, ?)");
+            $stmt_service_update = $db->prepare("UPDATE services SET method = ?, color = ? WHERE name = ?");
 
-        foreach ($all_service_names as $name) {
-            $color = $services_colors[$name] ?? '#6b7280';
-            $method = $services_methods[$name] ?? 'icmp';
+            foreach ($all_service_names as $name) {
+                $color = $services_colors[$name] ?? '#6b7280';
+                $method = $services_methods[$name] ?? 'icmp';
 
-            $stmt_service_check->execute([$name]);
-            $exists = $stmt_service_check->fetchColumn();
-            if ($exists) {
-                $stmt_service_update->execute([$method, $color, $name]);
-            } else {
-                $stmt_service_insert->execute([$name, $method, $color]);
+                $stmt_service_check->execute([$name]);
+                $exists = $stmt_service_check->fetchColumn();
+                if ($exists) {
+                    $stmt_service_update->execute([$method, $color, $name]);
+                } else {
+                    $stmt_service_insert->execute([$name, $method, $color]);
+                }
             }
-        }
 
-        // Clean services that are no longer in the config
-        if (!empty($all_service_names)) {
-            $placeholders = implode(',', array_fill(0, count($all_service_names), '?'));
-            $stmt_service_delete = $db->prepare("DELETE FROM services WHERE name NOT IN ($placeholders)");
-            $stmt_service_delete->execute($all_service_names);
-        } else {
-            $db->exec("DELETE FROM services");
+            // Clean services that are no longer in the public configuration.
+            if (!empty($all_service_names)) {
+                $placeholders = implode(',', array_fill(0, count($all_service_names), '?'));
+                $stmt_service_delete = $db->prepare("DELETE FROM services WHERE name NOT IN ($placeholders)");
+                $stmt_service_delete->execute($all_service_names);
+            } else {
+                $db->exec("DELETE FROM services");
+            }
         }
 
         // 3. Sync devices to SQLite database
@@ -1576,6 +1581,7 @@ function save_config_file($config, $file_path = '')
             $db->rollBack();
         }
         error_log("Failed to save configuration to SQLite: " . $e->getMessage());
+        return false;
     }
 
     return true;
@@ -1611,6 +1617,8 @@ function ensure_config_structure($config, $is_local_network = false)
 
     $config['settings'] = array_merge([
         'ping_interval' => '300',
+        'host_color' => '#6b7280',
+        'network_color' => '#012c81',
     ], $config['settings'] ?? []);
     unset($config['settings']['ping_attempts']);
 

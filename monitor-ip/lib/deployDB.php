@@ -1,6 +1,6 @@
 <?php
 
-$version = '1.2.1'; // Versión actual del esquema de la base de datos
+$version = '1.2.4'; // Versión actual del esquema de la base de datos
 $ping_interval = 300; // Intervalo de ping en segundos (valor por defecto)
 $security_enabled = true; // Habilitar seguridad (valor por defecto)
 $security_username = ''; // Nombre de usuario para autenticación (vacío por defecto)
@@ -60,8 +60,15 @@ try {
     $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('ai', 'provider', 'chatgpt')");
     $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('ai', 'base_url', 'https://chatgpt.com')");
     $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('ai', 'gpt_path', '')");
-    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('services', 'host_color', '$host_color')");
-    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('services', 'network_color', '$network_color')");
+    // Versions before the SQLite migration stored these display settings in
+    // the `services` section, while the dashboard reads them from `settings`.
+    // Copy existing custom values first, then add defaults for new installs.
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value)
+        SELECT 'settings', key, value
+        FROM settings
+        WHERE section = 'services' AND key IN ('host_color', 'network_color')");
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('settings', 'host_color', '$host_color')");
+    $db->exec("INSERT OR IGNORE INTO settings (section, key, value) VALUES ('settings', 'network_color', '$network_color')");
 
     // 4. Crear tabla de servicios de la red pública
     $db->exec("CREATE TABLE IF NOT EXISTS services (
@@ -69,6 +76,15 @@ try {
         method TEXT DEFAULT 'icmp',
         color TEXT DEFAULT '#6b7280'
     )");
+
+    // Recover the service catalog when upgrading databases created before
+    // services were stored in their own table. Public devices use `host` as
+    // their service name, so this is enough to restore the entries without
+    // touching any monitored device.
+    $db->exec("INSERT OR IGNORE INTO services (name, method, color)
+        SELECT DISTINCT host, 'icmp', '#6b7280'
+        FROM devices
+        WHERE is_local = 0 AND TRIM(COALESCE(host, '')) <> ''");
 
     // 5. Crear tabla de alertas de telegram
     $db->exec("CREATE TABLE IF NOT EXISTS telegram_alerts (
