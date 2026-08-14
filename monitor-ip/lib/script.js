@@ -21,13 +21,26 @@ function toggleTheme() {
 const modalFunctions = {
     // Show a modal by ID
     showModal: function (modalId) {
-        document.getElementById(modalId).style.display = 'flex';
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            return;
+        }
+
+        modal.style.display = 'flex';
         document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
     },
     // Hide a modal by ID
     hideModal: function (modalId) {
-        document.getElementById(modalId).style.display = 'none';
-        document.body.style.overflow = 'auto'; // Re-enable scrolling
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            return;
+        }
+
+        modal.style.display = 'none';
+        const hasOpenModal = Array.from(document.querySelectorAll('.modal')).some(function (item) {
+            return item.style.display === 'flex';
+        });
+        document.body.style.overflow = hasOpenModal ? 'hidden' : 'auto';
     },
     // Show a custom alert modal
     showAlert: function (message, type = 'info') {
@@ -925,10 +938,18 @@ function showIpDetailModal(ip, startTab = 'general') {
         uptimeTextColor = 'text-red-700 dark:text-red-400';
     }
 
+    const formatUptimePercentage = function (value) {
+        const percentage = Number(value);
+        if (!Number.isFinite(percentage)) {
+            return 'N/A';
+        }
+        return percentage.toFixed(2).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+    };
+
     let monthlyUptimeColors = '';
     const monthlyPercentage = Number(ipData.monthly_percentage || 0);
     const monthlySamples = Number(ipData.sample_count_30d || 0);
-    const monthlyDisplay = monthlySamples > 0 ? `${monthlyPercentage.toFixed(2)}%` : 'N/A';
+    const monthlyDisplay = monthlySamples > 0 ? `${formatUptimePercentage(monthlyPercentage)}%` : 'N/A';
     if (monthlySamples === 0) {
         monthlyUptimeColors = 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/40 dark:to-gray-800/20 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800';
     } else if (monthlyPercentage >= 90) {
@@ -961,7 +982,7 @@ function showIpDetailModal(ip, startTab = 'general') {
         <div class='grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4'>
             <div class='${uptimeColors} rounded-3xl p-5 sm:p-6 shadow-sm'>
                 <div class='text-[11px] uppercase font-black tracking-[0.16em] opacity-60'>Uptime 24h</div>
-                <div class='mt-3 text-4xl sm:text-5xl font-black leading-none'>${ipData.percentage.toFixed(2)}%</div>
+                <div class='mt-3 text-4xl sm:text-5xl font-black leading-none'>${formatUptimePercentage(ipData.percentage)}%</div>
             </div>
             <div class='${pingColors} rounded-3xl p-5 sm:p-6 shadow-sm'>
                 <div class='text-[11px] uppercase font-black tracking-[0.16em] opacity-60'>Latency 24h</div>

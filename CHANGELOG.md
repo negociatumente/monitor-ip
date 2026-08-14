@@ -1,5 +1,9 @@
 # Historial de Cambios - Monitor IP
 
+## [1.2.4] - 2026-08-14
+- **Modales y navegación**: Diseño unificado para modales y botones, con mayor altura para las comparativas, resultados adaptativos y desplazamiento seguro en pantallas pequeñas.
+- **Configuración**: Corregida la estructura del modal de importación y exportación para que pueda abrirse correctamente.
+
 ## [1.2.3] - 2026-08-14
 - **Renovación de interfaz**: Se ha actualizado el diseño del panel con una cabecera, barra lateral y navegación más limpias y consistentes.
 

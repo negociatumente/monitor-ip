@@ -1049,3 +1049,353 @@
         }
 
     }
+
+    /* ==================== UNIFIED MODALS & CONTROLS ==================== */
+    :root {
+        --ui-control-radius: 0.875rem;
+        --ui-modal-radius: 1.5rem;
+        --ui-focus-ring: 0 0 0 4px rgba(50, 110, 232, 0.2);
+        --ui-modal-border: rgba(226, 232, 240, 0.88);
+        --ui-modal-shadow: 0 28px 80px rgba(15, 23, 42, 0.28), 0 8px 28px rgba(15, 23, 42, 0.12);
+    }
+
+    .modal {
+        z-index: 120;
+        box-sizing: border-box;
+        padding: 1rem;
+        background: rgba(15, 23, 42, 0.64);
+        backdrop-filter: blur(10px) saturate(130%);
+        -webkit-backdrop-filter: blur(10px) saturate(130%);
+        animation: modal-backdrop-in 180ms ease-out;
+    }
+
+    .modal-content {
+        width: 100%;
+        max-height: calc(100dvh - 2rem);
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        border: 1px solid var(--ui-modal-border) !important;
+        border-radius: var(--ui-modal-radius) !important;
+        box-shadow: var(--ui-modal-shadow) !important;
+        overflow-x: hidden;
+        overflow-y: auto;
+        isolation: isolate;
+        animation: modal-surface-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-content:not([class*='max-w-']) {
+        max-width: 42rem;
+    }
+
+    /* The stylesheet is loaded after Tailwind, so retain every size utility
+       used by the existing modal markup instead of collapsing wide dialogs. */
+    .modal-content.max-w-md {
+        max-width: 28rem;
+    }
+
+    .modal-content.max-w-lg {
+        max-width: 32rem;
+    }
+
+    .modal-content.max-w-xl {
+        max-width: 36rem;
+    }
+
+    .modal-content.max-w-2xl {
+        max-width: 42rem;
+    }
+
+    .modal-content.max-w-3xl {
+        max-width: 48rem;
+    }
+
+    .modal-content.max-w-4xl {
+        max-width: 56rem;
+    }
+
+    .modal-content.max-w-5xl {
+        max-width: 64rem;
+    }
+
+    .dark .modal-content {
+        border-color: rgba(71, 85, 105, 0.72) !important;
+        box-shadow: 0 28px 80px rgba(0, 0, 0, 0.54), 0 8px 28px rgba(0, 0, 0, 0.32) !important;
+    }
+
+    #customAlert .modal-content,
+    #customConfirm .modal-content {
+        padding: 1.5rem;
+    }
+
+    .modal-content > :first-child:not(form) {
+        border-top-left-radius: calc(var(--ui-modal-radius) - 1px);
+        border-top-right-radius: calc(var(--ui-modal-radius) - 1px);
+    }
+
+    .modal :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+        border-radius: var(--ui-control-radius) !important;
+        transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+    }
+
+    .modal :is(input:not([type='checkbox']):not([type='radio']), select, textarea):focus {
+        border-color: #326ee8 !important;
+        box-shadow: var(--ui-focus-ring);
+        outline: none;
+    }
+
+    .btn {
+        min-height: 2.6rem;
+        border: 1px solid transparent;
+        border-radius: var(--ui-control-radius) !important;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        line-height: 1.1;
+        box-shadow: 0 5px 14px rgba(15, 23, 42, 0.12);
+        transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease, background-color 160ms ease;
+    }
+
+    .btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.16);
+        filter: saturate(1.06);
+    }
+
+    .btn:active:not(:disabled) {
+        transform: translateY(0) scale(0.98);
+        box-shadow: 0 3px 8px rgba(15, 23, 42, 0.12);
+    }
+
+    :is(button, .btn, a.btn):focus-visible {
+        outline: none;
+        box-shadow: var(--ui-focus-ring) !important;
+    }
+
+    :is(button, .btn, a.btn):disabled,
+    :is(button, .btn, a.btn)[aria-disabled='true'] {
+        cursor: not-allowed;
+        opacity: 0.58;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .modal :is(button, a):not(.btn):not(.rounded-full) {
+        border-radius: var(--ui-control-radius);
+        transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, color 160ms ease;
+    }
+
+    .modal :is(button, a[class*='bg-']):not(.btn):not(.rounded-full) {
+        font-weight: 700;
+        box-shadow: 0 5px 14px rgba(15, 23, 42, 0.1);
+    }
+
+    .modal :is(button, a):not(.btn):not(.rounded-full):hover {
+        transform: translateY(-1px);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #3978f2 0%, #2764d9 100%);
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6d43d7 100%);
+    }
+
+    .btn-accent {
+        background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #ef5350 0%, #dc2626 100%);
+    }
+
+    @keyframes modal-backdrop-in {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes modal-surface-in {
+        from {
+            opacity: 0;
+            transform: translateY(12px) scale(0.985);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @media (max-width: 639px) {
+        .modal {
+            align-items: flex-end;
+            padding: 0.5rem;
+        }
+
+        .modal-content {
+            width: 100%;
+            max-height: calc(100dvh - 1rem);
+            border-radius: 1.25rem 1.25rem 0.875rem 0.875rem !important;
+        }
+
+        #customAlert .modal-content,
+        #customConfirm .modal-content {
+            margin-bottom: 0.5rem;
+        }
+
+        .btn {
+            min-height: 2.75rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .modal,
+        .modal-content,
+        .btn,
+        .modal :is(button, a) {
+            animation: none !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
+    /* Long DNS and gaming benchmark results keep their header and actions
+       visible while the catalog and result grids can scroll independently. */
+    .benchmark-modal {
+        display: flex;
+        flex-direction: column;
+        max-height: min(90dvh, 48rem);
+        overflow: hidden;
+    }
+
+    .benchmark-modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .benchmark-results-scroll {
+        max-height: min(48vh, 30rem);
+        overflow-y: auto;
+        padding-right: 0.35rem;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+    }
+
+    .benchmark-modal-tall {
+        max-height: min(96dvh, 60rem);
+    }
+
+    .benchmark-modal-tall .benchmark-results-scroll {
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    #gamingCatalogList,
+    #dnsResolversList {
+        max-height: 24rem;
+        overflow-y: auto;
+        padding-right: 0.35rem;
+        overscroll-behavior: contain;
+    }
+
+    @media (max-width: 639px) {
+        .benchmark-modal {
+            max-height: calc(100dvh - 1rem);
+        }
+
+        .benchmark-results-scroll {
+            max-height: 42vh;
+        }
+
+        .benchmark-modal-tall {
+            max-height: calc(100dvh - 1rem);
+        }
+
+        .benchmark-modal-tall .benchmark-results-scroll {
+            max-height: 42vh;
+            overflow-y: auto;
+        }
+    }
+
+    .catalog-manager-modal {
+        display: flex;
+        flex-direction: column;
+        max-height: min(90dvh, 50rem);
+        overflow: hidden;
+    }
+
+    #gamingCatalogModal,
+    #dnsResolversModal {
+        z-index: 140;
+    }
+
+    .catalog-manager-body {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .catalog-manager-list {
+        flex: 1 1 auto;
+        min-height: 7rem;
+    }
+
+    .catalog-manager-item {
+        transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    .catalog-manager-item:hover {
+        transform: translateY(-1px);
+        border-color: rgba(50, 110, 232, 0.35);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .catalog-delete-button {
+        display: inline-flex;
+        min-height: 2.25rem;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 0.7rem;
+        padding: 0.45rem 0.65rem;
+        color: #dc2626;
+        background: #fff1f2;
+        font-size: 0.75rem;
+        font-weight: 700;
+        transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .catalog-delete-button:hover {
+        transform: translateY(-1px);
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .dark .catalog-delete-button {
+        border-color: rgba(248, 113, 113, 0.3);
+        background: rgba(127, 29, 29, 0.28);
+        color: #fca5a5;
+    }
+
+    .dark .catalog-delete-button:hover {
+        background: rgba(153, 27, 27, 0.42);
+        color: #fecaca;
+    }
+
+    @media (max-width: 639px) {
+        .catalog-manager-modal {
+            max-height: calc(100dvh - 1rem);
+        }
+
+        #gamingCatalogList,
+        #dnsResolversList {
+            max-height: 40vh;
+        }
+    }

@@ -1393,8 +1393,10 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
                 <!-- Project Info -->
                 <div class="text-center md:text-left">
                     <div class="flex items-center justify-center md:justify-start mb-4">
-                        <i class="fas fa-network-wired text-2xl text-blue-400 mr-3"></i>
-                        <h3 class="text-xl font-bold">IP Monitor</h3>
+                        <div class="app-header-brand bg-white p-1 sm:p-1 rounded-xl group-hover:scale-110 transition-all duration-300 shadow-lg">
+                            <img src="assets/logo.png" alt="Logo" class="w-4 h-4 sm:w-10 sm:h-10 object-contain">
+                        </div>
+                        <h3 class="ml-2 text-xl font-bold">IP Monitor</h3>
                     </div>
                     <p class="text-gray-300 text-sm leading-relaxed">
                         A powerful and elegant network monitoring solution to keep track of your critical
@@ -1594,7 +1596,7 @@ $network_label = isset($is_local_network) && $is_local_network ? 'Private Networ
     <div id="publicIpModal"
         class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
         <div
-            class="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
+            class="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-3xl shadow-2xl transition-all border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-100">
 
             <div class="p-5 bg-gradient-to-br from-blue-600 to-indigo-700 text-white relative overflow-hidden">
                 <!-- Decorative background elements -->

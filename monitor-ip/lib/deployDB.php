@@ -142,12 +142,28 @@ try {
             ['rocket_league', 'Rocket League', 'Epic Games', 'ping-eu.ds.on.epicgames.com', 'ping-nae.ds.on.epicgames.com', 'ping-asia.ds.on.epicgames.com'],
             ['apex_legends', 'Apex Legends', 'EA', 'easo.ea.com', 'easo.ea.com', 'easo.ea.com'],
             ['minecraft', 'Minecraft', 'Minecraft Services', 'api.minecraftservices.com', 'api.minecraftservices.com', 'api.minecraftservices.com'],
+            ['ea_sports_fc_26', 'EA Sports FC 26', 'EA Sports', 'easo.ea.com', 'easo.ea.com', 'easo.ea.com'],
+            ['rainbow_six_siege', 'Rainbow Six Siege', 'Ubisoft', 'public-ubiservices.ubi.com', 'public-ubiservices.ubi.com', 'public-ubiservices.ubi.com'],
         ];
         $insert_game = $db->prepare('INSERT OR IGNORE INTO gaming_games (slug, name, platform, target_europe, target_north_america, target_asia_pacific) VALUES (?, ?, ?, ?, ?, ?)');
         foreach ($games as $game) {
             $insert_game->execute($game);
         }
         $db->prepare("INSERT INTO settings (section, key, value) VALUES ('catalogs', 'gaming_games_seeded', '1')")->execute();
+    }
+
+    // Add new built-in titles to installations whose initial catalog was already seeded.
+    $catalog_seeded->execute(['gaming_games_v2_seeded']);
+    if ($catalog_seeded->fetchColumn() === false) {
+        $additional_games = [
+            ['ea_sports_fc_26', 'EA Sports FC 26', 'EA Sports', 'easo.ea.com', 'easo.ea.com', 'easo.ea.com'],
+            ['rainbow_six_siege', 'Rainbow Six Siege', 'Ubisoft', 'public-ubiservices.ubi.com', 'public-ubiservices.ubi.com', 'public-ubiservices.ubi.com'],
+        ];
+        $insert_game = $db->prepare('INSERT OR IGNORE INTO gaming_games (slug, name, platform, target_europe, target_north_america, target_asia_pacific) VALUES (?, ?, ?, ?, ?, ?)');
+        foreach ($additional_games as $game) {
+            $insert_game->execute($game);
+        }
+        $db->prepare("INSERT INTO settings (section, key, value) VALUES ('catalogs', 'gaming_games_v2_seeded', '1')")->execute();
     }
 
     $catalog_seeded->execute(['dns_resolvers_seeded']);

@@ -399,8 +399,11 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // Gaming Latency Test Functions
+let gamingLatencyRunning = false;
+
 function showGamingLatencyModal() {
     modalFunctions.showModal('gamingLatencyModal');
+    startGamingLatencyTest();
 }
 
 function hideGamingLatencyModal() {
@@ -439,6 +442,8 @@ const gamingGameImages = {
     rocket_league: 'assets/games/rocket-league.jpg',
     apex_legends: 'assets/games/apex-legends.jpg',
     minecraft: 'assets/games/minecraft.jpg',
+    ea_sports_fc_26: 'assets/games/ea-sports-fc-26.jpg',
+    rainbow_six_siege: 'assets/games/rainbow-six-siege.jpg',
 };
 
 function renderGamingLatencyResults(results) {
@@ -482,16 +487,21 @@ function renderGamingLatencyResults(results) {
 }
 
 async function startGamingLatencyTest() {
+    if (gamingLatencyRunning) {
+        return;
+    }
+
     const startButton = document.getElementById('startGamingLatencyBtn');
     const status = document.getElementById('gamingLatencyStatus');
     const resultsContainer = document.getElementById('gamingLatencyResults');
     const regionSelect = document.getElementById('gamingLatencyRegion');
     const regionName = regionSelect.options[regionSelect.selectedIndex].text;
+    gamingLatencyRunning = true;
     startButton.disabled = true;
     regionSelect.disabled = true;
     startButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Midiendo...';
     status.className = 'rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/25 dark:text-amber-200';
-    status.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Midiendo ocho destinos de ${escapeGamingLatencyHtml(regionName)} en paralelo. Puede tardar unos segundos.`;
+    status.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Midiendo los destinos de ${escapeGamingLatencyHtml(regionName)} en paralelo. Puede tardar unos segundos.`;
     resultsContainer.innerHTML = '';
 
     try {
@@ -506,13 +516,13 @@ async function startGamingLatencyTest() {
         }
 
         renderGamingLatencyResults(data.results);
-        const available = data.results.filter(result => result.available).length;
-        status.className = 'rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/25 dark:text-emerald-200';
-        status.innerHTML = `<i class="fas fa-check-circle mr-2"></i>Test completado: ${available} de ${data.results.length} destinos respondieron.`;
+        status.className = 'hidden';
+        status.innerHTML = '';
     } catch (error) {
         status.className = 'rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/25 dark:text-red-200';
         status.textContent = `No se pudo completar el test: ${error.message}`;
     } finally {
+        gamingLatencyRunning = false;
         startButton.disabled = false;
         regionSelect.disabled = false;
         startButton.innerHTML = '<i class="fas fa-redo mr-2"></i>Repetir test';
@@ -535,19 +545,26 @@ async function loadGamingCatalog() {
             return;
         }
         list.innerHTML = data.games.map(game => `
-            <div class="flex items-center justify-between gap-3 rounded-lg bg-white p-2.5 dark:bg-gray-800">
-                <div class="min-w-0"><p class="font-semibold text-gray-800 dark:text-gray-100 truncate">${escapeGamingLatencyHtml(game.name)} <span class="font-normal text-xs text-gray-500">· ${escapeGamingLatencyHtml(game.platform)}</span></p><p class="text-[11px] font-mono text-gray-500 dark:text-gray-400 truncate" title="EU: ${escapeGamingLatencyHtml(game.target_europe)} | NA: ${escapeGamingLatencyHtml(game.target_north_america)} | AP: ${escapeGamingLatencyHtml(game.target_asia_pacific)}">EU: ${escapeGamingLatencyHtml(game.target_europe)} · NA: ${escapeGamingLatencyHtml(game.target_north_america)} · AP: ${escapeGamingLatencyHtml(game.target_asia_pacific)}</p></div>
-                <button type="button" onclick="deleteGamingGame(${Number(game.id)});" class="shrink-0 text-red-500 hover:text-red-700" title="Eliminar juego"><i class="fas fa-trash-alt"></i></button>
-            </div>`).join('');
+            <article class="catalog-manager-item flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+                <div class="min-w-0"><p class="font-bold text-gray-800 dark:text-gray-100 truncate">${escapeGamingLatencyHtml(game.name)}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">${escapeGamingLatencyHtml(game.platform)}</p></div>
+                <button type="button" onclick="deleteGamingGame(${Number(game.id)});" class="catalog-delete-button shrink-0" title="Eliminar juego" aria-label="Eliminar ${escapeGamingLatencyHtml(game.name)}"><i class="fas fa-trash-alt"></i><span class="hidden sm:inline">Eliminar</span></button>
+            </article>`).join('');
     } catch (error) {
         list.textContent = `No se pudo cargar el catálogo: ${error.message}`;
     }
 }
 
+function showGamingCatalogModal() {
+    modalFunctions.showModal('gamingCatalogModal');
+    loadGamingCatalog();
+}
+
+function hideGamingCatalogModal() {
+    modalFunctions.hideModal('gamingCatalogModal');
+}
+
 function toggleGamingCatalogManager() {
-    const manager = document.getElementById('gamingCatalogManager');
-    manager.classList.toggle('hidden');
-    if (!manager.classList.contains('hidden')) loadGamingCatalog();
+    showGamingCatalogModal();
 }
 
 async function addGamingGame(event) {
@@ -579,6 +596,8 @@ async function deleteGamingGame(id) {
     loadGamingCatalog();
 }
 
+window.showGamingCatalogModal = showGamingCatalogModal;
+window.hideGamingCatalogModal = hideGamingCatalogModal;
 window.toggleGamingCatalogManager = toggleGamingCatalogManager;
 window.addGamingGame = addGamingGame;
 window.deleteGamingGame = deleteGamingGame;
@@ -682,9 +701,8 @@ async function startDnsBenchmark() {
         }
 
         renderDnsBenchmarkResults(data.results);
-        const available = data.results.filter(result => result.available).length;
-        status.className = 'rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/25 dark:text-emerald-200';
-        status.innerHTML = `<i class="fas fa-check-circle mr-2"></i>Comparativa completada: ${available} de ${data.results.length} DNS respondieron.`;
+        status.className = 'hidden';
+        status.innerHTML = '';
     } catch (error) {
         status.className = 'rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/25 dark:text-red-200';
         status.textContent = `No se pudo completar la comparativa: ${error.message}`;
@@ -711,19 +729,26 @@ async function loadDnsResolvers() {
             return;
         }
         list.innerHTML = data.resolvers.map(resolver => `
-            <div class="flex items-center justify-between gap-3 rounded-lg bg-white p-2.5 dark:bg-gray-800">
-                <div><p class="font-semibold text-gray-800 dark:text-gray-100">${escapeDnsBenchmarkHtml(resolver.name)}</p><p class="text-[11px] font-mono text-gray-500 dark:text-gray-400">${escapeDnsBenchmarkHtml(resolver.ip)}</p></div>
-                <button type="button" onclick="deleteDnsResolver(${Number(resolver.id)});" class="shrink-0 text-red-500 hover:text-red-700" title="Eliminar DNS"><i class="fas fa-trash-alt"></i></button>
-            </div>`).join('');
+            <article class="catalog-manager-item flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+                <div class="min-w-0"><p class="font-bold text-gray-800 dark:text-gray-100 truncate">${escapeDnsBenchmarkHtml(resolver.name)}</p><p class="mt-1 text-xs font-mono text-gray-500 dark:text-gray-400">${escapeDnsBenchmarkHtml(resolver.ip)}</p></div>
+                <button type="button" onclick="deleteDnsResolver(${Number(resolver.id)});" class="catalog-delete-button shrink-0" title="Eliminar DNS" aria-label="Eliminar ${escapeDnsBenchmarkHtml(resolver.name)}"><i class="fas fa-trash-alt"></i><span class="hidden sm:inline">Eliminar</span></button>
+            </article>`).join('');
     } catch (error) {
         list.textContent = `No se pudo cargar el catálogo: ${error.message}`;
     }
 }
 
+function showDnsResolversModal() {
+    modalFunctions.showModal('dnsResolversModal');
+    loadDnsResolvers();
+}
+
+function hideDnsResolversModal() {
+    modalFunctions.hideModal('dnsResolversModal');
+}
+
 function toggleDnsResolversManager() {
-    const manager = document.getElementById('dnsResolversManager');
-    manager.classList.toggle('hidden');
-    if (!manager.classList.contains('hidden')) loadDnsResolvers();
+    showDnsResolversModal();
 }
 
 async function addDnsResolver(event) {
@@ -755,6 +780,8 @@ async function deleteDnsResolver(id) {
     loadDnsResolvers();
 }
 
+window.showDnsResolversModal = showDnsResolversModal;
+window.hideDnsResolversModal = hideDnsResolversModal;
 window.toggleDnsResolversManager = toggleDnsResolversManager;
 window.addDnsResolver = addDnsResolver;
 window.deleteDnsResolver = deleteDnsResolver;
@@ -2671,8 +2698,8 @@ async function showPublicIPModal() {
             content.innerHTML = `
                 <div class="flex flex-col items-center">
                     <div class="text-center mb-6">
-                        <span class="text-[10px] uppercase font-bold text-gray-400 tracking-widest bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">Your Public IP Address</span>
-                        <h2 class="text-3xl font-black text-gray-800 dark:text-gray-100 mt-2 tracking-tight">${r.query}</h2>
+                        <span class="text-xs sm:text-sm uppercase font-bold text-gray-400 tracking-widest bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg">Your Public IP Address</span>
+                        <h2 class="text-4xl sm:text-5xl font-black text-gray-800 dark:text-gray-100 mt-3 tracking-tight">${r.query}</h2>
                     </div>
 
                     <div class="w-full grid grid-cols-2 gap-4">
@@ -2681,10 +2708,10 @@ async function showPublicIPModal() {
                                 <div class="w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-300">
                                     <i class="fas fa-building"></i>
                                 </div>
-                                <span class="text-xs font-bold text-blue-400 uppercase">Provider</span>
+                                <span class="text-sm font-bold text-blue-400 uppercase">Provider</span>
                             </div>
-                            <p class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight">${r.isp}</p>
-                            <p class="text-[10px] text-gray-400 mt-0.5">${r.as}</p>
+                            <p class="text-base sm:text-lg font-bold text-gray-700 dark:text-gray-200 leading-tight">${r.isp}</p>
+                            <p class="text-xs sm:text-sm text-gray-400 mt-1">${r.as}</p>
                         </div>
 
                         <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/50">
@@ -2692,13 +2719,13 @@ async function showPublicIPModal() {
                                 <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-800 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-300">
                                     <i class="fas fa-map-marker-alt"></i>
                                 </div>
-                                <span class="text-xs font-bold text-indigo-400 uppercase">Location</span>
+                                <span class="text-sm font-bold text-indigo-400 uppercase">Location</span>
                             </div>
-                            <p class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight flex items-center gap-2">
+                            <p class="text-base sm:text-lg font-bold text-gray-700 dark:text-gray-200 leading-tight flex items-center gap-2">
                                 ${r.countryCode ? `<img src="https://flagcdn.com/20x15/${r.countryCode.toLowerCase()}.png" class="rounded-sm shadow-sm">` : ''} 
                                 ${r.country}
                             </p>
-                            <p class="text-[10px] text-gray-400 mt-0.5">${r.city}, ${r.regionName}</p>
+                            <p class="text-xs sm:text-sm text-gray-400 mt-1">${r.city}, ${r.regionName}</p>
                         </div>
                     </div>
 
@@ -2757,7 +2784,7 @@ async function checkCGNATStatus() {
                             <h5 class="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase tracking-wide">CGNAT Detected</h5>
                             <p class="text-xs text-orange-700 dark:text-orange-300 mt-1">
                                 Your network is behind Carrier-Grade NAT. Port forwarding will not work.
-                                <br><span class="opacity-75 font-mono text-[10px]">Detected via hop: ${data.hop}</span>
+                                <br><span class="opacity-75 font-mono text-[12px]">Detected via hop: ${data.hop}</span>
                             </p>
                         </div>
                     </div>
