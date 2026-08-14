@@ -1,5 +1,5 @@
 # 🌐 IP Monitor  
-Este proyecto permite **monitorear la conectividad** a servidores desde tu red local y **corregir problemas en tu red**. Es útil para diagnosticar bloqueos de tu proveedor de Internet (ISP) y verificar la disponibilidad de estos servicios. Ademas, puedes realizar un escaneo de red local para descubrir dispositivos conectados a tu red y medir latencias y velocidades de tu red. Finalmente, puedes generar un reporte de la calidad de tu red.
+Este proyecto permite **monitorizar la conectividad** a servidores desde tu red local y **diagnosticar problemas de red**. Es útil para detectar bloqueos de tu proveedor de Internet (ISP), comprobar la disponibilidad de servicios, descubrir dispositivos locales y medir la calidad de la conexión. También incluye comparadores de latencia para videojuegos y resolutores DNS, además de reportes sobre el estado de la red.
 
 ![IP Monitor](monitor-ip/assets/monitor-v1.2.1.png)
 
@@ -36,6 +36,8 @@ Si buscas una solución personalizada para tu empresa ofrezco versiones **Enterp
 ✅ **Monitorización en tiempo real** de servidores públicos y dispositivos locales.  
 ✅ **Escaneo de Red Local**: Descubre dispositivos conectados a tu red.  
 ✅ **Test de Velocidad**: Mide tu latencia, velocidad de descarga y subida.  
+✅ **Comparador de Latencia Gaming**: Compara la latencia regional de juegos competitivos, con métricas de media, mínima, máxima, jitter y pérdida de paquetes.<br>
+✅ **Comparador DNS**: Compara resolutores DNS mediante consultas directas y ordena los resultados por latencia media.<br>
 ✅ **Trazabilidad de Red**: Analiza los saltos de la red para identificar problemas.  
 ✅ **Detección de CGNAT**: Identifica si estás detrás de una NAT compartida.  
 ✅ **Reporte de Red**: Genera un reporte de la calidad de tu red.  
@@ -56,7 +58,8 @@ monitor-ip/
 │   ├── logo.png                      # Logo del proyecto
 │   ├── monitor-v1.0.png              # Captura de pantalla del proyecto
 │   ├── telegram_alerts.png           # Captura de pantalla de alertas de Telegram
-│   └── telegram_intruders.png        # Captura de pantalla de intrusos de Telegram
+│   ├── telegram_intruders.png        # Captura de pantalla de intrusos de Telegram
+│   └── games/                        # Imágenes de los juegos del comparador de latencia
 ├── auth/                             # Archivos de configuración y resultados
 │   ├── login.php                     # Página de login y autenticación
 │   └── logout.php                    # Página de cierre de sesión
@@ -79,11 +82,13 @@ monitor-ip/
 |-----|---------------|---------------------|---------------|-----------------|---------------|----------------|--------------|
 | Test de conectividad / latencia | `iputils-ping` | `ping` | `ping` | ✔️ | ✔️ | ✔️ | ✔️ |
 | Test de peticiones HTTP / APIs | `curl` | `curl` | `curl` | ✔️* | ✔️ | ✔️ | ✔️ |
-| Test de consultas DNS | `dnsutils` | `dig`, `nslookup` | `nslookup` | ✔️* | ✔️ | ✔️ | ✔️ |
+| Consultas DNS | `dnsutils` | `dig`, `nslookup` | `Resolve-DnsName`, `nslookup` | ✔️* | ✔️ | ✔️ | ✔️ |
+| Comparador de DNS | `iputils-ping` | `ping` | `ping` | ✔️ | ✔️ | ✔️ | ✔️ |
+| Comparador de Juegos | `iputils-ping` | `ping` | `ping` | ✔️ | ✔️ | ✔️ | ✔️ |
 | Analizar los saltos de la red | `traceroute` | `traceroute` | `tracert` | ✔️* | ✔️ | ✔️ | ❌ |
 | Obtener IP del Gateway/Router | `iproute2` | `ip route` | `ipconfig` | ✔️ | ✔️ | ✔️ | ✔️ |
 | Test de velocidad | `Speedtest++` | `speedtest` | `speedtest.exe` | ✔️ | ✔️* | ✔️ | ✔️ |
-| Escaneo de dispositivos de la red | `nmap` | `nmap` | `nmap` | ✔️* | ✔️* | ✔️ | ❌ |
+| Escaneo de dispositivos | `nmap` | `nmap` | `nmap` | ✔️* | ✔️* | ✔️ | ❌ |
 | Alertas de Conectividad | `Telegram` | `Telegram` | `Telegram` | ✔️* | ✔️* | ✔️* | ✔️* |
 | Alertas por alta latencia | `Telegram` | `Telegram` | `Telegram` | ✔️* | ✔️* | ✔️* | ✔️* |
 | Alertas de Intrusos | `nmap/Telegram` | `nmap/Telegram` | `nmap/Telegram` | ✔️* | ✔️* | ✔️* | ✔️* |
@@ -226,7 +231,7 @@ http://localhost/monitor-ip
 - Instala el programa DB Browser for SQLite en tu sistema.
 - Abre la aplicación y selecciona `Open Database`.
 - Navega hasta ` monitor-ip\db\monitor.db` y seleccionalo.
-- Explora las tablas `devices`, `ping_results`, `settings`, `services`, `telegram_alerts` y `speedtest_results`.
+- Explora las tablas `devices`, `ping_results`, `settings`, `services`, `telegram_alerts`, `speedtest_results`, `gaming_games` y `dns_resolvers`.
 
 
 ## 🚨 Configurar Alertas Telegram (Opcional)
